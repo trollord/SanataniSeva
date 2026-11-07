@@ -148,7 +148,7 @@ export default function SiteNavbar({ forceScrolled = false }: { forceScrolled?: 
         <NavBody>
           <NavbarLogo />
           <NavItems items={navItems} />
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 shrink-0">
             {session ? (
               <>
                 {false && (

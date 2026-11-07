@@ -1,5 +1,5 @@
 /** Single source of truth for the transactional from-address. */
-export const EMAIL_FROM = "Sanatani Community <noreply@bluebrics.com>";
+export const EMAIL_FROM = "Sanatani Community <noreply@hiranandaniproperties.in>";
 
 // Branded HTML email templates. Email clients need inline styles and
 // table-based layout; fonts fall back to Georgia (serif headings, matching
@@ -28,7 +28,7 @@ function shell(content: string): string {
             <tr>
               <td style="background-color:#FF5F15;border-radius:14px 14px 0 0;padding:22px 32px;">
                 <span style="font-family:${sans};font-size:17px;font-weight:700;color:#ffffff;letter-spacing:-0.3px;">
-                  Blue<span style="color:rgba(255,255,255,0.6);">Bricks</span>
+                  Sanatani<span style="color:rgba(255,255,255,0.6);"> Community</span>
                 </span>
               </td>
             </tr>

@@ -18,8 +18,8 @@ export interface BlogPost {
 
 export const BLOG_POSTS: BlogPost[] = [
   {
-    slug: "how-zero-brokerage-saves-you-lakhs",
-    title: "How Zero Brokerage Saves You Lakhs - The Real Math",
+    slug: "how-direct-owner-deals-save-you-lakhs",
+    title: "How Direct Owner Deals Save You Lakhs - The Real Math",
     excerpt:
       "On a ₹2 crore flat, the typical 1–2% commission is ₹2–4 lakhs. Here's exactly where that money goes in a traditional deal - and how connecting directly with owners keeps it in your pocket.",
     date: "2026-07-18",

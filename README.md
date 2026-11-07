@@ -56,7 +56,7 @@ Test credentials after seeding:
 
 | Role  | Email                       | Password |
 |-------|-----------------------------|----------|
-| Admin | admin@bluebrics.com   | admin123 |
+| Admin | admin@sanatanicommunity.in   | admin123 |
 | Owner | owner@example.com           | owner123 |
 
 ---

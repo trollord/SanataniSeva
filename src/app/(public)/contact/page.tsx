@@ -148,7 +148,7 @@ export default function ContactPage() {
                 See how Sanatani Community works
               </h2>
               <p className="text-white/45 text-xs sm:text-sm leading-relaxed max-w-md">
-                Zero brokerage, direct owner connect, verified listings - in
+                Direct owner connect, verified listings, no middlemen - in
                 under three steps.
               </p>
             </div>

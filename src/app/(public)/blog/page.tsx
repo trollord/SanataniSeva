@@ -6,7 +6,7 @@ import { BLOG_POSTS } from "@/lib/blog";
 export const metadata: Metadata = {
   title: "Blog - Homes, Renting & Buying in Hiranandani Estate, Thane",
   description:
-    "Guides and insights on renting, buying and saving on brokerage for houses and flats in Hiranandani Estate, Thane - from the Sanatani Community team.",
+    "Guides and insights on renting, buying and saving money on houses and flats in Hiranandani Estate, Thane - from the Sanatani Community team.",
   alternates: { canonical: "/blog" },
 };
 
@@ -29,7 +29,7 @@ export default function BlogIndexPage() {
           The Sanatani Community Blog
         </h1>
         <p className="text-gray-500 text-sm sm:text-base leading-relaxed max-w-2xl mb-10 sm:mb-14">
-          Practical guides on renting, buying and saving on brokerage in
+          Practical guides on renting, buying and saving money in
           Hiranandani Estate, Thane - written by the team that verifies every
           listing on the platform.
         </p>

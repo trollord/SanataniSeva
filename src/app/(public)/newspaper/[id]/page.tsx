@@ -3,7 +3,7 @@ import { cache } from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import NewsViewer from "@/components/newspaper/NewsViewer";
+import NewsViewer from "@/components/newspaper/NewsViewerClient";
 import { SITE_NAME } from "@/lib/constants";
 
 export const revalidate = 3600;

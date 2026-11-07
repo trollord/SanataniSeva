@@ -27,7 +27,7 @@ export default function AuthLayout({
             </h2>
             <p className="text-white/60 leading-relaxed max-w-sm">
               Browse verified listings and connect directly with owners - completely free.
-              Zero brokerage. Zero commissions.
+              No middlemen. No commissions.
             </p>
           </div>
 

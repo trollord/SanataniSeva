@@ -11,7 +11,7 @@ import {
 pdfjs.GlobalWorkerOptions.workerSrc =
   `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
-interface Props {
+export interface NewsViewerProps {
   id: string;
   title: string;
   pageCount: number;
@@ -37,7 +37,7 @@ function totalViews(total: number, perView: number) {
   return Math.ceil(total / perView);
 }
 
-export default function NewsViewer({ id, title, pageCount, extraOffset = 0 }: Props) {
+export default function NewsViewer({ id, title, pageCount, extraOffset = 0 }: NewsViewerProps) {
   const [zoomIdx, setZoomIdx]   = useState(DEFAULT_IDX);
   const [numPages, setNumPages] = useState(pageCount);
   const [viewIdx, setViewIdx]   = useState(0);

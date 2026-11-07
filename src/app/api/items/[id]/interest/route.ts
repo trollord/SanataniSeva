@@ -51,7 +51,7 @@ export async function POST(
         itemTitle: item.title,
         message,
         callbackTime,
-        baseUrl: process.env.NEXTAUTH_URL ?? "https://www.bluebrics.com",
+        baseUrl: process.env.NEXTAUTH_URL ?? "https://www.hiranandaniproperties.in",
       });
       await getResend().emails.send({
         from: EMAIL_FROM,

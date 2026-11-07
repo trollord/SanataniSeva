@@ -113,7 +113,7 @@ export default async function BlogPostPage({
             Find your home in Hiranandani Estate
           </h3>
           <p className="text-white/50 text-sm mb-6">
-            Verified listings, direct owner contact, zero brokerage.
+            Verified listings, direct owner contact, no middlemen.
           </p>
           <Link
             href="/listings"

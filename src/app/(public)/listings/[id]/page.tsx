@@ -262,7 +262,7 @@ export default async function PropertyDetailPage({
           "@type": "RealEstateListing",
           name: property.title,
           description: property.description.slice(0, 300),
-          url: `${process.env.NEXTAUTH_URL ?? "https://www.bluebrics.com"}/listings/${property.id}`,
+          url: `${process.env.NEXTAUTH_URL ?? "https://www.hiranandaniproperties.in"}/listings/${property.id}`,
           image: property.images.filter((i) => !i.url.match(/\.(mp4|webm|mov)$/i)).map((i) => i.url),
           datePosted: property.createdAt.toISOString(),
           address: {

@@ -101,7 +101,7 @@ export function Navbar({
 
 export function NavBody({ children }: { children: React.ReactNode }) {
   return (
-    <div className="hidden md:flex items-center justify-between px-6 lg:px-8 h-[60px]">
+    <div className="hidden md:flex items-center justify-between gap-4 px-5 lg:px-6 h-[60px]">
       {children}
     </div>
   );
@@ -145,14 +145,14 @@ export function NavItems({ items }: { items: NavItem[] }) {
   const activeColor   = scrolled ? "#ffffff" : darkHero ? "#ffffff" : "#0B0B0C";
 
   return (
-    <nav className="flex items-center gap-6 lg:gap-8">
+    <nav className="flex items-center shrink-0 gap-5 lg:gap-7">
       {items.map((item) => {
         const active = pathname === item.link || pathname.startsWith(item.link + "/");
         return (
           <Link
             key={item.link}
             href={item.link}
-            className="text-base font-medium relative group transition-colors duration-200"
+            className="text-[13px] font-medium whitespace-nowrap relative group transition-colors duration-200"
             style={{ color: active ? activeColor : inactiveColor }}
           >
             {item.name}

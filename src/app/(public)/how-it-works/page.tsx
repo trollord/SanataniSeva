@@ -221,11 +221,11 @@ export default function HowItWorksPage() {
         </div>
       </section>
 
-      {/* ── WHY ZERO BROKERAGE ─────────────────────────────────────────────────── */}
+      {/* ── WHY DIRECT FROM OWNERS ─────────────────────────────────────────────── */}
       <section className="bg-[#1C0A00] py-24 sm:py-32 px-6 sm:px-8">
         <div className="max-w-6xl mx-auto">
           <h2 className="text-5xl sm:text-6xl font-extrabold tracking-tighter text-white mb-16 sm:mb-20">
-            Why Zero Brokerage?
+            Why Direct From Owners?
           </h2>
           <div className="grid sm:grid-cols-2 gap-6 lg:gap-8">
             {[

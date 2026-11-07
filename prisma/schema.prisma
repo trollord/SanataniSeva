@@ -282,3 +282,61 @@ model Newsletter {
 
   @@index([status, date])
 }
+
+// ─── Bus timetable ──────────────────────────────────────────────────────────
+// A timetable is local clock time, not a set of instants: "06:15" means 06:15
+// on the platform in Thane. Times are stored as "HH:MM" and dates as
+// "YYYY-MM-DD" strings, and "today" is always resolved in Asia/Kolkata — the
+// server runs UTC, where a naive getDay() rolls the day at 05:30 IST.
+
+model BusRoute {
+  id          String          @id @default(cuid())
+  routeNumber String          // "TMT 45", "AC-103"
+  name        String          // "Hiranandani Estate → Thane Station"
+  origin      String
+  destination String
+  via         String?
+  operator    String?         // TMT / NMMT / estate shuttle
+  note        String?         // "Runs via Rodas Enclave on request"
+  active      Boolean         @default(true)
+  sortOrder   Int             @default(0)
+  schedules   BusSchedule[]
+  exceptions  BusException[]
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@index([active, sortOrder])
+}
+
+// The recurring series — "every weekday at these times", set once and left.
+model BusSchedule {
+  id         String   @id @default(cuid())
+  routeId    String
+  route      BusRoute @relation(fields: [routeId], references: [id], onDelete: Cascade)
+  label      String   @default("") // "Weekday service", "Sunday service"
+  daysOfWeek String   @default("[]") // JSON array of 0-6, 0 = Sunday
+  times      String   @default("[]") // JSON array of "HH:MM"
+  validFrom  String?  // "YYYY-MM-DD", null = always
+  validUntil String?  // "YYYY-MM-DD", null = forever
+  active     Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([routeId, active])
+}
+
+// A one-off override for a date or a short stretch of dates.
+model BusException {
+  id        String   @id @default(cuid())
+  routeId   String
+  route     BusRoute @relation(fields: [routeId], references: [id], onDelete: Cascade)
+  type      String   @default("CANCELLED") // CANCELLED | REPLACED | EXTRA
+  startDate String   // "YYYY-MM-DD"
+  endDate   String   // "YYYY-MM-DD", same as startDate for a single day
+  times     String   @default("[]") // JSON array, used by REPLACED and EXTRA
+  reason    String?  // shown to residents: "Diwali holiday timetable"
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([routeId, startDate, endDate])
+}

@@ -24,13 +24,13 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXTAUTH_URL ?? "https://www.bluebrics.com"),
+  metadataBase: new URL(process.env.NEXTAUTH_URL ?? "https://www.hiranandaniproperties.in"),
   title: {
-    default: "Sanatani Community - Houses & Flats in Hiranandani Estate, Thane | Zero Brokerage",
+    default: "Sanatani Community - Houses, Marketplace & Local Services in Hiranandani Estate, Thane",
     template: "%s | Sanatani Community",
   },
   description:
-    "Find verified houses and flats for rent and sale in Hiranandani Estate, Thane. Connect directly with owners - zero brokerage, free to browse and register interest.",
+    "Find verified houses and flats for rent and sale in Hiranandani Estate, Thane. Connect directly with owners - no middlemen, free to browse and register interest.",
   keywords: [
     "houses in Hiranandani Estate",
     "flats in Hiranandani Estate Thane",
@@ -40,7 +40,7 @@ export const metadata: Metadata = {
     "Rodas Enclave",
     "One Hiranandani Park",
     "Thane real estate",
-    "zero brokerage Thane",
+    "direct owner listings Thane",
     "flats for rent Thane",
     "flats for sale Thane",
   ],
@@ -74,16 +74,16 @@ export default async function RootLayout({
                 "@context": "https://schema.org",
                 "@type": "Organization",
                 name: "Sanatani Community",
-                url: process.env.NEXTAUTH_URL ?? "https://www.bluebrics.com",
+                url: process.env.NEXTAUTH_URL ?? "https://www.hiranandaniproperties.in",
                 description:
-                  "Independent zero-brokerage property listing platform for Hiranandani Estate, Thane.",
+                  "Independent, direct-to-owner property listing platform for Hiranandani Estate, Thane.",
                 areaServed: "Hiranandani Estate, Thane, Maharashtra, India",
               },
               {
                 "@context": "https://schema.org",
                 "@type": "WebSite",
                 name: "Sanatani Community",
-                url: process.env.NEXTAUTH_URL ?? "https://www.bluebrics.com",
+                url: process.env.NEXTAUTH_URL ?? "https://www.hiranandaniproperties.in",
               },
             ]),
           }}

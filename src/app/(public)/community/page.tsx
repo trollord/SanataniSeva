@@ -4,10 +4,15 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import CommunityDirectory from "@/components/community/CommunityDirectory";
 import CommunityHero from "@/components/community/CommunityHero";
+import BusTimings from "@/components/community/BusTimings";
+import CommunityTabs from "@/components/community/CommunityTabs";
 import AddContactModal from "@/components/community/AddContactModal";
 import { type DbCommunityContact } from "@/lib/community";
 
-export const revalidate = 3600;
+// 60s, not an hour: the bus section highlights the *next* departure against
+// the current time, so an hour-old render would point at a bus that has
+// already gone. The vendor directory tolerates the shorter window fine.
+export const revalidate = 60;
 
 export const metadata: Metadata = {
   title: "Community Directory - Local Vendors & Services in Hiranandani Estate",
@@ -56,6 +61,9 @@ export default async function CommunityPage() {
 
   const isUsingSampleData = dbContacts.length === 0;
 
+  // Only offer the bus tab when there is at least one published route.
+  const busRouteCount = await prisma.busRoute.count({ where: { active: true } });
+
   return (
     <div className="pt-24 sm:pt-32 pb-16 sm:pb-24 px-5 sm:px-8">
       <div className="max-w-5xl mx-auto">
@@ -63,8 +71,12 @@ export default async function CommunityPage() {
         {/* ── Header ──────────────────────────────────────────────────────── */}
         <CommunityHero isAdmin={isAdmin} />
 
-        {/* ── Directory ───────────────────────────────────────────────────── */}
-        <CommunityDirectory dbContacts={dbContacts} />
+        {/* ── Directory + buses, as sub-tabs ──────────────────────────────── */}
+        <CommunityTabs
+          busesAvailable={busRouteCount > 0}
+          directory={<CommunityDirectory dbContacts={dbContacts} />}
+          buses={<BusTimings />}
+        />
 
         {/* ── Sample-data notice (only when no real data) ─────────────────── */}
         {isUsingSampleData && (

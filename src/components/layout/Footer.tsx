@@ -13,13 +13,13 @@ export default function Footer() {
           <div className="md:col-span-2 mb-6 sm:mb-10 md:mb-0">
             <Link href="/" className="inline-flex items-center gap-1.5 group mb-3 sm:mb-5">
               <span className="font-bold text-lg sm:text-xl tracking-tight text-white">
-                Blue<span className="text-white/60">Bricks</span>
+                Sanatani<span className="text-white/60"> Community</span>
               </span>
               <span className="h-1.5 w-1.5 rounded-full bg-white/40 mt-1 group-hover:scale-125 transition-transform duration-300" />
             </Link>
             <p className="text-white/40 text-xs sm:text-sm leading-relaxed max-w-xs">
-              Exclusively serving Hiranandani Estate, Thane. Completely free.
-              Zero brokerage, direct owner connect.
+              Exclusively serving Hiranandani Estate, Thane.
+              Direct owner connect, no middlemen.
             </p>
           </div>
 
@@ -97,7 +97,7 @@ export default function Footer() {
             © {new Date().getFullYear()} {SITE_NAME}. All rights reserved.
           </p>
           <p className="text-[10px] sm:text-xs text-white/25">
-            Zero Brokerage
+            Direct From Owners
           </p>
         </div>
 

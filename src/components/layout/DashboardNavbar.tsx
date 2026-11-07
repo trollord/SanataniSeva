@@ -54,8 +54,8 @@ export default function DashboardNavbar() {
     <header className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-100 h-[60px] flex items-center justify-between px-6 lg:px-8">
       {/* Logo */}
       <Link href="/" className="flex items-center gap-1.5 group shrink-0">
-        <span className="font-bold text-xl tracking-tight text-[#FF5F15]">
-          Blue<span className="text-[#FF5F15]">Bricks</span>
+        <span className="font-bold text-xl tracking-tight text-[#C8541A]">
+          Sanatani<span className="text-[#6B6B6B] font-medium"> Community</span>
         </span>
         <span className="h-1.5 w-1.5 rounded-full mt-1 bg-[#FF5F15] group-hover:scale-125 transition-transform duration-300" />
       </Link>
