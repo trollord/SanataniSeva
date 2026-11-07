@@ -44,3 +44,6 @@ prisma/*.db-journal
 # Local credential notes - never commit
 creds
 creds.*
+
+# Scratch build dirs from a second Next process (see distDir in next.config.mjs)
+.next-*

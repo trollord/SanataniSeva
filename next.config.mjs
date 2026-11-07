@@ -10,6 +10,13 @@ const securityHeaders = [
 ];
 
 const nextConfig = {
+  // Lets a second Next process (a production build, or a throwaway dev server on
+  // another port) use its own output directory instead of overwriting the one a
+  // running `npm run dev` is serving from, which leaves the dev server throwing
+  // "Cannot find module './NNNN.js'" until it is restarted.
+  //   NEXT_DIST_DIR=.next-scratch npx next dev -p 3137
+  distDir: process.env.NEXT_DIST_DIR || ".next",
+
   async headers() {
     return [{ source: "/(.*)", headers: securityHeaders }];
   },
