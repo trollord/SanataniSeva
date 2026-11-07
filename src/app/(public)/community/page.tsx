@@ -1,12 +1,10 @@
 import type { Metadata } from "next";
 import { Info } from "lucide-react";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
 import CommunityDirectory from "@/components/community/CommunityDirectory";
 import CommunityHero from "@/components/community/CommunityHero";
 import BusTimings from "@/components/community/BusTimings";
 import CommunityTabs from "@/components/community/CommunityTabs";
-import AddContactModal from "@/components/community/AddContactModal";
 import { type DbCommunityContact } from "@/lib/community";
 
 // 60s, not an hour: the bus section highlights the *next* departure against
@@ -31,9 +29,6 @@ export const metadata: Metadata = {
 };
 
 export default async function CommunityPage() {
-  const session = await auth();
-  const isAdmin = session?.user?.role === "ADMIN";
-
   const raw = await prisma.communityContact.findMany({
     where: { status: "ACTIVE" },
     orderBy: { createdAt: "desc" },
@@ -69,7 +64,7 @@ export default async function CommunityPage() {
       <div className="max-w-5xl mx-auto">
 
         {/* ── Header ──────────────────────────────────────────────────────── */}
-        <CommunityHero isAdmin={isAdmin} />
+        <CommunityHero />
 
         {/* ── Directory + buses, as sub-tabs ──────────────────────────────── */}
         <CommunityTabs
@@ -89,23 +84,6 @@ export default async function CommunityPage() {
           </span>
         </p>
 
-        {/* ── CTA — admin only ─────────────────────────────────────────── */}
-        {isAdmin && (
-          <div className="bg-[#1C0A00] rounded-2xl p-6 sm:p-10 mt-8 sm:mt-10">
-            <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-white/35 mb-3">
-              Know someone reliable?
-            </p>
-            <h2 className="font-[family-name:var(--font-playfair)] text-xl sm:text-3xl font-bold text-white mb-3">
-              Add a vendor to the directory
-            </h2>
-            <p className="text-white/45 text-xs sm:text-sm leading-relaxed max-w-lg mb-6">
-              If you have a carpenter, electrician or shopkeeper you trust, send
-              us their details and we will verify and list them for the
-              community.
-            </p>
-            <AddContactModal />
-          </div>
-        )}
       </div>
     </div>
   );
