@@ -1,7 +1,6 @@
 "use client";
 
 import { motion } from "framer-motion";
-import AddContactModal from "@/components/community/AddContactModal";
 
 const ease = [0.23, 1, 0.32, 1] as const;
 
@@ -11,7 +10,9 @@ const item = (delay: number) => ({
   transition: { duration: 0.5, ease, delay },
 });
 
-export default function CommunityHero({ isAdmin }: { isAdmin: boolean }) {
+// Contacts are managed only from /admin/community, so there is no add
+// affordance on the public page - not even for admins.
+export default function CommunityHero() {
   return (
     <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8 sm:mb-10">
       <div>
@@ -36,11 +37,6 @@ export default function CommunityHero({ isAdmin }: { isAdmin: boolean }) {
           WhatsApp them directly.
         </motion.p>
       </div>
-      {isAdmin && (
-        <motion.div {...item(0.24)} className="shrink-0">
-          <AddContactModal />
-        </motion.div>
-      )}
     </div>
   );
 }

@@ -47,7 +47,9 @@ export function usePlacesAutocomplete() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const sessionTokenRef = useRef<any>(null);
   const reqIdRef        = useRef(0);
-  const debounceRef     = useRef<ReturnType<typeof setTimeout>>();
+  // React 19 dropped the no-argument useRef overload, so the initial value is
+  // explicit now.
+  const debounceRef     = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const placesLibRef    = useRef<any>(null);
 

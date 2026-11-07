@@ -27,23 +27,34 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "Sanatani Seva - Houses, Marketplace & Local Services in Hiranandani Estate, Thane",
+    default:
+      "Sanatani Seva - Homes, Local Services & Marketplace in Hiranandani Estate, Thane",
     template: "%s | Sanatani Seva",
   },
   description:
-    "Find verified houses and flats for rent and sale in Hiranandani Estate, Thane. Connect directly with owners - no middlemen, free to browse and register interest.",
+    "Everything Hiranandani Estate residents need in one place: flats for rent and sale direct from owners, a directory of trusted local plumbers, electricians, doctors and shops, a resident marketplace, bus timings and the estate newspaper. Free to browse, no middlemen.",
   keywords: [
+    // Housing
     "houses in Hiranandani Estate",
     "flats in Hiranandani Estate Thane",
     "Hiranandani Estate rent",
     "Hiranandani Estate flats for sale",
+    "direct owner listings Thane",
     "Hiranandani Meadows",
     "Rodas Enclave",
     "One Hiranandani Park",
+    // Local services - the directory is a large part of the site now
+    "plumber Hiranandani Estate",
+    "electrician Hiranandani Estate",
+    "carpenter Hiranandani Estate",
+    "doctors in Hiranandani Estate Thane",
+    "local services Hiranandani Estate",
+    "emergency numbers Thane",
+    // Everything else the site carries
+    "Hiranandani Estate marketplace",
+    "Hiranandani Estate bus timings",
+    "Hiranandani Estate newspaper",
     "Thane real estate",
-    "direct owner listings Thane",
-    "flats for rent Thane",
-    "flats for sale Thane",
   ],
   alternates: { canonical: "/" },
   openGraph: {
@@ -51,7 +62,31 @@ export const metadata: Metadata = {
     locale: "en_IN",
     url: "/",
     siteName: "Sanatani Seva",
+    title: "Sanatani Seva - Homes, Local Services & Marketplace in Hiranandani Estate",
+    description:
+      "Flats direct from owners, a directory of trusted local services, a resident marketplace, bus timings and the estate newspaper - for Hiranandani Estate, Thane.",
   },
+  twitter: {
+    card: "summary_large_image",
+    title: "Sanatani Seva - Hiranandani Estate, Thane",
+    description:
+      "Flats direct from owners, trusted local services, a resident marketplace and bus timings for Hiranandani Estate.",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
+  // Phone numbers fill the directory; leave them to our own tel: links rather
+  // than letting iOS Safari linkify every number it finds.
+  formatDetection: { telephone: false },
+  applicationName: "Sanatani Seva",
+  category: "community",
 };
 
 export default async function RootLayout({

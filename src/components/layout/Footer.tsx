@@ -96,8 +96,20 @@ export default function Footer() {
           <p className="text-[10px] sm:text-xs text-white/25">
             © {new Date().getFullYear()} {SITE_NAME}. All rights reserved.
           </p>
-          <p className="text-[10px] sm:text-xs text-white/25">
-            Direct From Owners
+          <p className="text-[10px] sm:text-xs text-white/25 flex items-center gap-1.5">
+            <span>Direct From Owners</span>
+            <span aria-hidden className="text-white/15">·</span>
+            <span>
+              Made by{" "}
+              <a
+                href="https://www.bytelights.co/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-white/45 hover:text-[#FF5F15] transition-colors"
+              >
+                ByteLights
+              </a>
+            </span>
           </p>
         </div>
 

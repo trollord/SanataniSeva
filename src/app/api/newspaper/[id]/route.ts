@@ -5,10 +5,11 @@ import { GetObjectCommand } from "@aws-sdk/client-s3";
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   const newsletter = await prisma.newsletter.findUnique({
-    where: { id: params.id, status: "PUBLISHED" },
+    where: { id: id, status: "PUBLISHED" },
     select: { publicId: true, title: true },
   });
   if (!newsletter) {
