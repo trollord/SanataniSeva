@@ -2,9 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import type { CSSProperties } from "react";
 import { motion, useReducedMotion } from "framer-motion";
-import { Settle } from "@lucasmarkes/hairline/react";
 
 /* ------------------------------------------------------------------ tokens */
 /* Copied verbatim from the shared home-page token addendum. Each of the seven
@@ -23,16 +21,6 @@ const T1_LIGHT = `group inline-flex items-center gap-2 rounded-lg bg-[#1C1C1C] p
 
 // T3 — text link. The ground-correct colour pair is appended at the call site.
 const T3 = `group inline-flex items-center gap-1.5 border-b border-[#C8541A] pb-0.5 text-[13px] font-bold uppercase tracking-[0.12em] transition-colors duration-150 ${FOCUS}`;
-
-/* Fig. 1 sits on the #FAF8F5 overlap card, so --hairline-plate is that cream. */
-const PLATE_MASTHEAD = {
-  "--hairline-plate": "#FAF8F5",
-  "--hairline-hi": "#C8541A",
-  "--hairline-edge": "#1C1C1C",
-  "--hairline-mid": "#9E6B3F",
-  "--hairline-lo": "#EDE5D8",
-  "--hairline-stroke": "1.25",
-} as CSSProperties;
 
 /* ------------------------------------------------------- shared primitives */
 
@@ -73,23 +61,6 @@ function Rule({ color }: { color: string }) {
       viewport={{ once: true, amount: 0.9 }}
       transition={{ duration: reduce ? 0.2 : 0.6, ease: EASE }}
     />
-  );
-}
-
-/** The direct parent of a hairline figure: it owns the figure's ink and its width. */
-function Plate({
-  children,
-  vars,
-  className,
-}: {
-  children: React.ReactNode;
-  vars: CSSProperties;
-  className?: string;
-}) {
-  return (
-    <div className={className} style={vars}>
-      {children}
-    </div>
   );
 }
 
@@ -216,17 +187,7 @@ export default function HomeMasthead({ hasNews }: HomeMastheadProps) {
             </motion.div>
           </div>
 
-          <motion.div
-            className="order-3 col-span-12 lg:order-2 lg:col-span-5"
-            initial={reduce ? { opacity: 0 } : { opacity: 0, y: 10, scale: 1.02 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{
-              duration: reduce ? 0.2 : 0.48,
-              delay: reduce ? 0 : 0.1,
-              ease: EASE,
-              scale: { duration: reduce ? 0.2 : 0.8, delay: reduce ? 0 : 0.1, ease: EASE },
-            }}
-          >
+          <div className="order-3 col-span-12 lg:order-2 lg:col-span-5">
             {/* The positioning context is the PHOTOGRAPH, not the column. The
                 Fig. 1 card is anchored inside the image's own box, so it can
                 break left over the copy without ever reaching the caption that
@@ -241,26 +202,12 @@ export default function HomeMasthead({ hasNews }: HomeMastheadProps) {
                 className="aspect-[4/5] w-full rounded-2xl object-cover"
                 priority
               />
-
-              {/* The grid break: Fig. 1 breaks out of the column and over the
-                  copy. lg only — on small screens the rail is the hero. */}
-              <div className="absolute bottom-6 -left-14 z-10 hidden w-[232px] rounded-xl border border-[#EDE5D8] bg-[#FAF8F5] p-4 lg:block">
-                <Plate vars={PLATE_MASTHEAD}>
-                  <Settle
-                    intensity={0.62}
-                    play
-                    theme="light"
-                    label="Twelve scattered tiles sliding into one ordered hub"
-                    className="w-full"
-                  />
-                </Plate>
-              </div>
             </div>
 
             <p className={`${PF} mt-3 text-[13px] italic text-[#7A4F2A]`}>
               Hiranandani Estate, Thane — the one neighbourhood this portal covers.
             </p>
-          </motion.div>
+          </div>
           {/* Row 2 — the rail. Deliberately unequal: housing takes two columns
               of six, so this never reads as a five-up card grid. It animates as
               one group, because the simultaneity of the five uses is the point.

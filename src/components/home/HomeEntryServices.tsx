@@ -1,9 +1,7 @@
 "use client";
 
-import type { CSSProperties } from "react";
 import Link from "next/link";
 import { motion, useReducedMotion } from "framer-motion";
-import { Relay } from "@lucasmarkes/hairline/react";
 
 /* ── Shared page tokens ──────────────────────────────────────────────────────
    Copied verbatim from the home-page token block. Each home section is
@@ -72,31 +70,6 @@ const FOCUS =
 // solid button, so this entry takes the outlined tier.
 const T2_LIGHT = `group inline-flex items-center gap-2 rounded-lg border border-[#1C1C1C] px-6 py-3.5 text-[13px] font-bold uppercase tracking-[0.12em] text-[#1C1C1C] transition-colors duration-150 hover:bg-[#1C1C1C] hover:text-[#FAF8F5] ${FOCUS}`;
 
-/** Direct parent of a hairline figure. `--hairline-plate` must equal the real
-    background behind it, so the plate is never a distant ancestor. */
-function Plate({
-  children,
-  vars,
-  className,
-}: { children: React.ReactNode; vars: CSSProperties; className?: string }) {
-  return (
-    <div className={className} style={vars}>
-      {children}
-    </div>
-  );
-}
-
-// #D8C6A8 is the single off-token value on the page: a decorative recede stroke
-// inside this illustration, the #EDE0CC→#9E6B3F midpoint. Never text, never UI.
-const PLATE_SERVICES = {
-  "--hairline-plate": "#EDE0CC",
-  "--hairline-hi": "#C8541A",
-  "--hairline-edge": "#1C1C1C",
-  "--hairline-mid": "#9E6B3F",
-  "--hairline-lo": "#D8C6A8",
-  "--hairline-stroke": "1.2",
-} as CSSProperties;
-
 /* ── Props ───────────────────────────────────────────────────────────────── */
 
 interface Trade {
@@ -130,6 +103,7 @@ interface HomeEntryServicesProps {
  */
 export default function HomeEntryServices({ trades, totalContacts }: HomeEntryServicesProps) {
   const hasTrades = trades.length > 0;
+  const reduce = useReducedMotion();
 
   return (
     <section
@@ -142,23 +116,70 @@ export default function HomeEntryServices({ trades, totalContacts }: HomeEntrySe
         </div>
 
         <div className="grid grid-cols-12 gap-x-6 gap-y-12 lg:gap-x-10">
-          {/* Figure — cols 1-4. `play` is set: the hop-by-hop lighting IS the
-              directory's mechanism, so it demonstrates itself once. One of only
-              two figures on the page that plays. */}
-          <Reveal className="order-1 col-span-12 lg:col-span-4">
-            <Plate vars={PLATE_SERVICES} className="w-full max-w-[260px] lg:max-w-[300px]">
-              <Relay
-                intensity={0.6}
-                play
-                theme="light"
-                label="A call put through the estate, hop by hop"
-                className="w-full"
-              />
-            </Plate>
-          </Reveal>
+          {/* Figure — cols 1-4. Four sample rows from the live trades prop slide
+              in staggered, previewing what the directory looks like inside. */}
+          {hasTrades && (
+            <div className="order-1 col-span-12 lg:col-span-4">
+              <motion.div
+                className="w-full max-w-[280px] overflow-hidden rounded-2xl border border-[#D4C9B8] bg-[#F0E9DF] lg:max-w-[320px]"
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true, amount: 0.6 }}
+                variants={{
+                  hidden: {},
+                  visible: { transition: { staggerChildren: reduce ? 0 : 0.11 } },
+                }}
+              >
+                {/* Card header */}
+                <motion.div
+                  className="flex items-center gap-2.5 border-b border-[#D4C9B8] px-5 py-4"
+                  variants={{
+                    hidden: { opacity: 0 },
+                    visible: { opacity: 1, transition: { duration: 0.3, ease: EASE } },
+                  }}
+                >
+                  <div className="h-px w-5 shrink-0 bg-[#C8541A]" />
+                  <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#A8410F]">
+                    Directory preview
+                  </span>
+                </motion.div>
 
-          {/* Copy + trade index — cols 6-12 */}
-          <Reveal delay={0.06} className="order-2 col-span-12 lg:col-span-7 lg:col-start-6">
+                {/* Trade rows */}
+                {trades.slice(0, 4).map((trade) => (
+                  <motion.div
+                    key={trade.label}
+                    aria-hidden
+                    className="flex items-center justify-between border-b border-[#D4C9B8] px-5 py-3.5"
+                    variants={{
+                      hidden: reduce ? { opacity: 0 } : { opacity: 0, x: -10 },
+                      visible: { opacity: 1, x: 0, transition: { duration: reduce ? 0.2 : 0.36, ease: EASE } },
+                    }}
+                  >
+                    <span className="text-[13px] font-bold text-[#1C1C1C]">{trade.label}</span>
+                    <span className="ml-3 shrink-0 rounded-full bg-[#EDE0CC] px-2.5 py-0.5 text-[11px] font-bold tabular-nums text-[#7A4F2A]">
+                      {trade.count}
+                    </span>
+                  </motion.div>
+                ))}
+
+                {/* Card footer */}
+                <motion.div
+                  className="px-5 py-3.5"
+                  variants={{
+                    hidden: { opacity: 0 },
+                    visible: { opacity: 1, transition: { duration: 0.3, ease: EASE } },
+                  }}
+                >
+                  <span className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#7A4F2A]">
+                    +{trades.length - 4} more trades
+                  </span>
+                </motion.div>
+              </motion.div>
+            </div>
+          )}
+
+          {/* Copy + trade index — cols 6-12 (full-width if no trades yet) */}
+          <Reveal delay={0.06} className={`order-2 col-span-12 ${hasTrades ? "lg:col-span-7 lg:col-start-6" : ""}`}>
             <SectionLabel tone="ink">ENTRY 02 · PHONE NUMBERS</SectionLabel>
 
             <h2

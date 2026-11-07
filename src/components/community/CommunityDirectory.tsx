@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Search,
   X,
@@ -263,8 +263,8 @@ export default function CommunityDirectory({
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#EBEBEB]">
-                {pageResults.map((c) => (
-                  <ContactRow key={c.id} contact={c} />
+                {pageResults.map((c, i) => (
+                  <ContactRow key={c.id} contact={c} index={i} />
                 ))}
               </tbody>
             </table>
@@ -348,14 +348,40 @@ function PagerButton({
 }
 
 /* ─── Contact row ─────────────────────────────────────────────────────────── */
-function ContactRow({ contact: c }: { contact: CommunityContact }) {
+function ContactRow({ contact: c, index }: { contact: CommunityContact; index: number }) {
   const meta = COMMUNITY_CATEGORIES.find((cat) => cat.key === c.category);
   const Icon = meta ? ICONS[meta.icon] : Users;
-  // The page filters out numberless contacts, so there is always a primary.
   const primary = c.phones[0];
 
+  const rowRef = useRef<HTMLTableRowElement>(null);
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const el = rowRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setVisible(true);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.1 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
   return (
-    <tr className="hover:bg-[#f9fafa] transition-colors align-top">
+    <tr
+      ref={rowRef}
+      className="hover:bg-[#f9fafa] transition-colors align-top"
+      style={
+        visible
+          ? { animation: `rowIn 0.2s ease-out ${index * 25}ms both` }
+          : { opacity: 0 }
+      }
+    >
       {/* Contact */}
       <td className="px-4 sm:px-5 py-3.5">
         <div className="flex items-start gap-3">

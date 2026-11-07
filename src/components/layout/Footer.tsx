@@ -58,13 +58,12 @@ export default function Footer() {
               </h4>
               <ul className="space-y-2 sm:space-y-3">
                 {[
-                  { href: "/how-it-works",    label: "How It Works" },
-                  { href: "/community",       label: "Community Directory" },
-                  { href: "/marketplace",     label: "Marketplace" },
-                  { href: "/blog",            label: "Blog" },
+                  { href: "/listings",        label: "Real Estate" },
+                  { href: "/marketplace",     label: "Resell & Donate" },
+                  { href: "/community",       label: "Service Providers" },
+                  { href: "/newspaper",       label: "Latest News" },
+                  { href: "/contact",         label: "Connect" },
                   { href: "/dashboard/new",   label: "List Property" },
-                  { href: "/listings",        label: "All Listings" },
-                  { href: "/contact",         label: "Contact Us" },
                   { href: "/terms",           label: "Terms & Conditions" },
                 ].map(({ href, label }) => (
                   <li key={href}>

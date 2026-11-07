@@ -13,9 +13,9 @@ export const metadata: Metadata = {
 };
 
 // Placeholder contact details - swap for real ones before launch
-const CONTACT_PHONE = "+91 90000 00000";
+const CONTACT_PHONE = "+91 99300 09144";
 const CONTACT_EMAIL = "hello@sanataniseva.com";
-const WHATSAPP_NUMBER = "+91 90000 00000";
+const WHATSAPP_NUMBER = "+91 99300 09144";
 
 const FAQS: { q: string; a: string }[] = [
   {
@@ -78,7 +78,7 @@ export default function ContactPage() {
               icon={<Phone className="w-5 h-5" />}
               label="Call us"
               value={CONTACT_PHONE}
-              hint="Mon–Sat · 10:00 AM – 7:00 PM"
+              hint="Mon–Sat · 9:00 AM – 6:00 PM"
             />
 
             <QuickCard
@@ -98,7 +98,7 @@ export default function ContactPage() {
                 <p className="text-xs text-gray-500 leading-relaxed mt-0.5">
                   Monday to Saturday
                   <br />
-                  10:00 AM – 7:00 PM IST
+                  9:00 AM – 6:00 PM IST
                 </p>
               </div>
             </div>
