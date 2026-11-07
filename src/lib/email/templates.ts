@@ -44,7 +44,7 @@ function shell(content: string): string {
             <tr>
               <td style="padding:20px 24px 0;">
                 <p style="font-family:${sans};font-size:11px;color:#9a9a9a;margin:0;">
-                  &copy; ${new Date().getFullYear()} Sanatani Seva &middot; Powered by ByteLights
+                  &copy; ${new Date().getFullYear()} Sanatani Seva &middot; Powered by <a href="https://www.bytelights.co/" style="color:#9a9a9a;text-decoration:underline;">ByteLights</a>
                 </p>
               </td>
             </tr>
