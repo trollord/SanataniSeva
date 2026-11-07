@@ -1,0 +1,284 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String              @id @default(cuid())
+  name          String?
+  email         String              @unique
+  password      String?
+  role          String              @default("USER")
+  disabled      Boolean             @default(false)
+  phone         String?
+  emailVerified DateTime?
+  image         String?
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+  accounts      Account[]
+  verifications AdminVerification[]
+  inquiries     Inquiry[]
+  properties    Property[]
+  items         Item[]
+  itemInquiries ItemInquiry[]
+  sessions      Session[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Property {
+  id               String              @id @default(cuid())
+  title            String
+  description      String
+  type             String
+  listingType      String
+  status           String              @default("PENDING")
+  ownerId          String
+  address          String
+  building         String
+  flatNumber       String?
+  locality         String
+  latitude         Float?
+  longitude        Float?
+  bedrooms         Int?
+  bathrooms        Int?
+  areaSqft         Float
+  floor            Int?
+  totalFloors      Int?
+  furnished        String              @default("UNFURNISHED")
+  amenities        String              @default("[]")
+  price            Float
+  deposit          Float?
+  rentNegotiable   Boolean             @default(false)
+  lockInMonths     Int?
+  lockInNegotiable Boolean             @default(false)
+  availableFrom    String?
+  phonePublic      Boolean             @default(true)
+  views            Int                 @default(0)
+  activatedAt      DateTime?
+  closedAt         DateTime?
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+  verifications    AdminVerification[]
+  inquiries        Inquiry[]
+  priceHistory     PriceHistory[]
+  owner            User                @relation(fields: [ownerId], references: [id])
+  images           PropertyImage[]
+
+  @@index([status, listingType, type])
+  @@index([ownerId])
+  @@index([locality])
+}
+
+// Own-data location index for the add-property address search.
+// Grows from listings + selected Google places (only placeId is stored from
+// Google, which their ToS allows indefinitely). Local hits cost nothing.
+model Location {
+  id        String   @id @default(cuid())
+  name      String
+  address   String
+  locality  String?
+  latitude  Float
+  longitude Float
+  placeId   String?  @unique
+  hits      Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([name, address])
+  @@index([name])
+}
+
+model PropertyImage {
+  id         String   @id @default(cuid())
+  propertyId String
+  url        String
+  s3Key      String
+  isPrimary  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+}
+
+model PriceHistory {
+  id         String   @id @default(cuid())
+  propertyId String
+  price      Float
+  recordedAt DateTime @default(now())
+  source     String   @default("LISTING")
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+}
+
+model Inquiry {
+  id                String   @id @default(cuid())
+  propertyId        String
+  seekerId          String
+  status            String   @default("PENDING")
+  phone             String?
+  razorpayOrderId   String?
+  razorpayPaymentId String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  property          Property @relation(fields: [propertyId], references: [id])
+  seeker            User     @relation(fields: [seekerId], references: [id])
+
+  @@unique([propertyId, seekerId])
+}
+
+model AdminVerification {
+  id         String   @id @default(cuid())
+  propertyId String?
+  itemId     String?
+  adminId    String
+  action     String
+  notes      String?
+  createdAt  DateTime @default(now())
+  admin      User     @relation(fields: [adminId], references: [id])
+  property   Property? @relation(fields: [propertyId], references: [id])
+  item       Item?    @relation(fields: [itemId], references: [id], onDelete: SetNull)
+}
+
+// Marketplace: used-items (sell/purchase). Mirrors the Property posting
+// lifecycle (owner creates → admin approves → ACTIVE) but with its own
+// category schema. "Vehicles" category uses the optional vehicleType sub-type.
+model Item {
+  id              String              @id @default(cuid())
+  title           String
+  description     String
+  category        String              // OFFICE_FURNITURE | HOME_FURNITURE | ELECTRONICS | COMPUTERS | VEHICLES | OTHERS
+  vehicleType     String?             // CAR | TWO_WHEELER | CYCLE (only when category = VEHICLES)
+  condition       String              @default("GOOD") // NEW | LIKE_NEW | GOOD | FAIR
+  brand           String?
+  yearPurchased   Int?
+  price           Float
+  priceNegotiable Boolean             @default(false)
+  phonePublic     Boolean             @default(true)
+  pickupLocality  String
+  pickupArea      String?             // free-text landmark / tower
+  status          String              @default("PENDING") // PENDING | ACTIVE | SOLD | CLOSED
+  views           Int                 @default(0)
+  activatedAt     DateTime?
+  closedAt        DateTime?
+  sellerId        String
+  seller          User                @relation(fields: [sellerId], references: [id])
+  images          ItemImage[]
+  inquiries       ItemInquiry[]
+  verifications   AdminVerification[]
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  @@index([status, category])
+  @@index([sellerId])
+}
+
+model ItemImage {
+  id        String   @id @default(cuid())
+  itemId    String
+  url       String
+  s3Key     String
+  isPrimary Boolean  @default(false)
+  createdAt DateTime @default(now())
+  item      Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+}
+
+model ItemInquiry {
+  id        String   @id @default(cuid())
+  itemId    String
+  seekerId  String
+  status    String   @default("PENDING")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  item      Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  seeker    User     @relation(fields: [seekerId], references: [id])
+
+  @@unique([itemId, seekerId])
+}
+
+// Community directory: local vendors & service providers submitted by residents.
+// New submissions start as PENDING; admin sets to ACTIVE to publish or REJECTED.
+model CommunityContact {
+  id            String   @id @default(cuid())
+  name          String
+  contactPerson String?
+  category      String   // key from COMMUNITY_CATEGORIES
+  service       String
+  phone         String
+  whatsapp      Boolean  @default(false)
+  locality      String
+  address       String   @default("")
+  hours         String   @default("")
+  tags          String   @default("[]") // JSON array of strings
+  verified      Boolean  @default(false)
+  status        String   @default("PENDING") // PENDING | ACTIVE | REJECTED
+  submittedBy   String?  // email of submitter
+  notes         String?  // admin notes
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([status, category])
+}
+
+// Individual news items posted by admin — shown in the "Today's News" feed.
+model NewsItem {
+  id          String   @id @default(cuid())
+  headline    String
+  body        String
+  category    String   @default("GENERAL") // EVENTS | COMMUNITY | ANNOUNCEMENTS | SPORTS | GENERAL
+  imageUrl    String?
+  status      String   @default("DRAFT")   // DRAFT | PUBLISHED
+  publishedAt DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([status, publishedAt])
+}
+
+// Weekly newspaper editions uploaded by admin as PDFs via Cloudinary.
+model Newsletter {
+  id        String   @id @default(cuid())
+  title     String
+  date      DateTime
+  pdfUrl    String   // original PDF URL on Cloudinary
+  publicId  String   // Cloudinary public_id — used to generate per-page image URLs
+  pageCount Int
+  status    String   @default("PUBLISHED") // DRAFT | PUBLISHED
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status, date])
+}
