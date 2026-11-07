@@ -59,10 +59,13 @@ export default function AddContactModal() {
   });
 
   async function onSubmit(data: FormData) {
+    // Quick-add takes one number; the record stores a list. Extra numbers are
+    // added later from the admin panel, which has repeatable inputs.
+    const { phone, ...rest } = data;
     const res = await fetch("/api/community/contacts", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
+      body: JSON.stringify({ ...rest, phones: [phone] }),
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));

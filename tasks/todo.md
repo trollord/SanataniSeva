@@ -1,108 +1,90 @@
-# Move the app onto the Supabase `SanataniSeva` database
+# Community: phone arrays, admin CRUD, table layout
 
-Fresh Supabase project `jbdtwgjvsqojcplhsfck` (0 tables, 0 migrations). The app
-currently points at a local Postgres named `hiranandani-homes` (pre-rebrand) via
-Prisma. Goal: create the schema on Supabase, start real migration history, and
-repoint the app.
+Prior plans: `tasks/supabase-migration.md`, `tasks/community-import.md`.
 
-## Context
+Four asks:
+1. Contacts can hold **multiple numbers** — store as an array, not one string.
+2. Cards **without a number must not render** on the public page.
+3. Public `/community` becomes a **dense table with search + pagination** — 250
+   cards of scrolling is poor UX.
+4. **Admin panel** gets a full-record **edit popup** and an **add single record**
+   button, alongside the existing CSV import/export. Editing is admin-only and
+   lives in `/admin/community`, not on the public page.
 
-- 19 Prisma models; no `prisma/migrations/` has ever existed (`db push` only).
-- No `supabase-js` anywhere in `src/` — Supabase is used purely as hosted
-  Postgres behind Prisma + NextAuth's Prisma adapter.
-- `postgres` role has `rolbypassrls = true`; `anon` / `authenticated` do not.
+## Why this is wide
 
-## Tasks
+`phone` is a scalar today and is read in 9 places. Changing it to `phones
+String[]` (native Postgres `text[]`, not a JSON string — these are queried and
+displayed, unlike `tags`) touches:
 
-- [x] `prisma/migrations/0_init/migration.sql` — baseline DDL generated with
-      `prisma migrate diff --from-empty` (19 tables, 21 indexes, 16 FKs)
-- [x] `prisma/migrations/migration_lock.toml` — provider = postgresql
-- [x] Apply `0_init` to Supabase
-- [x] Second migration: `enable_rls` — `alter table ... enable row level
-      security` on all 19 tables, no policies. Verified 19/19 `relrowsecurity`.
-- [x] `prisma/schema.prisma` — add `directUrl = env("DIRECT_URL")`;
-      `prisma validate` passes
-- [x] `.env.example` — documented pooled `DATABASE_URL` (6543) + `DIRECT_URL`
-      (5432); `.env` staged with `<PASSWORD>`/`<REGION>` markers
-- [x] `.env` — real credentials in. Region `ap-northeast-1` was not guessed: the
-      direct host `db.<ref>.supabase.co` confirmed the password first, then a
-      Supavisor tenant probe across 8 candidate pooler hosts found the one that
-      resolves `postgres.<ref>` (the other 7 return `ENOTFOUND tenant/user`).
-- [x] Baseline Prisma's ledger: `migrate resolve --applied` for both migrations
-      → `prisma migrate status` reports "Database schema is up to date!"
-- [x] Verify: both pooler ports reachable; count/create/include/delete round trip
-      through `src/lib/prisma.ts`; `next build` exit 0 with 0 Prisma errors
-      (down from 2)
-- [ ] Admin account: `npx tsx scripts/create-admin.ts <email> <password>`
-      — waiting on the email to use
-- [ ] Vercel: set `DATABASE_URL` + `DIRECT_URL` in project env (user action)
-
-## Seeding decision
-
-Real admin only — no `prisma/seed.ts` / `seed-items.ts` run. Those create demo
-properties and an `admin@sanataniseva.com` account with the hardcoded password
-`admin123`, which must not exist on the production DB.
-
-Checked: neither seed touches `BusRoute`, `BusSchedule`, `BusException`, or
-`CommunityContact` — there is no reference-data seed in the repo at all. That
-content is entered through `/admin/bus-timings` and `/admin/community`, so
-`/community` and the bus-timings component will render empty until someone adds
-rows. Nothing to migrate from the old local DB since this is a fresh start.
+| file | change |
+|---|---|
+| `prisma/schema.prisma` | `phone String` -> `phones String[]` |
+| migration | add `phones`, backfill from `phone` + the `Alt:` numbers parked in `notes`, drop `phone` |
+| `src/lib/community.ts` | both interfaces + `toDisplayContact` |
+| `(public)/community/page.tsx` | select, and drop contacts with no number |
+| `CommunityDirectory.tsx` | table layout, pagination, render N numbers |
+| `api/community/contacts` | GET select, POST zod |
+| `api/admin/community/[id]` | PATCH currently only takes status/notes/verified — widen to the whole record |
+| `api/admin/community/bulk` | row schema |
+| `api/admin/community/export` | CSV column |
+| `CommunityCSVTools.tsx` | `phone` -> `phones`, pipe-separated like `tags` |
+| `AddContactModal.tsx` | repeatable number inputs |
+| `scripts/import-community-contacts.ts` | write the array directly instead of `Alt:` notes |
 
 ## Decisions
 
-- **RLS on, zero policies.** Supabase exposes `public` through PostgREST; with
-  RLS enabled and no policies, `anon` sees nothing. Prisma connects as
-  `postgres` (BYPASSRLS) so app queries are untouched. Deny-by-default costs
-  nothing here because no client ever talks to PostgREST.
-- **Transaction pooler (6543) for the app**, session pooler (5432) as
-  `DIRECT_URL`. Next.js on Vercel is serverless — direct connections exhaust the
-  pool; the pooler also sidesteps the IPv6-only direct host. `pgbouncer=true`
-  disables named prepared statements, which transaction pooling cannot support.
-- **Migrations over `db push`.** Fresh DB is the moment to start history.
+**`String[]`, not a JSON string.** `tags` uses JSON-in-TEXT, but phones are
+displayed, dialled and searched; a real `text[]` keeps them queryable and avoids
+parse-on-every-render. Postgres handles it natively and Prisma maps it cleanly.
 
-## Pre-existing infrastructure found on the project
+**The 30 `Alt:` numbers move out of `notes` into the array.** The importer
+parked second numbers in free text because the column could not hold them. The
+migration parses them back out and strips the fragment, so no number is stranded
+in prose.
 
-An event trigger `ensure_rls` (owner `postgres`) calls
-`public.rls_auto_enable()` on `ddl_command_end` and enables RLS on every new
-table in `public`. Not created by this work and left in place — it means the 19
-tables already had RLS before the `enable_rls` migration ran, making that
-migration a no-op here (`enable row level security` is idempotent). It is still
-worth keeping: the trigger is project-side infrastructure that no other
-environment has.
+**No-number rows were already invisible** — the 7 phone-less contacts went in as
+PENDING and the page filters on ACTIVE. The explicit empty-array filter is
+defence in depth, so a future ACTIVE row with no number cannot render a card
+with nothing to call.
 
-Its function was `SECURITY DEFINER` with `EXECUTE` granted to `anon` /
-`authenticated` (Supabase's default privileges on new functions), so the linter
-flagged it as callable via `/rest/v1/rpc/rls_auto_enable`. Revoked in a
-Supabase-side migration (`revoke_public_execute_on_rls_auto_enable`), kept out
-of `prisma/migrations/` deliberately — the function does not exist on a plain
-local Postgres, and neither do the `anon`/`authenticated` roles, so a REVOKE
-there would break `prisma migrate deploy` everywhere else.
+**Table keeps the existing search and category filters** — they work and the
+rework is layout only. Adding pagination at 25/page also fixes the RSC payload
+size flagged earlier.
 
-## Caveat to carry forward
+## Tasks
 
-Prisma does not model RLS. On Supabase the `ensure_rls` trigger covers new
-tables, but anywhere else a future `prisma migrate dev` creates a table with RLS
-*off*. Add an `enable row level security` line to each new migration that
-creates a table rather than relying on the trigger.
+- [x] Migration: `phones text[]`, backfill, strip `Alt:` from notes, drop `phone`
+      — 250 rows: 213 one number, **30 multiple**, 7 none, 0 `Alt:` left in
+      prose, 0 empty strings in arrays
+- [x] `schema.prisma` + client regenerated; `migrate status` clean
+- [x] `lib/community.ts` types and mapper
+- [x] Importer writes `phones` (dry-run reparses the sheet unchanged)
+- [x] Public page: selects `phones`, drops numberless rows
+- [x] `CommunityDirectory`: table + 25/page pager + multi-number rendering
+- [x] API routes: public GET/POST, admin PATCH (full record), new admin POST,
+      bulk, export
+- [x] Admin: edit dialog (full record), add-record button, pagination at 50
+- [x] CSV tools: `phones` column, pipe-separated like `tags`
+- [x] `next build` exit 0 (69 routes); verified against the live DB
+- [ ] Commit
 
 ## Review
 
-The app is on Supabase. Schema, RLS, migration history, and connectivity are all
-verified rather than assumed — a green `next build` proves nothing about the DB
-here, because `await auth()` in the root layout (`src/app/layout.tsx:64`) forces
-every route to render on demand, so no page ever queries Postgres at build time.
+238 ACTIVE contacts render, all with at least one number, 30 of them with
+several. 10 pages at 25 per page instead of one 250-row scroll.
 
-Two things left for a human decision, both cheapest to act on now:
+Worth carrying forward:
 
-1. **The `postgres` password is weak** — a dictionary word identical to the
-   project name, i.e. the first thing anyone would try. It is the
-   superuser-equivalent credential for the production DB on a publicly
-   reachable host. It lives in exactly two places (`.env`, and Vercel once
-   set), so rotating it to a generated string costs one dashboard reset plus
-   one edit. (Deliberately not written out here — this file is committed.)
-2. **The project is in `ap-northeast-1` (Tokyo); the users are in Thane.**
-   Expect roughly 100–150 ms extra round trip per query, and Prisma issues
-   several per page. `ap-south-1` (Mumbai) is the natural home. A project's
-   region cannot be changed in place — it means a new project and repointing —
-   which is near-free while the DB holds zero rows and expensive later.
+1. **`Dialog` here is Base UI, not Radix.** `DialogTrigger asChild` does not
+   compile — Base UI takes a `render={<Button/>}` prop. The dialog state is
+   controlled anyway, so the trigger is now a plain button calling
+   `setOpen(true)`; simpler and avoids the mismatch entirely.
+2. **Admin pagination was a prerequisite, not a nicety.** The table capped at
+   `take: 200` against 250 rows, so ~50 contacts could not be reached at all —
+   "admin can edit any record" was not achievable without it.
+3. **PATCH refuses to publish a contact with no number.** The public page drops
+   numberless rows, so marking one ACTIVE would have silently produced a record
+   that exists but never appears. It now returns a reason instead.
+4. The public quick-add still takes a single number and posts `[phone]`; the
+   repeatable inputs live in the admin dialog where bulk curation happens.

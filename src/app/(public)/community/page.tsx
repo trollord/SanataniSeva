@@ -43,7 +43,7 @@ export default async function CommunityPage() {
       contactPerson: true,
       category: true,
       service: true,
-      phone: true,
+      phones: true,
       whatsapp: true,
       locality: true,
       address: true,
@@ -54,12 +54,12 @@ export default async function CommunityPage() {
     },
   });
 
-  const dbContacts: DbCommunityContact[] = raw.map((c) => ({
-    ...c,
-    contactPerson: c.contactPerson ?? null,
-  }));
-
-  const isUsingSampleData = dbContacts.length === 0;
+  // A card with no number has nothing to act on, so it is not shown. The
+  // numberless rows are already PENDING, but this keeps that true even if one
+  // is published by mistake.
+  const dbContacts: DbCommunityContact[] = raw
+    .filter((c) => c.phones.length > 0)
+    .map((c) => ({ ...c, contactPerson: c.contactPerson ?? null }));
 
   // Only offer the bus tab when there is at least one published route.
   const busRouteCount = await prisma.busRoute.count({ where: { active: true } });
@@ -78,18 +78,16 @@ export default async function CommunityPage() {
           buses={<BusTimings />}
         />
 
-        {/* ── Sample-data notice (only when no real data) ─────────────────── */}
-        {isUsingSampleData && (
-          <p className="flex items-start gap-2 text-[11px] sm:text-xs text-gray-400 leading-relaxed mt-10 sm:mt-14">
-            <Info className="w-3.5 h-3.5 shrink-0 mt-px" />
-            <span>
-              This directory currently shows sample entries - names and phone
-              numbers are placeholders while we collect and verify real listings
-              from residents. Sanatani Seva does not employ or endorse the vendors
-              listed here; please verify credentials before hiring.
-            </span>
-          </p>
-        )}
+        {/* ── Disclaimer — always shown ───────────────────────────────────── */}
+        <p className="flex items-start gap-2 text-[11px] sm:text-xs text-gray-400 leading-relaxed mt-10 sm:mt-14">
+          <Info className="w-3.5 h-3.5 shrink-0 mt-px" />
+          <span>
+            Listings are contributed by residents and are not vetted by us.
+            Sanatani Seva does not employ or endorse the vendors listed here;
+            please verify credentials and agree charges before hiring. Spotted a
+            wrong number? Let us know and we will correct it.
+          </span>
+        </p>
 
         {/* ── CTA — admin only ─────────────────────────────────────────── */}
         {isAdmin && (

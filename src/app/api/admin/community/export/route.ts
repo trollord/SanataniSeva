@@ -12,7 +12,7 @@ export async function GET() {
     orderBy: { createdAt: "desc" },
     select: {
       name: true,
-      phone: true,
+      phones: true,
       category: true,
       service: true,
       locality: true,
@@ -28,7 +28,7 @@ export async function GET() {
   });
 
   const headers = [
-    "name", "phone", "category", "service", "locality",
+    "name", "phones", "category", "service", "locality",
     "contactPerson", "address", "hours", "whatsapp", "status", "verified", "createdAt", "tags",
   ];
 
@@ -36,7 +36,7 @@ export async function GET() {
 
   const rows = contacts.map((c) => [
     escape(c.name),
-    escape(c.phone),
+    escape(c.phones.join("|")),
     escape(c.category),
     escape(c.service),
     escape(c.locality),

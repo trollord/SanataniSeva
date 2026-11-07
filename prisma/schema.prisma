@@ -241,7 +241,7 @@ model CommunityContact {
   contactPerson String?
   category      String   // key from COMMUNITY_CATEGORIES
   service       String
-  phone         String
+  phones        String[] // one vendor often has two or more numbers
   whatsapp      Boolean  @default(false)
   locality      String
   address       String   @default("")

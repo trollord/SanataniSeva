@@ -17,7 +17,7 @@ const KEY_TO_LABEL = Object.fromEntries(
 const VALID_KEYS = new Set<string>(COMMUNITY_CATEGORIES.map((c) => c.key));
 const VALID_LOCALITIES = new Set(HIRANANDANI_LOCALITIES as readonly string[]);
 
-const REQUIRED_COLS = ["name", "phone", "category", "service", "locality"];
+const REQUIRED_COLS = ["name", "phones", "category", "service", "locality"];
 const ALL_COLS = [...REQUIRED_COLS, "contactPerson", "address", "hours", "whatsapp"];
 
 type ParsedRow = {
@@ -45,12 +45,19 @@ function validateRow(raw: Record<string, string>, index: number): ParsedRow {
   const errors: string[] = [];
 
   const name = raw.name?.trim() ?? "";
-  const phone = raw.phone?.trim() ?? "";
+  // One vendor often has several numbers; pipe-separated, same as `tags`.
+  const phones = (raw.phones ?? "")
+    .split("|")
+    .map((p) => p.trim())
+    .filter(Boolean);
   const service = raw.service?.trim() ?? "";
   const whatsappRaw = raw.whatsapp?.trim().toLowerCase() ?? "";
 
   if (name.length < 2 || name.length > 120) errors.push("Name must be 2–120 chars");
-  if (!/^[+\d\s\-()]{7,20}$/.test(phone)) errors.push("Invalid phone number");
+  if (phones.length === 0) errors.push("At least one phone number is required");
+  else if (phones.length > 5) errors.push("At most five numbers");
+  else if (!phones.every((p) => /^[+\d\s\-()]{3,20}$/.test(p)))
+    errors.push("Invalid phone number");
   if (service.length < 5 || service.length > 200) errors.push("Service must be 5–200 chars");
 
   const category = resolveCategory(raw.category ?? "");
@@ -65,7 +72,7 @@ function validateRow(raw: Record<string, string>, index: number): ParsedRow {
     errors.length === 0
       ? {
           name,
-          phone,
+          phones,
           category: category!,
           service,
           locality: locality!,
@@ -87,7 +94,7 @@ function downloadTemplate() {
   const headers = ALL_COLS;
   const exampleRow = [
     "Ramesh Plumbing Works",
-    "9876543210",
+    "9876543210|9820011223",
     "plumber",
     "All plumbing repairs, pipe fitting, tap replacement",
     "Hiranandani Estate",
@@ -309,7 +316,7 @@ export default function CommunityCSVTools() {
                     <td className="px-3 py-2 font-medium text-gray-900 max-w-[140px] truncate">
                       {row.data.name || "—"}
                     </td>
-                    <td className="px-3 py-2 text-gray-600">{row.data.phone || "—"}</td>
+                    <td className="px-3 py-2 text-gray-600">{row.data.phones || "—"}</td>
                     <td className="px-3 py-2 text-gray-600">
                       {row.mapped
                         ? KEY_TO_LABEL[row.mapped.category as string] ?? row.data.category

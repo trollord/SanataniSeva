@@ -9,11 +9,17 @@ const CATEGORY_KEYS = COMMUNITY_CATEGORIES.map((c) => c.key) as [string, ...stri
 
 const submitSchema = z.object({
   name: z.string().min(2, "Name is required").max(120),
-  phone: z
-    .string()
-    .min(7, "Enter a valid phone number")
-    .max(20)
-    .regex(/^[+\d\s\-()]+$/, "Enter a valid phone number"),
+  phones: z
+    .array(
+      z
+        .string()
+        .trim()
+        .min(3, "Enter a valid phone number")
+        .max(20)
+        .regex(/^[+\d\s\-()]+$/, "Enter a valid phone number")
+    )
+    .min(1, "At least one phone number is required")
+    .max(5, "At most five numbers"),
   category: z.enum(CATEGORY_KEYS),
   service: z.string().min(5, "Describe the service (min 5 chars)").max(200),
   locality: z.string().refine((v) => (HIRANANDANI_LOCALITIES as readonly string[]).includes(v), {
@@ -67,7 +73,7 @@ export async function GET() {
       contactPerson: true,
       category: true,
       service: true,
-      phone: true,
+      phones: true,
       whatsapp: true,
       locality: true,
       address: true,
