@@ -13,13 +13,13 @@ export default function Footer() {
           <div className="md:col-span-2 mb-6 sm:mb-10 md:mb-0">
             <Link href="/" className="inline-flex items-center gap-1.5 group mb-3 sm:mb-5">
               <span className="font-bold text-lg sm:text-xl tracking-tight text-white">
-                Blue<span className="text-white/60">Bricks</span>
+                Sanatani<span className="text-white/60"> Seva</span>
               </span>
               <span className="h-1.5 w-1.5 rounded-full bg-white/40 mt-1 group-hover:scale-125 transition-transform duration-300" />
             </Link>
             <p className="text-white/40 text-xs sm:text-sm leading-relaxed max-w-xs">
-              Exclusively serving Hiranandani Estate, Thane. Completely free.
-              Zero brokerage, direct owner connect.
+              Exclusively serving Hiranandani Estate, Thane.
+              Direct owner connect, no middlemen.
             </p>
           </div>
 
@@ -84,7 +84,7 @@ export default function Footer() {
 
         {/* Independent-platform disclaimer */}
         <p className="text-[10px] sm:text-xs text-white/25 leading-relaxed mt-8 sm:mt-14 max-w-3xl">
-          Disclaimer: Sanatani Community (hiranandaniproperties.in) is an independent property
+          Disclaimer: Sanatani Seva (sanataniseva.com) is an independent property
           listing platform and is not affiliated with, endorsed by, or
           connected to the Hiranandani Group or any of its companies. The name
           &ldquo;Hiranandani&rdquo; refers solely to the Hiranandani Estate
@@ -97,7 +97,7 @@ export default function Footer() {
             © {new Date().getFullYear()} {SITE_NAME}. All rights reserved.
           </p>
           <p className="text-[10px] sm:text-xs text-white/25">
-            Zero Brokerage
+            Direct From Owners
           </p>
         </div>
 

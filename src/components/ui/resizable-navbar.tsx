@@ -42,7 +42,6 @@ export function Navbar({
   const [internalMobileOpen, setInternalMobileOpen] = useState(false);
   const mobileOpen = mobileOpenProp ?? internalMobileOpen;
   const setMobileOpen = onMobileOpenChange ?? setInternalMobileOpen;
-  const pathname = usePathname();
 
   // Landing page now has a light cream hero — no dark hero pages
   const darkHero = false;
@@ -101,7 +100,7 @@ export function Navbar({
 
 export function NavBody({ children }: { children: React.ReactNode }) {
   return (
-    <div className="hidden md:flex items-center justify-between px-6 lg:px-8 h-[60px]">
+    <div className="hidden md:flex items-center justify-between gap-4 px-5 lg:px-6 h-[60px]">
       {children}
     </div>
   );
@@ -120,7 +119,7 @@ export function NavbarLogo() {
     <Link href="/" className="flex items-center gap-1.5 group shrink-0">
       <span className="font-bold text-xl tracking-tight">
         <span style={{ color: "#C8541A" }}>Sanatani</span>
-        <span className="transition-colors duration-300" style={{ color: subtleColor }}> Community</span>
+        <span className="transition-colors duration-300" style={{ color: subtleColor }}> Seva</span>
       </span>
       <span
         className="h-1.5 w-1.5 rounded-full mt-1 group-hover:scale-125 transition-transform duration-300"
@@ -145,14 +144,14 @@ export function NavItems({ items }: { items: NavItem[] }) {
   const activeColor   = scrolled ? "#ffffff" : darkHero ? "#ffffff" : "#0B0B0C";
 
   return (
-    <nav className="flex items-center gap-6 lg:gap-8">
+    <nav className="flex items-center shrink-0 gap-5 lg:gap-7">
       {items.map((item) => {
         const active = pathname === item.link || pathname.startsWith(item.link + "/");
         return (
           <Link
             key={item.link}
             href={item.link}
-            className="text-base font-medium relative group transition-colors duration-200"
+            className="text-[13px] font-medium whitespace-nowrap relative group transition-colors duration-200"
             style={{ color: active ? activeColor : inactiveColor }}
           >
             {item.name}

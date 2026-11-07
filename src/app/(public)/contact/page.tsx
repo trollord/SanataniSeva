@@ -6,15 +6,15 @@ import WhatsAppIcon from "@/components/ui/WhatsAppIcon";
 import { whatsAppContactUrl } from "@/lib/utils/whatsapp";
 
 export const metadata: Metadata = {
-  title: "Contact Us - Get in touch with Sanatani Community",
+  title: "Contact Us - Get in touch with Sanatani Seva",
   description:
-    "Have a question about a listing, want to list your property or add a vendor to the community directory? Reach the Sanatani Community team by form, phone, email or WhatsApp.",
+    "Have a question about a listing, want to list your property or add a vendor to the community directory? Reach the Sanatani Seva team by form, phone, email or WhatsApp.",
   alternates: { canonical: "/contact" },
 };
 
 // Placeholder contact details - swap for real ones before launch
 const CONTACT_PHONE = "+91 90000 00000";
-const CONTACT_EMAIL = "hello@sanatanicommunity.example";
+const CONTACT_EMAIL = "hello@sanataniseva.com";
 const WHATSAPP_NUMBER = "+91 90000 00000";
 
 const FAQS: { q: string; a: string }[] = [
@@ -145,10 +145,10 @@ export default function ContactPage() {
                 New here?
               </p>
               <h2 className="font-[family-name:var(--font-playfair)] text-xl sm:text-3xl font-bold text-white mb-2">
-                See how Sanatani Community works
+                See how Sanatani Seva works
               </h2>
               <p className="text-white/45 text-xs sm:text-sm leading-relaxed max-w-md">
-                Zero brokerage, direct owner connect, verified listings - in
+                Direct owner connect, verified listings, no middlemen - in
                 under three steps.
               </p>
             </div>

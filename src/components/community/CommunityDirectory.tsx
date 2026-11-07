@@ -33,7 +33,6 @@ import {
   COMMUNITY_CATEGORIES,
   COMMUNITY_CONTACTS,
   COMMUNITY_LOCALITIES,
-  CATEGORY_COUNTS,
   type CommunityContact,
   type DbCommunityContact,
   toDisplayContact,
@@ -298,7 +297,7 @@ function ContactCard({ contact: c }: { contact: CommunityContact }) {
             </h3>
             {c.verified && (
               <span
-                title="Verified by Sanatani Community"
+                title="Verified by Sanatani Seva"
                 className="inline-flex items-center gap-1 shrink-0 mt-0.5 px-2 py-0.5 rounded-full bg-[#EBEBEB] text-[9px] font-bold uppercase tracking-[0.1em] text-gray-500"
               >
                 <BadgeCheck className="w-3 h-3" />
@@ -371,7 +370,7 @@ function ContactCard({ contact: c }: { contact: CommunityContact }) {
           <a
             href={whatsAppContactUrl(
               c.phone,
-              `Hi ${c.contactPerson ?? c.name}, I found you on the Sanatani Community community directory for Hiranandani Estate.`
+              `Hi ${c.contactPerson ?? c.name}, I found you on the Sanatani Seva community directory for Hiranandani Estate.`
             )}
             target="_blank"
             rel="noopener noreferrer"

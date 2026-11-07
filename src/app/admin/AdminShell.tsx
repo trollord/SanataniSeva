@@ -16,6 +16,7 @@ import {
   BarChart3,
   Package,
   BookUser,
+  Bus,
   Newspaper,
 } from "lucide-react";
 
@@ -25,6 +26,7 @@ const NAV_LINKS = [
   { href: "/admin/listings", label: "Listings Queue", icon: ListChecks },
   { href: "/admin/items", label: "Marketplace", icon: Package },
   { href: "/admin/community", label: "Community", icon: BookUser },
+  { href: "/admin/bus-timings", label: "Bus Timings", icon: Bus },
   { href: "/admin/newsletter", label: "Newspaper", icon: Newspaper },
   { href: "/admin/news",       label: "Today's News", icon: Newspaper },
   { href: "/admin/inquiries", label: "Inquiries", icon: MessageSquare },

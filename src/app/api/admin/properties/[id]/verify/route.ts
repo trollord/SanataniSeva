@@ -72,7 +72,7 @@ export async function POST(
         from: EMAIL_FROM,
         to: property.owner.email!,
         subject: "Your listing has been approved!",
-        html: `<p>Your listing "<b>${escapeHtml(property.title)}</b>" is now live on Sanatani Community.</p><p><a href="${process.env.NEXTAUTH_URL}/listings/${property.id}">View listing</a></p>`,
+        html: `<p>Your listing "<b>${escapeHtml(property.title)}</b>" is now live on Sanatani Seva.</p><p><a href="${process.env.NEXTAUTH_URL}/listings/${property.id}">View listing</a></p>`,
       });
     } else {
       await getResend().emails.send({

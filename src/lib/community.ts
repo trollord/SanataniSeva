@@ -45,7 +45,7 @@ export interface CommunityContact {
   tags: string[];
   rating: number;
   reviews: number;
-  /** Physically verified by the Sanatani Community team */
+  /** Physically verified by the Sanatani Seva team */
   verified: boolean;
   /** Year they started serving the estate */
   since: number;

@@ -4,10 +4,29 @@ import Link from "next/link";
 export const metadata: Metadata = {
   title: "Terms & Conditions",
   description:
-    "Terms and conditions for using Sanatani Community - an independent property listing platform for Hiranandani Estate, Thane.",
+    "Terms and conditions for using Sanatani Seva - an independent property listing platform for Hiranandani Estate, Thane.",
 };
 
 const LAST_UPDATED = "19 July 2026";
+
+const BYTELIGHTS_URL = "https://www.bytelights.co/";
+
+/** The studio behind the platform. Named four times in these terms, so the
+    link and its styling live in one place. */
+function ByteLights({ bold = false }: { bold?: boolean }) {
+  return (
+    <a
+      href={BYTELIGHTS_URL}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={`text-[#FF5F15] underline underline-offset-2 hover:opacity-80 transition-opacity ${
+        bold ? "font-bold" : ""
+      }`}
+    >
+      ByteLights
+    </a>
+  );
+}
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -34,7 +53,7 @@ export default function TermsPage() {
 
         <Section title="1. Acceptance of These Terms">
           <p>
-            By accessing or using Sanatani Community, accessible at hiranandaniproperties.in (the &ldquo;Platform&rdquo;), you agree
+            By accessing or using Sanatani Seva, accessible at sanataniseva.com (the &ldquo;Platform&rdquo;), you agree
             to be bound by these Terms &amp; Conditions. If you do not agree with any part of
             these terms, please do not use the Platform.
           </p>
@@ -42,10 +61,10 @@ export default function TermsPage() {
 
         <Section title="2. About the Platform">
           <p>
-            Sanatani Community is an independent online property listing platform that
+            Sanatani Seva is an independent online property listing platform that
             helps property seekers discover residential and commercial properties located in
             the Hiranandani Estate locality of Thane, Maharashtra, and connect directly with
-            the owners of those properties. The Platform is a product of <b>ByteLights</b>.
+            the owners of those properties. The Platform is a product of <ByteLights bold />.
           </p>
         </Section>
 
@@ -128,7 +147,8 @@ export default function TermsPage() {
 
         <Section title="10. Intellectual Property">
           <p>
-            The Platform&rsquo;s design, software, and original content are owned by ByteLights.
+            The Platform&rsquo;s design, software, and original content are owned by{" "}
+            <ByteLights />.
             Listing photographs and descriptions remain the property of the respective owners
             who submitted them and are displayed with their permission. You may not copy,
             scrape, or reuse Platform content without prior written consent.
@@ -139,7 +159,7 @@ export default function TermsPage() {
           <p>
             The Platform is provided on an &ldquo;as is&rdquo; and &ldquo;as available&rdquo;
             basis without warranties of any kind, express or implied. To the maximum extent
-            permitted by law, ByteLights and the Platform shall not be liable for any indirect,
+            permitted by law, <ByteLights /> and the Platform shall not be liable for any indirect,
             incidental, consequential, or special damages, or for any loss arising out of any
             property transaction, use of the Platform, or reliance on any listing.
           </p>
@@ -147,7 +167,7 @@ export default function TermsPage() {
 
         <Section title="12. Indemnification">
           <p>
-            You agree to indemnify and hold harmless ByteLights and the Platform from any
+            You agree to indemnify and hold harmless <ByteLights /> and the Platform from any
             claims, losses, or expenses (including reasonable legal fees) arising out of your
             use of the Platform, your listings, or your breach of these terms.
           </p>

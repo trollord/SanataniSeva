@@ -51,7 +51,7 @@ export default async function DashboardPage() {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">My Listings</h1>
           <p className="text-sm text-gray-500 mt-1">
-            Manage your property listings on Sanatani Community
+            Manage your property listings on Sanatani Seva
           </p>
         </div>
         <Link href="/dashboard/new">

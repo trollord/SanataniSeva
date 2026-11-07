@@ -15,7 +15,7 @@ export default function AuthLayout({
 
           <Link href="/" className="relative z-10">
             <span className="font-bold text-2xl text-white">
-              Sanatani Community
+              Sanatani Seva
             </span>
           </Link>
 
@@ -27,7 +27,7 @@ export default function AuthLayout({
             </h2>
             <p className="text-white/60 leading-relaxed max-w-sm">
               Browse verified listings and connect directly with owners - completely free.
-              Zero brokerage. Zero commissions.
+              No middlemen. No commissions.
             </p>
           </div>
 
@@ -51,7 +51,7 @@ export default function AuthLayout({
           <div className="lg:hidden p-5">
             <Link href="/" className="flex items-center gap-2">
               <span className="font-bold text-xl text-[#FF5F15]">
-                Sanatani Community
+                Sanatani Seva
               </span>
             </Link>
           </div>

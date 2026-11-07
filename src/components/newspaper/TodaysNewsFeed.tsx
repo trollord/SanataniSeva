@@ -115,7 +115,8 @@ export default function TodaysNewsFeed({ items }: { items: NewsItemMeta[] }) {
             onDragEnd={(_e, info) => {
               setDragging(false);
               if (Math.abs(info.offset.x) > 60) {
-                info.offset.x < 0 ? go(index + 1, 1) : go(index - 1, -1);
+                if (info.offset.x < 0) go(index + 1, 1);
+                else go(index - 1, -1);
               }
               setTimeout(resume, 8000);
             }}

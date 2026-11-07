@@ -77,7 +77,7 @@ export default function RegisterPage() {
         window.location.href = "/login";
         return;
       }
-      toast.success("Email verified! Welcome to Sanatani Community.");
+      toast.success("Email verified! Welcome to Sanatani Seva.");
       window.location.href = "/dashboard";
     } finally {
       setLoading(false);
@@ -168,7 +168,7 @@ export default function RegisterPage() {
         <h1 className="font-[family-name:var(--font-playfair)] text-3xl font-bold text-gray-900 mb-2">
           Create your account
         </h1>
-        <p className="text-gray-500">Join Sanatani Community - find your home directly from owners</p>
+        <p className="text-gray-500">Join Sanatani Seva - find your home directly from owners</p>
       </div>
 
       <Button

@@ -1,7 +1,17 @@
 export const PLATFORM_FEE_INR = 9999;
 export const CURRENCY = "INR";
-export const SITE_NAME = "Sanatani Community";
-export const SITE_URL = process.env.NEXTAUTH_URL ?? "https://www.bluebrics.com";
+export const SITE_NAME = "Sanatani Seva";
+/**
+ * Canonical origin, no trailing slash. Everything that needs an absolute URL
+ * — metadata, sitemap, robots, structured data, emails — reads this, so the
+ * domain is spelled out in exactly one place.
+ *
+ * NEXTAUTH_URL wins when set, which is what makes preview deployments and
+ * localhost emit their own origin instead of the production one.
+ *
+ * Apex, not www: pick one as canonical and redirect the other at the host.
+ */
+export const SITE_URL = process.env.NEXTAUTH_URL ?? "https://sanataniseva.com";
 export const SITE_TAGLINE = "Your Trusted Real Estate Advisors in Hiranandani Estate";
 
 export const HIRANANDANI_LOCALITIES = [

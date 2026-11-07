@@ -87,7 +87,7 @@ export default async function MarketplacePage() {
           <Info className="w-3.5 h-3.5 shrink-0 mt-px" />
           <span>
             Prices and condition descriptions are provided by sellers. Verify
-            the item in person before paying. Sanatani Community is a listing platform
+            the item in person before paying. Sanatani Seva is a listing platform
             and does not mediate transactions.
           </span>
         </p>

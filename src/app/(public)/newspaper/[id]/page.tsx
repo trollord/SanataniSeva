@@ -3,7 +3,7 @@ import { cache } from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import NewsViewer from "@/components/newspaper/NewsViewer";
+import NewsViewer from "@/components/newspaper/NewsViewerClient";
 import { SITE_NAME } from "@/lib/constants";
 
 export const revalidate = 3600;
@@ -56,7 +56,7 @@ export default async function EditionPage({
         {/* Wordmark */}
         <Link href="/" className="flex items-center gap-1.5 shrink-0 group">
           <span className="font-bold text-sm text-white leading-none tracking-tight">Sanatani</span>
-          <span className="text-sm text-white/40 leading-none hidden sm:inline"> Community</span>
+          <span className="text-sm text-white/40 leading-none hidden sm:inline"> Seva</span>
           <span className="h-1.5 w-1.5 rounded-full bg-[#C8541A] ml-0.5 mb-px group-hover:scale-125 transition-transform" />
         </Link>
 

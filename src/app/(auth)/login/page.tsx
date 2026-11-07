@@ -61,7 +61,7 @@ function LoginForm() {
         <h1 className="font-[family-name:var(--font-playfair)] text-3xl font-bold text-gray-900 mb-2">
           Welcome back
         </h1>
-        <p className="text-gray-500">Sign in to your Sanatani Community account</p>
+        <p className="text-gray-500">Sign in to your Sanatani Seva account</p>
       </div>
 
       {/* Google OAuth */}

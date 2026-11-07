@@ -48,8 +48,8 @@ export default async function BlogPostPage({
     headline: post.title,
     description: post.excerpt,
     datePublished: post.date,
-    author: { "@type": "Organization", name: "Sanatani Community" },
-    publisher: { "@type": "Organization", name: "Sanatani Community", url: SITE_URL },
+    author: { "@type": "Organization", name: "Sanatani Seva" },
+    publisher: { "@type": "Organization", name: "Sanatani Seva", url: SITE_URL },
     mainEntityOfPage: `${SITE_URL}/blog/${post.slug}`,
   };
 
@@ -113,7 +113,7 @@ export default async function BlogPostPage({
             Find your home in Hiranandani Estate
           </h3>
           <p className="text-white/50 text-sm mb-6">
-            Verified listings, direct owner contact, zero brokerage.
+            Verified listings, direct owner contact, no middlemen.
           </p>
           <Link
             href="/listings"

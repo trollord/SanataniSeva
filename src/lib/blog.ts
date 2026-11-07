@@ -18,8 +18,8 @@ export interface BlogPost {
 
 export const BLOG_POSTS: BlogPost[] = [
   {
-    slug: "how-zero-brokerage-saves-you-lakhs",
-    title: "How Zero Brokerage Saves You Lakhs - The Real Math",
+    slug: "how-direct-owner-deals-save-you-lakhs",
+    title: "How Direct Owner Deals Save You Lakhs - The Real Math",
     excerpt:
       "On a ₹2 crore flat, the typical 1–2% commission is ₹2–4 lakhs. Here's exactly where that money goes in a traditional deal - and how connecting directly with owners keeps it in your pocket.",
     date: "2026-07-18",
@@ -42,7 +42,7 @@ export const BLOG_POSTS: BlogPost[] = [
         type: "p",
         text: "None of this money improves the home you're buying or renting. It's a discovery cost - the price of finding the other party. And in a well-mapped, tightly-knit township like Hiranandani Estate, discovery is exactly the problem technology solves better.",
       },
-      { type: "h2", text: "What Sanatani Community does differently" },
+      { type: "h2", text: "What Sanatani Seva does differently" },
       {
         type: "p",
         text: "Owners list directly, for free. Our team verifies every listing before it goes live. Seekers browse verified homes, register interest for free, and talk to the owner directly - no intermediary in the conversation, no percentage riding on the deal. We charge a flat advisory fee only after a transaction actually closes, which is a fraction of a percentage-based commission.",
@@ -97,13 +97,13 @@ export const BLOG_POSTS: BlogPost[] = [
       },
       {
         type: "p",
-        text: "Every listing on Sanatani Community shows the deposit, lock-in and availability upfront, and you talk to the owner directly - so the answers to these questions come from the person who actually owns the home. Registering interest is free.",
+        text: "Every listing on Sanatani Seva shows the deposit, lock-in and availability upfront, and you talk to the owner directly - so the answers to these questions come from the person who actually owns the home. Registering interest is free.",
       },
     ],
   },
   {
     slug: "how-sanatani-community-works",
-    title: "Direct From Owners: How Sanatani Community Actually Works",
+    title: "Direct From Owners: How Sanatani Seva Actually Works",
     excerpt:
       "Free verified listings, direct owner contact, and a flat advisory fee only when a deal closes - a transparent look at our model and why we built it this way.",
     date: "2026-07-23",
@@ -111,7 +111,7 @@ export const BLOG_POSTS: BlogPost[] = [
     blocks: [
       {
         type: "p",
-        text: "Sanatani Community is an independent listing platform built for one place we know deeply: Hiranandani Estate, Thane. Because we focus on a single township, every listing can be individually verified and every price can be sanity-checked against real local data.",
+        text: "Sanatani Seva is an independent listing platform built for one place we know deeply: Hiranandani Estate, Thane. Because we focus on a single township, every listing can be individually verified and every price can be sanity-checked against real local data.",
       },
       { type: "h2", text: "For owners" },
       {
@@ -160,7 +160,7 @@ export const BLOG_POSTS: BlogPost[] = [
       },
       {
         type: "p",
-        text: "None of this is exotic - it's an afternoon of document collection when the seller is organised. Dealing directly with the owner, as you do on Sanatani Community, usually makes that faster: the person answering your questions is the person who holds the documents.",
+        text: "None of this is exotic - it's an afternoon of document collection when the seller is organised. Dealing directly with the owner, as you do on Sanatani Seva, usually makes that faster: the person answering your questions is the person who holds the documents.",
       },
       {
         type: "p",

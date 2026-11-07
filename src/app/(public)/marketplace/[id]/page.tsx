@@ -2,12 +2,10 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { cache } from "react";
 import type { Metadata } from "next";
-import { Phone, MapPin, CalendarClock, Tag, ShieldCheck } from "lucide-react";
+import { MapPin, CalendarClock, Tag, ShieldCheck } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import PropertyGallery from "@/components/property/PropertyGallery";
-import WhatsAppIcon from "@/components/ui/WhatsAppIcon";
-import { whatsAppContactUrl } from "@/lib/utils/whatsapp";
 import { formatPrice, formatDate } from "@/lib/utils/formatters";
 import ItemContactSection from "@/components/marketplace/ItemContactSection";
 import ItemCard, {
@@ -236,7 +234,7 @@ export default async function ItemDetailPage({
             </p>
             <p className="text-xs text-gray-500 leading-relaxed mt-1">
               Inspect the item in person before paying. Prefer cash or UPI on
-              handover. Sanatani Community does not hold funds or guarantee item
+              handover. Sanatani Seva does not hold funds or guarantee item
               condition.
             </p>
           </div>

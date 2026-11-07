@@ -59,7 +59,7 @@ export default function UploadForm() {
           <Input
             id="title"
             name="title"
-            placeholder="e.g. Sanatani Community Weekly - Oct 2026"
+            placeholder="e.g. Sanatani Seva Weekly - Oct 2026"
             required
           />
         </div>

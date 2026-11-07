@@ -35,7 +35,9 @@ const nextConfig = {
   },
   experimental: {
     serverActions: {
-      allowedOrigins: ["localhost:3000", "hiranandani-homes.vercel.app", "hiranandaniproperties-puce.vercel.app", "blue-bricks-nine.vercel.app", "www.hiranandaniproperties.in", "hiranandaniproperties.in"],
+      // Production host plus local dev. Add the Vercel preview host for this
+      // project if server actions are ever used from a preview deployment.
+      allowedOrigins: ["localhost:3000", "sanataniseva.com", "www.sanataniseva.com"],
     },
   },
   outputFileTracingExcludes: {

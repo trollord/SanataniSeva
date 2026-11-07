@@ -4,8 +4,8 @@ import GuidedTour, { type TourStep } from "./GuidedTour";
 
 const STEPS: TourStep[] = [
   {
-    title: "Welcome to Sanatani Community 👋",
-    body: "Your zero-brokerage home search for Hiranandani Estate, Thane. Here's a quick 30-second tour of how everything works.",
+    title: "Welcome to Sanatani Seva 👋",
+    body: "Your direct-from-owner home search for Hiranandani Estate, Thane. Here's a quick 30-second tour of how everything works.",
   },
   {
     target: '[data-tour="filters"], [data-tour="filters-mobile"]',

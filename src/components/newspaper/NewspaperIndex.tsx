@@ -1,11 +1,20 @@
 "use client";
 
 import { useState } from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { Calendar, ChevronDown, X } from "lucide-react";
-import EditionCover from "./EditionCover";
 import TodaysNewsFeed, { type NewsItemMeta } from "./TodaysNewsFeed";
+
+// react-pdf pulls in pdfjs-dist, which is browser-only and throws if it is
+// evaluated during SSR — so the cover thumbnails load client-side only.
+const EditionCover = dynamic(() => import("./EditionCover"), {
+  ssr: false,
+  loading: () => (
+    <div className="w-full bg-gray-100" style={{ aspectRatio: "210 / 297" }} />
+  ),
+});
 
 export interface EditionMeta {
   id: string;

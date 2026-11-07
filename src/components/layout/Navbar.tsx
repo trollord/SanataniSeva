@@ -17,7 +17,6 @@ import {
   MobileNav,
   MobileNavHeader,
   MobileNavToggle,
-  MobileNavMenu,
   useNavbar,
 } from "@/components/ui/resizable-navbar";
 
@@ -148,7 +147,7 @@ export default function SiteNavbar({ forceScrolled = false }: { forceScrolled?: 
         <NavBody>
           <NavbarLogo />
           <NavItems items={navItems} />
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 shrink-0">
             {session ? (
               <>
                 {false && (
@@ -296,67 +295,5 @@ export default function SiteNavbar({ forceScrolled = false }: { forceScrolled?: 
       </div>
 
     </>
-  );
-}
-
-/* ─── MobileNavLink helper ────────────────────────────────────────────────── */
-function MobileNavLink({
-  href,
-  onClick,
-  children,
-}: {
-  href: string;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
-  const { scrolled } = useNavbar();
-  return (
-    <Link
-      href={href}
-      onClick={onClick}
-      className="block px-1 py-3 text-sm font-medium transition-colors duration-200 border-b"
-      style={{
-        color: scrolled ? "rgba(255,255,255,0.8)" : "rgba(26,26,26,0.75)",
-        borderColor: scrolled
-          ? "rgba(255,255,255,0.08)"
-          : "rgba(26,26,26,0.07)",
-      }}
-    >
-      {children}
-    </Link>
-  );
-}
-
-/* ─── MobileActionButton helper ───────────────────────────────────────────── */
-function MobileActionButton({
-  onClick,
-  icon,
-  children,
-  bordered,
-  danger,
-}: {
-  onClick: () => void;
-  icon: React.ReactNode;
-  children: React.ReactNode;
-  bordered?: boolean;
-  danger?: boolean;
-}) {
-  const { scrolled } = useNavbar();
-  const color = danger
-    ? scrolled ? "rgba(255,120,120,1)" : "rgb(239,68,68)"
-    : scrolled ? "rgba(255,255,255,0.85)" : "rgba(26,26,26,0.75)";
-  const borderColor = scrolled ? "rgba(255,255,255,0.08)" : "rgba(26,26,26,0.07)";
-  return (
-    <button
-      onClick={onClick}
-      className="flex items-center gap-2 px-1 py-2.5 text-sm font-medium w-full text-left"
-      style={{
-        color,
-        borderBottom: bordered ? `1px solid ${borderColor}` : undefined,
-      }}
-    >
-      {icon}
-      {children}
-    </button>
   );
 }

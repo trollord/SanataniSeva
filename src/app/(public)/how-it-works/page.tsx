@@ -37,7 +37,7 @@ export default function HowItWorksPage() {
           </span>
 
           <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-[88px] font-extrabold tracking-tighter text-[#FF5F15] max-w-4xl leading-[0.92] mb-8">
-            How Sanatani Community Works
+            How Sanatani Seva Works
           </h1>
 
           <p className="text-gray-500 text-base sm:text-lg md:text-xl max-w-2xl font-medium leading-relaxed mb-12">
@@ -71,7 +71,7 @@ export default function HowItWorksPage() {
               Browse Verified Listings
             </h2>
             <p className="text-gray-500 text-lg leading-relaxed">
-              Every property listed on Sanatani Community undergoes a rigorous
+              Every property listed on Sanatani Seva undergoes a rigorous
               internal verification. High-resolution imagery, accurate square
               footage, and verified legal status come standard.
             </p>
@@ -221,11 +221,11 @@ export default function HowItWorksPage() {
         </div>
       </section>
 
-      {/* ── WHY ZERO BROKERAGE ─────────────────────────────────────────────────── */}
+      {/* ── WHY DIRECT FROM OWNERS ─────────────────────────────────────────────── */}
       <section className="bg-[#1C0A00] py-24 sm:py-32 px-6 sm:px-8">
         <div className="max-w-6xl mx-auto">
           <h2 className="text-5xl sm:text-6xl font-extrabold tracking-tighter text-white mb-16 sm:mb-20">
-            Why Zero Brokerage?
+            Why Direct From Owners?
           </h2>
           <div className="grid sm:grid-cols-2 gap-6 lg:gap-8">
             {[
