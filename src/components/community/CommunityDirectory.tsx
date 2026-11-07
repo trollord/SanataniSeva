@@ -25,14 +25,19 @@ import {
   Truck,
   GraduationCap,
   Leaf,
+  Building2,
+  Car,
+  Siren,
+  Flame,
+  Landmark,
+  Briefcase,
+  Palette,
   type LucideIcon,
 } from "lucide-react";
 import WhatsAppIcon from "@/components/ui/WhatsAppIcon";
 import { whatsAppContactUrl } from "@/lib/utils/whatsapp";
 import {
   COMMUNITY_CATEGORIES,
-  COMMUNITY_CONTACTS,
-  COMMUNITY_LOCALITIES,
   type CommunityContact,
   type DbCommunityContact,
   toDisplayContact,
@@ -53,6 +58,13 @@ const ICONS: Record<string, LucideIcon> = {
   Truck,
   GraduationCap,
   Leaf,
+  Building2,
+  Car,
+  Siren,
+  Flame,
+  Landmark,
+  Briefcase,
+  Palette,
 };
 
 function buildSearchIndex(contacts: CommunityContact[]): Record<string, string> {
@@ -76,11 +88,16 @@ export default function CommunityDirectory({
   dbContacts: DbCommunityContact[];
 }) {
   const contacts: CommunityContact[] = useMemo(
-    () =>
-      dbContacts.length > 0
-        ? dbContacts.map(toDisplayContact)
-        : COMMUNITY_CONTACTS,
+    () => dbContacts.map(toDisplayContact),
     [dbContacts]
+  );
+
+  // Only offer localities that actually have listings - the shared
+  // HIRANANDANI_LOCALITIES list covers property forms too and would show
+  // filters that match nothing here.
+  const localities = useMemo(
+    () => Array.from(new Set(contacts.map((c) => c.locality).filter(Boolean))).sort(),
+    [contacts]
   );
 
   const searchIndex = useMemo(() => buildSearchIndex(contacts), [contacts]);
@@ -154,7 +171,7 @@ export default function CommunityDirectory({
             className="w-full appearance-none bg-white border border-[#e4e9ea] rounded-full pl-10 pr-9 py-3 sm:py-3.5 text-sm font-medium text-zinc-700 cursor-pointer hover:bg-[#f2f4f4] focus:outline-none transition-all"
           >
             <option value="all">All Localities</option>
-            {COMMUNITY_LOCALITIES.map((l) => (
+            {localities.map((l) => (
               <option key={l} value={l}>
                 {l}
               </option>

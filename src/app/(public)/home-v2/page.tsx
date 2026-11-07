@@ -2,11 +2,7 @@ export const dynamic = "force-dynamic";
 
 import { unstable_cache } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import {
-  COMMUNITY_CATEGORIES,
-  CATEGORY_COUNTS,
-  COMMUNITY_CONTACTS,
-} from "@/lib/community";
+import { COMMUNITY_CATEGORIES } from "@/lib/community";
 import NewsBannerStrip from "@/components/newspaper/NewsBannerStrip";
 import EstateGallery from "@/components/home-v2/EstateGallery";
 import HomeMasthead from "@/components/home/HomeMasthead";
@@ -59,11 +55,19 @@ export default async function HomeV2Page() {
   // completedDeals is intentionally skipped and never rendered.
   const [activeListings, , owners] = stats;
 
-  // Trade index for ENTRY 02, derived entirely from the static directory.
+  // Trade index for ENTRY 02, counted off the published directory. Grouping in
+  // the DB rather than loading every contact just to length-check it.
+  const grouped = await prisma.communityContact.groupBy({
+    by: ["category"],
+    where: { status: "ACTIVE" },
+    _count: { _all: true },
+  });
+  const countByCategory = new Map(grouped.map((g) => [g.category, g._count._all]));
   const trades = COMMUNITY_CATEGORIES.map((c) => ({
     label: c.label,
-    count: CATEGORY_COUNTS[c.key] ?? 0,
+    count: countByCategory.get(c.key) ?? 0,
   })).filter((t) => t.count > 0);
+  const totalContacts = grouped.reduce((n, g) => n + g._count._all, 0);
 
   return (
     <div className="bg-[#FAF8F5] text-[#1C1C1C]">
@@ -75,7 +79,7 @@ export default async function HomeV2Page() {
           nothing at all when they do not — in every environment. The numbered
           entry sequence reads Entry 01 → Entry 02 either way. */}
       <EstateGallery />
-      <HomeEntryServices trades={trades} totalContacts={COMMUNITY_CONTACTS.length} />
+      <HomeEntryServices trades={trades} totalContacts={totalContacts} />
       <HomeMarketDiptych items={marketplaceItems} />
       <HomeEntryNewspaper />
       <HomeClosing />

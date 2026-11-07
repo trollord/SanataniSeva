@@ -40,3 +40,7 @@ next-env.d.ts
 prisma/*.db
 prisma/*.db-journal
 .claude/
+
+# Local credential notes - never commit
+creds
+creds.*
