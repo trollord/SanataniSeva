@@ -119,6 +119,10 @@ export default function CommunityDirectory({
   const [locality, setLocality] = useState<string>("all");
   const [page, setPage] = useState(1);
 
+  const changeQuery = (v: string) => { setQuery(v); setPage(1); };
+  const changeCategory = (v: string) => { setCategory(v); setPage(1); };
+  const changeLocality = (v: string) => { setLocality(v); setPage(1); };
+
   const results = useMemo(() => {
     const terms = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
 
@@ -135,8 +139,9 @@ export default function CommunityDirectory({
 
   const pageCount = Math.max(1, Math.ceil(results.length / PER_PAGE));
   // Narrowing a filter can leave you past the end of the new result set, which
-  // would render an empty table and look like "no matches".
-  useEffect(() => setPage(1), [query, category, locality]);
+  // would render an empty table and look like "no matches". Each filter resets
+  // the page itself; `safePage` still clamps, so a stale page can never render
+  // an empty table.
   const safePage = Math.min(page, pageCount);
   const pageResults = results.slice((safePage - 1) * PER_PAGE, safePage * PER_PAGE);
 
@@ -156,14 +161,14 @@ export default function CommunityDirectory({
           <input
             type="search"
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => changeQuery(e.target.value)}
             placeholder="Search carpenter, plumber, tiffin, shop name…"
             aria-label="Search the community directory"
             className="w-full bg-white border border-[#e4e9ea] rounded-full pl-11 pr-10 py-3 sm:py-3.5 text-sm text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:border-[#FF5F15]/25 transition-colors [&::-webkit-search-cancel-button]:hidden"
           />
           {query && (
             <button
-              onClick={() => setQuery("")}
+              onClick={() => changeQuery("")}
               aria-label="Clear search"
               className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-900 transition-colors"
             >
@@ -175,7 +180,7 @@ export default function CommunityDirectory({
         <div className="sm:w-56">
           <SearchableSelect
             value={locality}
-            onChange={setLocality}
+            onChange={changeLocality}
             variant="pill"
             leadingIcon={<MapPin className="w-3.5 h-3.5 text-zinc-500 shrink-0" />}
             options={[
@@ -191,7 +196,7 @@ export default function CommunityDirectory({
       <div className="flex gap-2 overflow-x-auto pb-1 mt-4 sm:mt-5 -mx-5 px-5 sm:mx-0 sm:px-0 sm:flex-wrap sm:overflow-visible [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         <CategoryPill
           active={category === "all"}
-          onClick={() => setCategory("all")}
+          onClick={() => changeCategory("all")}
           Icon={Users}
           label="All"
           count={contacts.length}
@@ -200,7 +205,7 @@ export default function CommunityDirectory({
           <CategoryPill
             key={c.key}
             active={category === c.key}
-            onClick={() => setCategory(c.key)}
+            onClick={() => changeCategory(c.key)}
             Icon={ICONS[c.icon]}
             label={c.label}
             count={categoryCounts[c.key] ?? 0}

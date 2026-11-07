@@ -9,7 +9,8 @@ async function guard() {
   return session && session.user.role === "ADMIN" ? null : NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 }
 
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const denied = await guard();
   if (denied) return denied;
 
@@ -33,7 +34,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   if (body.validUntil !== undefined) data.validUntil = parseDate(body.validUntil);
 
   try {
-    await prisma.busSchedule.update({ where: { id: params.id }, data });
+    await prisma.busSchedule.update({ where: { id }, data });
   } catch {
     return NextResponse.json({ error: "Schedule not found" }, { status: 404 });
   }
@@ -42,11 +43,12 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   return NextResponse.json({ ok: true });
 }
 
-export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const denied = await guard();
   if (denied) return denied;
   try {
-    await prisma.busSchedule.delete({ where: { id: params.id } });
+    await prisma.busSchedule.delete({ where: { id } });
   } catch {
     return NextResponse.json({ error: "Schedule not found" }, { status: 404 });
   }

@@ -37,8 +37,9 @@ const patchSchema = z
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   const session = await auth();
   if (!session || session.user.role !== "ADMIN") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -67,7 +68,7 @@ export async function PATCH(
   }
   if (data.status === "ACTIVE" && !data.phones) {
     const current = await prisma.communityContact.findUnique({
-      where: { id: params.id },
+      where: { id },
       select: { phones: true },
     });
     if (current && current.phones.length === 0) {
@@ -79,7 +80,7 @@ export async function PATCH(
   }
 
   try {
-    await prisma.communityContact.update({ where: { id: params.id }, data });
+    await prisma.communityContact.update({ where: { id }, data });
     revalidatePath("/community");
     revalidatePath("/admin/community");
     return NextResponse.json({ ok: true });
@@ -90,15 +91,16 @@ export async function PATCH(
 
 export async function DELETE(
   _req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   const session = await auth();
   if (!session || session.user.role !== "ADMIN") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
-    await prisma.communityContact.delete({ where: { id: params.id } });
+    await prisma.communityContact.delete({ where: { id } });
     revalidatePath("/community");
     revalidatePath("/admin/community");
     return NextResponse.json({ ok: true });
