@@ -43,7 +43,8 @@ export interface CommunityContact {
   category: CommunityCategory;
   /** Short trade description shown under the name */
   service: string;
-  phone: string;
+  /** One or more numbers; first is the primary. Never empty for a rendered card. */
+  phones: string[];
   /** Reachable on WhatsApp at the same number */
   whatsapp: boolean;
   locality: string;
@@ -67,7 +68,7 @@ export interface DbCommunityContact {
   contactPerson: string | null;
   category: string;
   service: string;
-  phone: string;
+  phones: string[];
   whatsapp: boolean;
   locality: string;
   address: string;
@@ -90,7 +91,7 @@ export function toDisplayContact(c: DbCommunityContact): CommunityContact {
     contactPerson: c.contactPerson ?? undefined,
     category: c.category as CommunityCategory,
     service: c.service,
-    phone: c.phone,
+    phones: c.phones,
     whatsapp: c.whatsapp,
     locality: c.locality,
     address: c.address,

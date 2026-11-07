@@ -245,7 +245,7 @@ async function main() {
     srNo: string;
     data: {
       name: string; contactPerson: string | null; category: string;
-      service: string; phone: string; whatsapp: boolean; locality: string;
+      service: string; phones: string[]; whatsapp: boolean; locality: string;
       address: string; hours: string; tags: string; verified: boolean;
       status: string; notes: string | null;
     };
@@ -308,7 +308,6 @@ async function main() {
     }
 
     const noteParts = [`Imported from "${sheetName}" (Sr. No ${srNo}).`];
-    if (alts.length) noteParts.push(`Alt: ${alts.join(", ")}.`);
     if (reason) noteParts.push(`Needs review: ${reason}.`);
 
     prepared.push({
@@ -319,7 +318,7 @@ async function main() {
         contactPerson: person || null,
         category,
         service,
-        phone: primary,
+        phones: primary ? [primary, ...alts] : [],
         whatsapp: false,
         locality: mapLocality(area),
         address,
@@ -368,8 +367,8 @@ async function main() {
   let created = 0;
   let updated = 0;
   for (const p of prepared) {
-    const where = p.data.phone
-      ? { name: p.data.name, phone: p.data.phone }
+    const where = p.data.phones.length
+      ? { name: p.data.name, phones: { has: p.data.phones[0] } }
       : { name: p.data.name, category: p.data.category };
     const existing = await prisma.communityContact.findFirst({
       where,

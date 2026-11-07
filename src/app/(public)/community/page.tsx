@@ -43,7 +43,7 @@ export default async function CommunityPage() {
       contactPerson: true,
       category: true,
       service: true,
-      phone: true,
+      phones: true,
       whatsapp: true,
       locality: true,
       address: true,
@@ -54,10 +54,12 @@ export default async function CommunityPage() {
     },
   });
 
-  const dbContacts: DbCommunityContact[] = raw.map((c) => ({
-    ...c,
-    contactPerson: c.contactPerson ?? null,
-  }));
+  // A card with no number has nothing to act on, so it is not shown. The
+  // numberless rows are already PENDING, but this keeps that true even if one
+  // is published by mistake.
+  const dbContacts: DbCommunityContact[] = raw
+    .filter((c) => c.phones.length > 0)
+    .map((c) => ({ ...c, contactPerson: c.contactPerson ?? null }));
 
   // Only offer the bus tab when there is at least one published route.
   const busRouteCount = await prisma.busRoute.count({ where: { active: true } });

@@ -10,7 +10,7 @@ const CATEGORY_KEYS = COMMUNITY_CATEGORIES.map((c) => c.key) as [string, ...stri
 
 const rowSchema = z.object({
   name: z.string().min(2).max(120),
-  phone: z.string().min(7).max(20).regex(/^[+\d\s\-()]+$/),
+  phones: z.array(z.string().trim().min(3).max(20).regex(/^[+\d\s\-()]+$/)).min(1).max(5),
   category: z.enum(CATEGORY_KEYS),
   service: z.string().min(5).max(200),
   locality: z.string().refine(
