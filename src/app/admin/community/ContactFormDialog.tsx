@@ -10,24 +10,23 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import Modal from "@/components/ui/Modal";
+import SearchableSelect from "@/components/ui/searchable-select";
 import { COMMUNITY_CATEGORIES } from "@/lib/community";
 import { HIRANANDANI_LOCALITIES } from "@/lib/constants";
 
 const CATEGORY_KEYS = COMMUNITY_CATEGORIES.map((c) => c.key) as [string, ...string[]];
+
+const CATEGORY_OPTIONS = COMMUNITY_CATEGORIES.map((c) => ({
+  value: c.key,
+  label: c.label,
+}));
+const LOCALITY_OPTIONS = HIRANANDANI_LOCALITIES.map((l) => ({ value: l, label: l }));
+const STATUS_OPTIONS = [
+  { value: "ACTIVE", label: "Active — visible on the public directory" },
+  { value: "PENDING", label: "Pending — hidden until reviewed" },
+  { value: "REJECTED", label: "Rejected — hidden" },
+];
 
 // react-hook-form needs objects, not bare strings, to track a dynamic list -
 // useFieldArray keys off a stable id per row. Unwrapped on submit.
@@ -74,6 +73,34 @@ export interface ContactRecord {
   verified: boolean;
   status: string;
   notes: string | null;
+}
+
+/** Label above control, consistent gap, error underneath. */
+function Field({
+  label,
+  htmlFor,
+  error,
+  hint,
+  className = "",
+  children,
+}: {
+  label: string;
+  htmlFor?: string;
+  error?: string;
+  hint?: string;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className={className}>
+      <Label htmlFor={htmlFor} className="mb-2 text-[13px] font-medium text-gray-700">
+        {label}
+      </Label>
+      {children}
+      {hint && !error && <p className="mt-1.5 text-[11px] text-gray-400">{hint}</p>}
+      {error && <p className="mt-1.5 text-xs text-red-600">{error}</p>}
+    </div>
+  );
 }
 
 export default function ContactFormDialog({
@@ -146,212 +173,241 @@ export default function ContactFormDialog({
     router.refresh();
   }
 
+  const inputClass = "h-10";
+
+  const formId = isEdit ? `edit-contact-${contact!.id}` : "add-contact";
+
   return (
-    <Dialog
-      open={open}
-      onOpenChange={(next) => {
-        setOpen(next);
-        if (!next) setServerError(null);
-      }}
-    >
+    <>
       {isEdit ? (
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="inline-flex items-center gap-1 text-xs font-medium text-gray-600 hover:text-gray-900 px-2 py-1 rounded-md hover:bg-gray-100 transition-colors"
+          className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900"
         >
-          <Pencil className="w-3.5 h-3.5" />
+          <Pencil className="h-3.5 w-3.5" />
           Edit
         </button>
       ) : (
         <Button size="sm" className="gap-1.5" onClick={() => setOpen(true)}>
-          <Plus className="w-4 h-4" />
+          <Plus className="h-4 w-4" />
           Add contact
         </Button>
       )}
 
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>{isEdit ? "Edit contact" : "Add contact"}</DialogTitle>
-        </DialogHeader>
-
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="name">Name</Label>
-              <Input id="name" {...register("name")} placeholder="Shop or person's name" />
-              {errors.name && <p className="text-xs text-red-600 mt-1">{errors.name.message}</p>}
-            </div>
-            <div>
-              <Label htmlFor="contactPerson">Contact person</Label>
-              <Input id="contactPerson" {...register("contactPerson")} placeholder="e.g. Ramesh" />
-            </div>
+      <Modal
+        open={open}
+        onClose={() => {
+          setOpen(false);
+          setServerError(null);
+        }}
+        size="lg"
+        title={isEdit ? "Edit contact" : "Add contact"}
+        description={
+          isEdit
+            ? "Changes go live on the public directory as soon as you save."
+            : "Added straight to the directory - no review step."
+        }
+        footer={
+          <div className="flex items-center justify-end gap-2.5">
+            <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+              Cancel
+            </Button>
+            {/* Lives outside the <form>, so it submits by id */}
+            <Button type="submit" form={formId} disabled={isSubmitting}>
+              {isSubmitting && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />}
+              {isEdit ? "Save changes" : "Add contact"}
+            </Button>
+          </div>
+        }
+      >
+        <form id={formId} onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+          {/* Who */}
+          <div className="grid grid-cols-1 gap-x-5 gap-y-5 sm:grid-cols-2">
+            <Field label="Name" htmlFor="name" error={errors.name?.message}>
+              <Input
+                id="name"
+                className={inputClass}
+                {...register("name")}
+                placeholder="Shop or person's name"
+              />
+            </Field>
+            <Field label="Contact person" htmlFor="contactPerson">
+              <Input
+                id="contactPerson"
+                className={inputClass}
+                {...register("contactPerson")}
+                placeholder="e.g. Ramesh"
+              />
+            </Field>
           </div>
 
-          {/* Phone numbers — repeatable */}
-          <div>
-            <Label>Phone numbers</Label>
-            <div className="space-y-2 mt-1.5">
+          {/* Numbers */}
+          <Field
+            label="Phone numbers"
+            error={
+              errors.phones?.message ??
+              errors.phones?.find?.((e) => e?.value?.message)?.value?.message
+            }
+          >
+            <div className="space-y-2">
               {fields.map((field, i) => (
-                <div key={field.id} className="flex gap-2">
+                <div key={field.id} className="flex items-center gap-2">
                   <Input
+                    className={inputClass}
                     {...register(`phones.${i}.value` as const)}
                     placeholder="98765 43210"
                     inputMode="tel"
+                    aria-label={`Phone number ${i + 1}`}
                   />
                   <button
                     type="button"
                     onClick={() => remove(i)}
                     disabled={fields.length === 1}
-                    aria-label="Remove number"
-                    className="px-2.5 rounded-md text-gray-400 hover:text-red-600 hover:bg-red-50 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-gray-400 transition-colors"
+                    aria-label={`Remove number ${i + 1}`}
+                    className="shrink-0 rounded-md p-2.5 text-gray-400 transition-colors hover:bg-red-50 hover:text-red-600 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-gray-400"
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <Trash2 className="h-4 w-4" />
                   </button>
                 </div>
               ))}
             </div>
-            {fields.length < 5 && (
-              <button
-                type="button"
-                onClick={() => append({ value: "" })}
-                className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-gray-600 hover:text-gray-900"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                Add another number
-              </button>
-            )}
-            {errors.phones && (
-              <p className="text-xs text-red-600 mt-1">
-                {errors.phones.message ??
-                  errors.phones.find?.((e) => e?.value?.message)?.value?.message ??
-                  "Check the numbers entered"}
-              </p>
-            )}
-            <label className="flex items-center gap-2 mt-2.5 cursor-pointer">
-              <input type="checkbox" {...register("whatsapp")} className="rounded border-gray-300" />
-              <span className="text-xs text-gray-600">Reachable on WhatsApp</span>
-            </label>
-          </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <Label>Category</Label>
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+              {fields.length < 5 ? (
+                <button
+                  type="button"
+                  onClick={() => append({ value: "" })}
+                  className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-600 transition-colors hover:text-gray-900"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  Add another number
+                </button>
+              ) : (
+                <span className="text-[11px] text-gray-400">Maximum of five numbers</span>
+              )}
+
+              <label className="flex cursor-pointer items-center gap-2">
+                <input
+                  type="checkbox"
+                  {...register("whatsapp")}
+                  className="h-4 w-4 rounded border-gray-300"
+                />
+                <span className="text-xs text-gray-600">Reachable on WhatsApp</span>
+              </label>
+            </div>
+          </Field>
+
+          {/* What and where */}
+          <div className="grid grid-cols-1 gap-x-5 gap-y-5 sm:grid-cols-2">
+            <Field label="Category">
               <Controller
                 control={control}
                 name="category"
                 render={({ field }) => (
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {COMMUNITY_CATEGORIES.map((c) => (
-                        <SelectItem key={c.key} value={c.key}>
-                          {c.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <SearchableSelect
+                    value={field.value}
+                    onChange={field.onChange}
+                    options={CATEGORY_OPTIONS}
+                    aria-label="Category"
+                  />
                 )}
               />
-            </div>
-            <div>
-              <Label>Locality</Label>
+            </Field>
+            <Field label="Locality" error={errors.locality?.message}>
               <Controller
                 control={control}
                 name="locality"
                 render={({ field }) => (
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select locality" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {HIRANANDANI_LOCALITIES.map((l) => (
-                        <SelectItem key={l} value={l}>
-                          {l}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <SearchableSelect
+                    value={field.value}
+                    onChange={field.onChange}
+                    options={LOCALITY_OPTIONS}
+                    aria-label="Locality"
+                  />
                 )}
               />
-            </div>
+            </Field>
           </div>
 
-          <div>
-            <Label htmlFor="service">Service</Label>
-            <Input id="service" {...register("service")} placeholder="e.g. AC repair and servicing" />
-            {errors.service && (
-              <p className="text-xs text-red-600 mt-1">{errors.service.message}</p>
-            )}
+          <Field
+            label="Service"
+            htmlFor="service"
+            error={errors.service?.message}
+            hint="Shown under the name on the public directory"
+          >
+            <Input
+              id="service"
+              className={inputClass}
+              {...register("service")}
+              placeholder="e.g. AC repair and servicing"
+            />
+          </Field>
+
+          <div className="grid grid-cols-1 gap-x-5 gap-y-5 sm:grid-cols-2">
+            <Field label="Address" htmlFor="address">
+              <Input
+                id="address"
+                className={inputClass}
+                {...register("address")}
+                placeholder="Shop / building / landmark"
+              />
+            </Field>
+            <Field label="Hours" htmlFor="hours">
+              <Input
+                id="hours"
+                className={inputClass}
+                {...register("hours")}
+                placeholder="e.g. Mon to Sat, 9am to 8pm"
+              />
+            </Field>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="address">Address</Label>
-              <Input id="address" {...register("address")} placeholder="Shop / building / landmark" />
-            </div>
-            <div>
-              <Label htmlFor="hours">Hours</Label>
-              <Input id="hours" {...register("hours")} placeholder="e.g. Mon–Sat, 9am–8pm" />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <Label>Status</Label>
+          {/* Publishing */}
+          <div className="grid grid-cols-1 gap-x-5 gap-y-5 sm:grid-cols-2">
+            <Field label="Status">
               <Controller
                 control={control}
                 name="status"
                 render={({ field }) => (
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="ACTIVE">Active</SelectItem>
-                      <SelectItem value="PENDING">Pending</SelectItem>
-                      <SelectItem value="REJECTED">Rejected</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <SearchableSelect
+                    value={field.value}
+                    onChange={field.onChange}
+                    options={STATUS_OPTIONS}
+                    searchable={false}
+                    aria-label="Status"
+                  />
                 )}
               />
-            </div>
-            <div className="flex items-end">
-              <label className="flex items-center gap-2 cursor-pointer pb-2">
+            </Field>
+            <Field label="Verification">
+              <label className="flex h-10 cursor-pointer items-center gap-2.5 rounded-lg border border-gray-200 px-3">
                 <input
                   type="checkbox"
                   {...register("verified")}
-                  className="rounded border-gray-300"
+                  className="h-4 w-4 rounded border-gray-300"
                 />
-                <span className="text-xs text-gray-600">Verified by the team</span>
+                <span className="text-sm text-gray-600">Verified by the team</span>
               </label>
-            </div>
+            </Field>
           </div>
 
-          <div>
-            <Label htmlFor="notes">Internal notes</Label>
-            <Textarea id="notes" rows={2} {...register("notes")} placeholder="Not shown publicly" />
-          </div>
+          <Field label="Internal notes" htmlFor="notes" hint="Never shown publicly">
+            <Textarea
+              id="notes"
+              rows={4}
+              className="min-h-24 resize-y leading-relaxed"
+              {...register("notes")}
+            />
+          </Field>
 
           {serverError && (
-            <p className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-md px-3 py-2">
+            <p className="rounded-lg border border-red-100 bg-red-50 px-3.5 py-2.5 text-sm text-red-600">
               {serverError}
             </p>
           )}
-
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setOpen(false)}>
-              Cancel
-            </Button>
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting && <Loader2 className="w-4 h-4 animate-spin mr-1.5" />}
-              {isEdit ? "Save changes" : "Add contact"}
-            </Button>
-          </DialogFooter>
         </form>
-      </DialogContent>
-    </Dialog>
+      </Modal>
+    </>
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
+import SearchableSelect from "@/components/ui/searchable-select";
 import {
   HIRANANDANI_LOCALITIES,
   PROPERTY_TYPE_LABELS,
@@ -72,16 +73,15 @@ export default function FilterPanel({ onClose }: { onClose?: () => void }) {
           Property Type
         </label>
         <div className="relative">
-          <select
+          <SearchableSelect
             value={type}
-            onChange={(e) => apply({ type: e.target.value })}
-            className="w-full appearance-none bg-[#f2f4f4] border-none rounded-lg px-3 py-2.5 text-sm text-zinc-900 font-medium cursor-pointer focus:outline-none focus:ring-0"
-          >
-            <option value="">All Types</option>
-            {Object.entries(PROPERTY_TYPE_LABELS).map(([value, label]) => (
-              <option key={value} value={value}>{label}</option>
-            ))}
-          </select>
+            onChange={(v) => apply({ type: v })}
+            options={[
+              { value: "", label: "All Types" },
+              ...Object.entries(PROPERTY_TYPE_LABELS).map(([value, label]) => ({ value, label })),
+            ]}
+            aria-label="Property type"
+          />
           <svg className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none w-4 h-4 text-zinc-400"
             fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -95,16 +95,15 @@ export default function FilterPanel({ onClose }: { onClose?: () => void }) {
           Locality
         </label>
         <div className="relative">
-          <select
+          <SearchableSelect
             value={locality}
-            onChange={(e) => apply({ locality: e.target.value })}
-            className="w-full appearance-none bg-[#f2f4f4] border-none rounded-lg px-3 py-2.5 pr-10 text-sm text-zinc-900 font-medium cursor-pointer focus:outline-none focus:ring-0"
-          >
-            <option value="">All Localities</option>
-            {HIRANANDANI_LOCALITIES.map((loc) => (
-              <option key={loc} value={loc}>{loc}</option>
-            ))}
-          </select>
+            onChange={(v) => apply({ locality: v })}
+            options={[
+              { value: "", label: "All Localities" },
+              ...HIRANANDANI_LOCALITIES.map((loc) => ({ value: loc, label: loc })),
+            ]}
+            aria-label="Locality"
+          />
           <svg className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none w-4 h-4 text-zinc-400"
             fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}

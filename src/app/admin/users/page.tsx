@@ -5,6 +5,7 @@ import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 import { formatDate } from "@/lib/utils/formatters";
 import { Loader2 } from "lucide-react";
+import SearchableSelect from "@/components/ui/searchable-select";
 
 interface UserRow {
   id: string;
@@ -146,16 +147,16 @@ export default function AdminUsersPage() {
                 <span className="text-xs text-gray-400 italic">You</span>
               ) : (
                 <>
-                  <select
-                    value={u.role}
-                    onChange={(e) => updateRole(u.id, e.target.value)}
-                    disabled={updating === u.id}
-                    className="text-xs border border-gray-200 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-200"
-                  >
-                    {ROLE_OPTIONS.map((r) => (
-                      <option key={r} value={r}>{r}</option>
-                    ))}
-                  </select>
+                  <div className="w-[108px]">
+                    <SearchableSelect
+                      value={u.role}
+                      onChange={(v) => updateRole(u.id, v)}
+                      options={ROLE_OPTIONS.map((r) => ({ value: r, label: r }))}
+                      size="sm"
+                      disabled={updating === u.id}
+                      aria-label="Change role"
+                    />
+                  </div>
                   {u.id !== session?.user?.id && (
                     u.disabled ? (
                       <button
@@ -226,16 +227,16 @@ export default function AdminUsersPage() {
                     {u.id === session?.user?.id ? (
                       <span className="text-xs text-gray-400 italic">You</span>
                     ) : (
-                      <select
-                        value={u.role}
-                        onChange={(e) => updateRole(u.id, e.target.value)}
-                        disabled={updating === u.id}
-                        className="text-xs border border-gray-200 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-200"
-                      >
-                        {ROLE_OPTIONS.map((r) => (
-                          <option key={r} value={r}>{r}</option>
-                        ))}
-                      </select>
+                      <div className="w-[108px]">
+                        <SearchableSelect
+                          value={u.role}
+                          onChange={(v) => updateRole(u.id, v)}
+                          options={ROLE_OPTIONS.map((r) => ({ value: r, label: r }))}
+                          size="sm"
+                          disabled={updating === u.id}
+                          aria-label="Change role"
+                        />
+                      </div>
                     )}
                   </td>
                   <td className="px-4 py-3">

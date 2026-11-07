@@ -33,6 +33,7 @@ import {
 } from "lucide-react";
 import WhatsAppIcon from "@/components/ui/WhatsAppIcon";
 import { whatsAppContactUrl } from "@/lib/utils/whatsapp";
+import SearchableSelect from "@/components/ui/searchable-select";
 import {
   COMMUNITY_CATEGORIES,
   type CommunityContact,
@@ -171,29 +172,18 @@ export default function CommunityDirectory({
           )}
         </div>
 
-        <div className="relative sm:w-56">
-          <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-500 pointer-events-none" />
-          <select
+        <div className="sm:w-56">
+          <SearchableSelect
             value={locality}
-            onChange={(e) => setLocality(e.target.value)}
+            onChange={setLocality}
+            variant="pill"
+            leadingIcon={<MapPin className="w-3.5 h-3.5 text-zinc-500 shrink-0" />}
+            options={[
+              { value: "all", label: "All Localities" },
+              ...localities.map((l) => ({ value: l, label: l })),
+            ]}
             aria-label="Filter by locality"
-            className="w-full appearance-none bg-white border border-[#e4e9ea] rounded-full pl-10 pr-9 py-3 sm:py-3.5 text-sm font-medium text-zinc-700 cursor-pointer hover:bg-[#f2f4f4] focus:outline-none transition-all"
-          >
-            <option value="all">All Localities</option>
-            {localities.map((l) => (
-              <option key={l} value={l}>
-                {l}
-              </option>
-            ))}
-          </select>
-          <svg
-            className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none w-3.5 h-3.5 text-zinc-400"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-          </svg>
+          />
         </div>
       </div>
 

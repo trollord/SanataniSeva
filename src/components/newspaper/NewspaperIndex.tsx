@@ -4,8 +4,9 @@ import { useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Calendar, ChevronDown, X } from "lucide-react";
+import { Calendar, X } from "lucide-react";
 import TodaysNewsFeed, { type NewsItemMeta } from "./TodaysNewsFeed";
+import SearchableSelect from "@/components/ui/searchable-select";
 
 // react-pdf pulls in pdfjs-dist, which is browser-only and throws if it is
 // evaluated during SSR — so the cover thumbnails load client-side only.
@@ -100,38 +101,30 @@ export default function NewspaperIndex({ past, newsItems }: Props) {
 
               {/* Filters */}
               <div className="flex items-center justify-end gap-2 flex-wrap">
-                <div className="relative">
-                  <select
-                    value={filterMonth ?? ""}
-                    onChange={(e) => setFilterMonth(e.target.value ? Number(e.target.value) : null)}
-                    className="appearance-none bg-white border border-[#E5DDD4] rounded-xl
-                               text-[11px] font-semibold text-[#0B0B0C] pl-3 pr-7 py-1.5
-                               focus:outline-none focus:border-[#C8541A] hover:border-[#C8541A]
-                               transition-colors cursor-pointer"
-                  >
-                    <option value="">All months</option>
-                    {months.map((m) => (
-                      <option key={m} value={m}>{MONTHS[m - 1]}</option>
-                    ))}
-                  </select>
-                  <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-3 w-3 text-gray-400 pointer-events-none" />
+                <div className="w-[128px]">
+                  <SearchableSelect
+                    value={filterMonth === null ? "" : String(filterMonth)}
+                    onChange={(v) => setFilterMonth(v ? Number(v) : null)}
+                    size="sm"
+                    options={[
+                      { value: "", label: "All months" },
+                      ...months.map((m) => ({ value: String(m), label: MONTHS[m - 1] })),
+                    ]}
+                    aria-label="Filter by month"
+                  />
                 </div>
 
-                <div className="relative">
-                  <select
-                    value={filterYear ?? ""}
-                    onChange={(e) => setFilterYear(e.target.value ? Number(e.target.value) : null)}
-                    className="appearance-none bg-white border border-[#E5DDD4] rounded-xl
-                               text-[11px] font-semibold text-[#0B0B0C] pl-3 pr-7 py-1.5
-                               focus:outline-none focus:border-[#C8541A] hover:border-[#C8541A]
-                               transition-colors cursor-pointer"
-                  >
-                    <option value="">All years</option>
-                    {years.map((y) => (
-                      <option key={y} value={y}>{y}</option>
-                    ))}
-                  </select>
-                  <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-3 w-3 text-gray-400 pointer-events-none" />
+                <div className="w-[112px]">
+                  <SearchableSelect
+                    value={filterYear === null ? "" : String(filterYear)}
+                    onChange={(v) => setFilterYear(v ? Number(v) : null)}
+                    size="sm"
+                    options={[
+                      { value: "", label: "All years" },
+                      ...years.map((y) => ({ value: String(y), label: String(y) })),
+                    ]}
+                    aria-label="Filter by year"
+                  />
                 </div>
 
                 {hasFilter && (

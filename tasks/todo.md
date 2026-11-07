@@ -1,90 +1,96 @@
-# Community: phone arrays, admin CRUD, table layout
+# One dropdown, one popup
 
-Prior plans: `tasks/supabase-migration.md`, `tasks/community-import.md`.
+The admin contact dialog exposed that the app has three dropdown
+implementations and two popup implementations. Converge on one of each.
 
-Four asks:
-1. Contacts can hold **multiple numbers** — store as an array, not one string.
-2. Cards **without a number must not render** on the public page.
-3. Public `/community` becomes a **dense table with search + pagination** — 250
-   cards of scrolling is poor UX.
-4. **Admin panel** gets a full-record **edit popup** and an **add single record**
-   button, alongside the existing CSV import/export. Editing is admin-only and
-   lives in `/admin/community`, not on the public page.
+## Audit
 
-## Why this is wide
+**Popups** — `ui/Modal` is already the house design (Playfair title, `#FF5F15`,
+rounded-2xl, bottom-sheet on mobile with a drag handle) and 6 files use it:
+`InterestModal`, `BecomeOwnerModal`, `ItemInterestModal`, `WhatsAppShare`,
+`DashboardListings`, `admin/listings/[id]`.
 
-`phone` is a scalar today and is read in 9 places. Changing it to `phones
-String[]` (native Postgres `text[]`, not a JSON string — these are queried and
-displayed, unlike `tags`) touches:
+The outliers are the ones to convert:
+- `admin/community/ContactFormDialog` — Base UI `ui/dialog` (mine)
+- `dashboard/new/page.tsx` — Base UI `ui/dialog`
+- `community/AddContactModal` — hand-rolled `fixed inset-0`
 
-| file | change |
-|---|---|
-| `prisma/schema.prisma` | `phone String` -> `phones String[]` |
-| migration | add `phones`, backfill from `phone` + the `Alt:` numbers parked in `notes`, drop `phone` |
-| `src/lib/community.ts` | both interfaces + `toDisplayContact` |
-| `(public)/community/page.tsx` | select, and drop contacts with no number |
-| `CommunityDirectory.tsx` | table layout, pagination, render N numbers |
-| `api/community/contacts` | GET select, POST zod |
-| `api/admin/community/[id]` | PATCH currently only takes status/notes/verified — widen to the whole record |
-| `api/admin/community/bulk` | row schema |
-| `api/admin/community/export` | CSV column |
-| `CommunityCSVTools.tsx` | `phone` -> `phones`, pipe-separated like `tags` |
-| `AddContactModal.tsx` | repeatable number inputs |
-| `scripts/import-community-contacts.ts` | write the array directly instead of `Alt:` notes |
+Not converted, deliberately — these are not form popups and share nothing with
+the dialog pattern: `PropertyGallery` (lightbox), `Navbar` /
+`MobileFilterToggle` / `AdminShell` / `ui/sheet` (nav drawers), `GuidedTour`
+(coach marks), `DisclaimerPopup` (full-bleed first-visit notice).
+
+**Dropdowns** — 18 files across three implementations:
+- Base UI `ui/select` (7): `dashboard/new`, `dashboard/listings/[id]/edit`,
+  `ContactForm`, `SearchBar`, `ItemForm`, `MarketplaceGrid`, `AddContactModal`
+- native `<select>` (11): `ListingActions`, `CreateNewsForm`, `admin/users`,
+  `ItemAdminActions`, `CommunityAdminActions`, `dashboard/new`, `PhoneInput`,
+  `ListingsContent`, `NewspaperIndex`, `FilterPanel`, `CommunityDirectory`
+- `SearchableSelect` (1, new)
 
 ## Decisions
 
-**`String[]`, not a JSON string.** `tags` uses JSON-in-TEXT, but phones are
-displayed, dialled and searched; a real `text[]` keeps them queryable and avoids
-parse-on-every-render. Postgres handles it natively and Prisma maps it cleanly.
+**One component, two shapes.** `SearchableSelect` gains a `variant`: `default`
+(rounded-lg, grey border — forms and admin) and `pill` (rounded-full,
+`#e4e9ea` — the public filter bars, where it sits beside a pill search box).
+Forcing one shape would break whichever context it was not designed for;
+CLAUDE.md says match the surrounding pattern, so the component is shared and
+the shape follows its neighbours.
 
-**The 30 `Alt:` numbers move out of `notes` into the array.** The importer
-parked second numbers in free text because the column could not hold them. The
-migration parses them back out and strips the fragment, so no number is stranded
-in prose.
+**Search appears only when it earns its place** — default is on above 7
+options. A 3-item status picker gets no search box.
 
-**No-number rows were already invisible** — the 7 phone-less contacts went in as
-PENDING and the page filters on ACTIVE. The explicit empty-array filter is
-defence in depth, so a future ACTIVE row with no number cannot render a card
-with nothing to call.
+**`ui/Modal` grows a `size` and a `footer` slot** rather than the form dialog
+keeping its own chrome. That is what makes the admin dialog look like the rest
+of the app instead of like Base UI's default.
 
-**Table keeps the existing search and category filters** — they work and the
-rework is layout only. Adding pagination at 25/page also fixes the RSC payload
-size flagged earlier.
+**`PhoneInput`'s country selector stays as-is.** It is a flag + dial-code combo
+widget, not a value picker, and routing it through a generic select would lose
+the flag column.
 
 ## Tasks
 
-- [x] Migration: `phones text[]`, backfill, strip `Alt:` from notes, drop `phone`
-      — 250 rows: 213 one number, **30 multiple**, 7 none, 0 `Alt:` left in
-      prose, 0 empty strings in arrays
-- [x] `schema.prisma` + client regenerated; `migrate status` clean
-- [x] `lib/community.ts` types and mapper
-- [x] Importer writes `phones` (dry-run reparses the sheet unchanged)
-- [x] Public page: selects `phones`, drops numberless rows
-- [x] `CommunityDirectory`: table + 25/page pager + multi-number rendering
-- [x] API routes: public GET/POST, admin PATCH (full record), new admin POST,
-      bulk, export
-- [x] Admin: edit dialog (full record), add-record button, pagination at 50
-- [x] CSV tools: `phones` column, pipe-separated like `tags`
-- [x] `next build` exit 0 (69 routes); verified against the live DB
+- [x] `SearchableSelect`: `variant` (default | pill), `size` (sm | md),
+      `disabled`, `invalid`, `leadingIcon`, hidden input for `name`
+- [x] `ui/Modal`: `size` (sm | lg) and a `footer` slot that switches the panel
+      to fixed header / scrolling body / fixed footer. Existing six callers
+      untouched — the new layout only engages when `footer` is passed.
+- [x] 3 popups converted: `ContactFormDialog`, `AddContactModal`,
+      `dashboard/new` skip-photos confirm
+- [x] 11 native `<select>` converted directly
+- [x] 17 Base UI `Select` blocks converted *without touching their files* —
+      `ui/select.tsx` is now a shim over `SearchableSelect`
+- [x] `next build` exit 0 (69 routes, same 4 pre-existing warnings)
+- [x] Verified in Chrome: community pill filter, marketplace condition filter
+      (shim path), admin edit dialog
 - [ ] Commit
 
 ## Review
 
-238 ACTIVE contacts render, all with at least one number, 30 of them with
-several. 10 pages at 25 per page instead of one 250-row scroll.
+Every dropdown in the app is now one component and every form popup is one
+shell.
 
-Worth carrying forward:
+The leverage was in `ui/select.tsx`. Rewriting 17 `<Select><SelectTrigger>…`
+blocks by hand across 7 files would have been slow and easy to get wrong, so
+that module became a compatibility shim instead: `Select` walks its children,
+reads the placeholder off `SelectValue` and the options off the `SelectItem`s,
+and renders `SearchableSelect`. The descriptor components return null and are
+never mounted. Every call site kept its own trigger classes — several use `!`
+utilities for sizing, which still win — so nothing had to change in those files
+and nothing about their layout moved.
 
-1. **`Dialog` here is Base UI, not Radix.** `DialogTrigger asChild` does not
-   compile — Base UI takes a `render={<Button/>}` prop. The dialog state is
-   controlled anyway, so the trigger is now a plain button calling
-   `setOpen(true)`; simpler and avoids the mismatch entirely.
-2. **Admin pagination was a prerequisite, not a nicety.** The table capped at
-   `take: 200` against 250 rows, so ~50 contacts could not be reached at all —
-   "admin can edit any record" was not achievable without it.
-3. **PATCH refuses to publish a contact with no number.** The public page drops
-   numberless rows, so marking one ACTIVE would have silently produced a record
-   that exists but never appears. It now returns a reason instead.
-4. The public quick-add still takes a single number and posts `[phone]`; the
-   repeatable inputs live in the admin dialog where bulk curation happens.
+Shapes, not uniformity: `variant="pill"` for the public filter bars, where the
+control sits beside a rounded-full search box, and the default rounded-lg
+elsewhere. One shape everywhere would have looked wrong in whichever context it
+was not designed for.
+
+Deliberately left alone, because they are not dropdowns or form popups:
+`PropertyGallery` (lightbox), `Navbar` / `MobileFilterToggle` / `AdminShell` /
+`ui/sheet` (nav drawers), `GuidedTour` (coach marks), `DisclaimerPopup`
+(first-visit notice), and `PhoneInput`'s country picker, which is a flag +
+dial-code widget rather than a value list.
+
+One visual change worth flagging: the newspaper archive's month/year filters
+used that page's editorial palette (`#E5DDD4` border, `#C8541A` focus). They now
+use the shared control, so they look like the rest of the app rather than like
+the newspaper page.
