@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
+import SearchableSelect from "@/components/ui/searchable-select";
 
 const CATEGORIES = [
   { value: "EVENTS",        label: "Events" },
@@ -91,17 +92,12 @@ export default function CreateNewsForm() {
           <label className="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-1">
             Category
           </label>
-          <select
+          <SearchableSelect
             value={form.category}
-            onChange={(e) => set("category", e.target.value)}
-            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:border-[#C8541A] transition-colors"
-          >
-            {CATEGORIES.map((c) => (
-              <option key={c.value} value={c.value}>
-                {c.label}
-              </option>
-            ))}
-          </select>
+            onChange={(v) => set("category", v)}
+            options={CATEGORIES.map((c) => ({ value: c.value, label: c.label }))}
+            aria-label="News category"
+          />
         </div>
 
         <div className="sm:col-span-2">

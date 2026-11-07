@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Loader2, Trash2 } from "lucide-react";
+import SearchableSelect from "@/components/ui/searchable-select";
 
 const STATUS_OPTIONS = [
   { value: "ACTIVE", label: "Active" },
@@ -96,18 +97,21 @@ export default function ListingActions({
         </>
       ) : (
         <>
-          <select
-            value={status}
-            onChange={(e) => changeStatus(e.target.value)}
-            className="text-xs border border-gray-200 rounded px-2 py-1 bg-white focus:outline-none focus:ring-2 focus:ring-blue-200 cursor-pointer"
-          >
-            {STATUS_OPTIONS.map((s) => (
-              <option key={s.value} value={s.value}>{s.label}</option>
-            ))}
-            {!STATUS_OPTIONS.some((s) => s.value === status) && (
-              <option value={status}>{status}</option>
-            )}
-          </select>
+          <div className="w-[128px]">
+            <SearchableSelect
+              value={status}
+              onChange={changeStatus}
+              /* Keeps an unrecognised current status selectable rather than
+                 falling back to the placeholder. */
+              options={
+                STATUS_OPTIONS.some((o) => o.value === status)
+                  ? STATUS_OPTIONS
+                  : [...STATUS_OPTIONS, { value: status, label: status }]
+              }
+              size="sm"
+              aria-label="Change status"
+            />
+          </div>
           <button
             onClick={() => setConfirmDelete(true)}
             title="Delete listing"

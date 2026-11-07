@@ -16,6 +16,14 @@ interface ModalProps {
   onConfirm?: () => void;
   danger?: boolean;
   loading?: boolean;
+  /** `lg` is for form dialogs; `sm` keeps the confirm-dialog width. */
+  size?: "sm" | "lg";
+  /**
+   * Pinned action bar. Supplying it also switches the panel to a fixed
+   * header / scrolling body / fixed footer layout, so a long form scrolls
+   * under its own buttons instead of sliding the whole panel away.
+   */
+  footer?: React.ReactNode;
 }
 
 export default function Modal({
@@ -30,7 +38,10 @@ export default function Modal({
   onConfirm,
   danger = false,
   loading = false,
+  size = "sm",
+  footer,
 }: ModalProps) {
+  const wide = size === "lg";
   return (
     <AnimatePresence>
       {open && (
@@ -51,11 +62,21 @@ export default function Modal({
             animate={{ y: 0, opacity: 1, scale: 1 }}
             exit={{ y: 40, opacity: 0, scale: 0.98 }}
             transition={{ type: "spring", stiffness: 320, damping: 28 }}
-            className="relative z-10 w-full sm:max-w-md bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl border border-gray-100 px-5 pt-6 pb-8 sm:p-8 max-h-[92dvh] overflow-y-auto"
+            className={`relative z-10 w-full bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl border border-gray-100 max-h-[92dvh] ${
+              wide ? "sm:max-w-3xl" : "sm:max-w-md"
+            } ${
+              footer
+                ? "flex flex-col overflow-hidden"
+                : "px-5 pt-6 pb-8 sm:p-8 overflow-y-auto"
+            }`}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Drag handle - mobile only */}
-            <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-5 sm:hidden" />
+            <div
+              className={`w-10 h-1 bg-gray-200 rounded-full mx-auto sm:hidden ${
+                footer ? "mt-3 mb-2 shrink-0" : "mb-5"
+              }`}
+            />
 
             {/* Close */}
             <button
@@ -68,7 +89,7 @@ export default function Modal({
 
             {/* Header */}
             {(subtitle || title || description) && (
-              <div className="mb-6">
+              <div className={footer ? "shrink-0 px-5 pt-4 pb-4 sm:px-8 sm:pt-7 border-b border-gray-100" : "mb-6"}>
                 {subtitle && (
                   <p className="text-[10px] font-semibold tracking-[0.25em] text-gray-400 uppercase mb-2">
                     {subtitle}
@@ -88,7 +109,15 @@ export default function Modal({
             )}
 
             {/* Custom content */}
-            {children}
+            {footer ? (
+              <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5 sm:px-8">{children}</div>
+            ) : (
+              children
+            )}
+
+            {footer && (
+              <div className="shrink-0 border-t border-gray-100 px-5 py-4 sm:px-8">{footer}</div>
+            )}
 
             {/* Confirm / Cancel buttons */}
             {onConfirm && (

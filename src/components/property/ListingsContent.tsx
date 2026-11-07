@@ -8,6 +8,7 @@ import Link from "next/link";
 import PropertyCard from "@/components/property/PropertyCard";
 import MobileFilterToggle from "@/components/search/MobileFilterToggle";
 import ActiveFilterChips from "@/components/search/ActiveFilterChips";
+import SearchableSelect from "@/components/ui/searchable-select";
 
 const SORT_OPTIONS = [
   { value: "", label: "Newest First" },
@@ -192,22 +193,16 @@ export default function ListingsContent() {
           <MobileFilterToggle />
 
           {/* Sort */}
-          <div className="relative">
-            <ArrowUpDown className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none w-3.5 h-3.5 text-zinc-500" />
-            <select
+          <div className="w-[172px] sm:w-[196px]">
+            <SearchableSelect
               value={sort}
-              onChange={(e) => changeSort(e.target.value)}
+              onChange={changeSort}
+              variant="pill"
+              className="h-10 sm:h-[42px] text-xs sm:text-sm"
+              leadingIcon={<ArrowUpDown className="w-3.5 h-3.5 text-zinc-500 shrink-0" />}
+              options={SORT_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
               aria-label="Sort properties"
-              className="appearance-none bg-white border border-[#e4e9ea] rounded-full pl-9 pr-8 py-2 sm:py-2.5 text-xs sm:text-sm font-medium text-zinc-700 cursor-pointer hover:bg-[#f2f4f4] focus:outline-none transition-all"
-            >
-              {SORT_OPTIONS.map((o) => (
-                <option key={o.value} value={o.value}>{o.label}</option>
-              ))}
-            </select>
-            <svg className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none w-3.5 h-3.5 text-zinc-400"
-              fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-            </svg>
+            />
           </div>
 
           {/* View switch - labeled segmented control */}

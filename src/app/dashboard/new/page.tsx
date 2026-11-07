@@ -12,14 +12,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "@/components/ui/dialog";
+import Modal from "@/components/ui/Modal";
 import {
   Select,
   SelectContent,
@@ -794,41 +787,34 @@ function Step2({
         </Button>
       </div>
 
-      {/* Skip-without-photos confirmation dialog */}
-      <Dialog open={showSkipDialog} onOpenChange={setShowSkipDialog}>
-        <DialogContent showCloseButton={false} className="max-w-sm">
-          <DialogHeader>
-            <div className="flex justify-center mb-2">
-              <div className="inline-flex p-3 rounded-full bg-amber-50">
-                <ImageOff className="h-6 w-6 text-amber-500" />
-              </div>
-            </div>
-            <DialogTitle className="text-center text-gray-900">
-              No photos added
-            </DialogTitle>
-            <DialogDescription className="text-center leading-relaxed">
-              Listings with photos receive <span className="font-semibold text-gray-900">significantly more interest</span> from serious buyers and tenants. Adding even one photo makes your listing stand out.
-              <br /><br />
-              You can still list without photos and add them later from your dashboard.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="flex-col sm:flex-col gap-2 border-0 bg-transparent p-0 mt-2">
-            <Button
-              className="w-full bg-[#FF5F15] hover:bg-[#FF5F15]/90 text-white gap-2"
-              onClick={() => setShowSkipDialog(false)}
-            >
-              <Camera className="h-4 w-4" /> Add Photos
-            </Button>
-            <Button
-              variant="outline"
-              className="w-full text-gray-500"
-              onClick={() => { setShowSkipDialog(false); onNext(); }}
-            >
-              Skip for now
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Skip-without-photos confirmation */}
+      <Modal
+        open={showSkipDialog}
+        onClose={() => setShowSkipDialog(false)}
+        title="No photos added"
+        description="Listings with photos receive significantly more interest from serious buyers and tenants. Adding even one photo makes your listing stand out. You can still list without photos and add them later from your dashboard."
+      >
+        <div className="flex justify-center -mt-2 mb-5">
+          <div className="inline-flex p-3 rounded-full bg-amber-50">
+            <ImageOff className="h-6 w-6 text-amber-500" />
+          </div>
+        </div>
+        <div className="flex flex-col gap-2">
+          <Button
+            className="w-full bg-[#FF5F15] hover:bg-[#FF5F15]/90 text-white gap-2"
+            onClick={() => setShowSkipDialog(false)}
+          >
+            <Camera className="h-4 w-4" /> Add Photos
+          </Button>
+          <Button
+            variant="outline"
+            className="w-full text-gray-500"
+            onClick={() => { setShowSkipDialog(false); onNext(); }}
+          >
+            Skip for now
+          </Button>
+        </div>
+      </Modal>
     </div>
   );
 }

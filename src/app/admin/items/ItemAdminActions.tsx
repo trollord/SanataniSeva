@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Loader2, Trash2, CheckCircle2 } from "lucide-react";
+import SearchableSelect from "@/components/ui/searchable-select";
 
 const OTHER_STATUSES = [
   { value: "PENDING", label: "Pending" },
@@ -85,16 +86,16 @@ export default function ItemAdminActions({
 
       {/* Status dropdown - excludes ACTIVE (use Verify button instead) */}
       {status !== "PENDING" && (
-        <select
-          value={status}
-          disabled={busy}
-          onChange={(e) => changeStatus(e.target.value)}
-          className="text-xs border border-gray-200 rounded-lg px-2.5 py-1.5 bg-white"
-        >
-          {OTHER_STATUSES.map((o) => (
-            <option key={o.value} value={o.value}>{o.label}</option>
-          ))}
-        </select>
+        <div className="w-[116px]">
+          <SearchableSelect
+            value={status}
+            onChange={changeStatus}
+            options={OTHER_STATUSES}
+            size="sm"
+            disabled={busy}
+            aria-label="Change status"
+          />
+        </div>
       )}
 
       {/* Delete */}

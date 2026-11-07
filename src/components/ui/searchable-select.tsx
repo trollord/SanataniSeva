@@ -25,7 +25,14 @@ export default function SearchableSelect({
   options,
   placeholder = "Select…",
   searchable,
+  variant = "default",
+  size = "md",
+  disabled = false,
+  invalid = false,
+  className = "",
+  leadingIcon,
   id,
+  name,
   "aria-label": ariaLabel,
 }: {
   value: string;
@@ -34,7 +41,21 @@ export default function SearchableSelect({
   placeholder?: string;
   /** Defaults on once the list is long enough to be worth filtering. */
   searchable?: boolean;
+  /**
+   * `default` for forms and the admin panel; `pill` for the public filter bars,
+   * where it sits next to a rounded-full search box and a square control would
+   * look wrong beside it.
+   */
+  variant?: "default" | "pill";
+  /** `sm` fits inside a table row's action cell. */
+  size?: "sm" | "md";
+  disabled?: boolean;
+  invalid?: boolean;
+  className?: string;
+  /** Small icon rendered inside the trigger, left of the value. */
+  leadingIcon?: React.ReactNode;
   id?: string;
+  name?: string;
   "aria-label"?: string;
 }) {
   const showSearch = searchable ?? options.length > 7;
@@ -147,15 +168,35 @@ export default function SearchableSelect({
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-label={ariaLabel}
-        className="flex h-10 w-full items-center justify-between gap-2 rounded-lg border border-gray-200 bg-white px-3 text-left text-sm text-gray-900 transition-colors hover:bg-gray-50 focus-visible:border-gray-400 focus-visible:ring-2 focus-visible:ring-gray-200 focus-visible:outline-none"
+        disabled={disabled}
+        className={[
+          "flex w-full items-center justify-between gap-2 bg-white text-left transition-colors focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50",
+          variant === "pill"
+            ? "h-[46px] rounded-full border border-[#e4e9ea] px-4 text-sm font-medium text-zinc-700 hover:bg-[#f2f4f4] hover:text-zinc-900"
+            : size === "sm"
+              ? "h-8 rounded-lg border border-gray-200 px-2.5 text-xs text-gray-700 hover:bg-gray-50 focus-visible:border-gray-400"
+              : "h-10 rounded-lg border border-gray-200 px-3 text-sm text-gray-900 hover:bg-gray-50 focus-visible:border-gray-400 focus-visible:ring-2 focus-visible:ring-gray-200",
+          invalid ? "border-red-400" : "",
+          className,
+        ]
+          .filter(Boolean)
+          .join(" ")}
       >
-        <span className={selected ? "truncate" : "truncate text-gray-400"}>
-          {selected?.label ?? placeholder}
+        <span className="flex min-w-0 items-center gap-2">
+          {leadingIcon}
+          <span className={selected ? "truncate" : "truncate text-gray-400"}>
+            {selected?.label ?? placeholder}
+          </span>
         </span>
         <ChevronDown
-          className={`h-4 w-4 shrink-0 text-gray-400 transition-transform ${open ? "rotate-180" : ""}`}
+          className={`shrink-0 text-gray-400 transition-transform ${
+            size === "sm" ? "h-3.5 w-3.5" : "h-4 w-4"
+          } ${open ? "rotate-180" : ""}`}
         />
       </button>
+
+      {/* Mirrors the value for uncontrolled consumers and native form posts. */}
+      {name && <input type="hidden" name={name} value={value} />}
 
       {open &&
         rect &&
@@ -168,14 +209,16 @@ export default function SearchableSelect({
             style={{
               position: "fixed",
               left: rect.left,
-              width: rect.width,
+              width: Math.max(rect.width, size === "sm" ? 190 : 0),
               ...(flip
                 ? { bottom: window.innerHeight - rect.top + 6 }
                 : { top: rect.bottom + 6 }),
               maxHeight: panelMaxHeight,
               zIndex: 90,
             }}
-            className="flex flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-[0_16px_48px_rgba(0,0,0,0.14)]"
+            className={`flex flex-col overflow-hidden border border-gray-200 bg-white shadow-[0_16px_48px_rgba(0,0,0,0.14)] ${
+              variant === "pill" ? "rounded-2xl" : "rounded-xl"
+            }`}
           >
             {showSearch && (
               <div className="relative shrink-0 border-b border-gray-100 p-2">

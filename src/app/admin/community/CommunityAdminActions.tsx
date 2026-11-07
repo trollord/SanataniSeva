@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Loader2, Trash2, CheckCircle } from "lucide-react";
+import SearchableSelect from "@/components/ui/searchable-select";
 
 const STATUS_OPTIONS = [
   { value: "PENDING", label: "Pending" },
@@ -82,18 +83,16 @@ export default function CommunityAdminActions({
         </button>
       )}
 
-      <select
-        value={status}
-        disabled={busy}
-        onChange={(e) => changeStatus(e.target.value)}
-        className="text-xs border border-gray-200 rounded-lg px-2.5 py-1.5 bg-white"
-      >
-        {STATUS_OPTIONS.map((o) => (
-          <option key={o.value} value={o.value}>
-            {o.label}
-          </option>
-        ))}
-      </select>
+      <div className="w-[116px]">
+        <SearchableSelect
+          value={status}
+          onChange={changeStatus}
+          options={STATUS_OPTIONS}
+          size="sm"
+          disabled={busy}
+          aria-label="Change status"
+        />
+      </div>
 
       {confirmDelete ? (
         <>

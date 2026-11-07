@@ -10,12 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import Modal from "@/components/ui/Modal";
 import SearchableSelect from "@/components/ui/searchable-select";
 import { COMMUNITY_CATEGORIES } from "@/lib/community";
 import { HIRANANDANI_LOCALITIES } from "@/lib/constants";
@@ -180,14 +175,10 @@ export default function ContactFormDialog({
 
   const inputClass = "h-10";
 
+  const formId = isEdit ? `edit-contact-${contact!.id}` : "add-contact";
+
   return (
-    <Dialog
-      open={open}
-      onOpenChange={(next) => {
-        setOpen(next);
-        if (!next) setServerError(null);
-      }}
-    >
+    <>
       {isEdit ? (
         <button
           type="button"
@@ -204,214 +195,219 @@ export default function ContactFormDialog({
         </Button>
       )}
 
-      {/* sm:max-w-3xl, not max-w-3xl: DialogContent ships `sm:max-w-sm`, and an
-          unprefixed utility loses to it at every real breakpoint. */}
-      <DialogContent className="flex max-h-[88vh] flex-col gap-0 overflow-hidden p-0 sm:max-w-3xl">
-        <DialogHeader className="shrink-0 border-b border-gray-100 px-6 py-4 pr-14">
-          <DialogTitle className="text-base font-semibold text-gray-900">
-            {isEdit ? "Edit contact" : "Add contact"}
-          </DialogTitle>
-        </DialogHeader>
-
-        <form onSubmit={handleSubmit(onSubmit)} className="flex min-h-0 flex-1 flex-col">
-          <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-6 py-5">
-            {/* Who */}
-            <div className="grid grid-cols-1 gap-x-5 gap-y-5 sm:grid-cols-2">
-              <Field label="Name" htmlFor="name" error={errors.name?.message}>
-                <Input
-                  id="name"
-                  className={inputClass}
-                  {...register("name")}
-                  placeholder="Shop or person's name"
-                />
-              </Field>
-              <Field label="Contact person" htmlFor="contactPerson">
-                <Input
-                  id="contactPerson"
-                  className={inputClass}
-                  {...register("contactPerson")}
-                  placeholder="e.g. Ramesh"
-                />
-              </Field>
-            </div>
-
-            {/* Numbers */}
-            <Field
-              label="Phone numbers"
-              error={
-                errors.phones?.message ??
-                errors.phones?.find?.((e) => e?.value?.message)?.value?.message
-              }
-            >
-              <div className="space-y-2">
-                {fields.map((field, i) => (
-                  <div key={field.id} className="flex items-center gap-2">
-                    <Input
-                      className={inputClass}
-                      {...register(`phones.${i}.value` as const)}
-                      placeholder="98765 43210"
-                      inputMode="tel"
-                      aria-label={`Phone number ${i + 1}`}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => remove(i)}
-                      disabled={fields.length === 1}
-                      aria-label={`Remove number ${i + 1}`}
-                      className="shrink-0 rounded-md p-2.5 text-gray-400 transition-colors hover:bg-red-50 hover:text-red-600 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-gray-400"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-
-              <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
-                {fields.length < 5 ? (
-                  <button
-                    type="button"
-                    onClick={() => append({ value: "" })}
-                    className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-600 transition-colors hover:text-gray-900"
-                  >
-                    <Plus className="h-3.5 w-3.5" />
-                    Add another number
-                  </button>
-                ) : (
-                  <span className="text-[11px] text-gray-400">Maximum of five numbers</span>
-                )}
-
-                <label className="flex cursor-pointer items-center gap-2">
-                  <input
-                    type="checkbox"
-                    {...register("whatsapp")}
-                    className="h-4 w-4 rounded border-gray-300"
-                  />
-                  <span className="text-xs text-gray-600">Reachable on WhatsApp</span>
-                </label>
-              </div>
-            </Field>
-
-            {/* What and where */}
-            <div className="grid grid-cols-1 gap-x-5 gap-y-5 sm:grid-cols-2">
-              <Field label="Category">
-                <Controller
-                  control={control}
-                  name="category"
-                  render={({ field }) => (
-                    <SearchableSelect
-                      value={field.value}
-                      onChange={field.onChange}
-                      options={CATEGORY_OPTIONS}
-                      aria-label="Category"
-                    />
-                  )}
-                />
-              </Field>
-              <Field label="Locality" error={errors.locality?.message}>
-                <Controller
-                  control={control}
-                  name="locality"
-                  render={({ field }) => (
-                    <SearchableSelect
-                      value={field.value}
-                      onChange={field.onChange}
-                      options={LOCALITY_OPTIONS}
-                      aria-label="Locality"
-                    />
-                  )}
-                />
-              </Field>
-            </div>
-
-            <Field
-              label="Service"
-              htmlFor="service"
-              error={errors.service?.message}
-              hint="Shown under the name on the public directory"
-            >
-              <Input
-                id="service"
-                className={inputClass}
-                {...register("service")}
-                placeholder="e.g. AC repair and servicing"
-              />
-            </Field>
-
-            <div className="grid grid-cols-1 gap-x-5 gap-y-5 sm:grid-cols-2">
-              <Field label="Address" htmlFor="address">
-                <Input
-                  id="address"
-                  className={inputClass}
-                  {...register("address")}
-                  placeholder="Shop / building / landmark"
-                />
-              </Field>
-              <Field label="Hours" htmlFor="hours">
-                <Input
-                  id="hours"
-                  className={inputClass}
-                  {...register("hours")}
-                  placeholder="e.g. Mon to Sat, 9am to 8pm"
-                />
-              </Field>
-            </div>
-
-            {/* Publishing */}
-            <div className="grid grid-cols-1 gap-x-5 gap-y-5 sm:grid-cols-2">
-              <Field label="Status">
-                <Controller
-                  control={control}
-                  name="status"
-                  render={({ field }) => (
-                    <SearchableSelect
-                      value={field.value}
-                      onChange={field.onChange}
-                      options={STATUS_OPTIONS}
-                      searchable={false}
-                      aria-label="Status"
-                    />
-                  )}
-                />
-              </Field>
-              <Field label="Verification">
-                <label className="flex h-10 cursor-pointer items-center gap-2.5 rounded-lg border border-gray-200 px-3">
-                  <input
-                    type="checkbox"
-                    {...register("verified")}
-                    className="h-4 w-4 rounded border-gray-300"
-                  />
-                  <span className="text-sm text-gray-600">Verified by the team</span>
-                </label>
-              </Field>
-            </div>
-
-            <Field label="Internal notes" htmlFor="notes" hint="Never shown publicly">
-              <Textarea
-                id="notes"
-                rows={4}
-                className="min-h-24 resize-y leading-relaxed"
-                {...register("notes")}
-              />
-            </Field>
-
-            {serverError && (
-              <p className="rounded-lg border border-red-100 bg-red-50 px-3.5 py-2.5 text-sm text-red-600">
-                {serverError}
-              </p>
-            )}
-          </div>
-
-          <div className="flex shrink-0 items-center justify-end gap-2.5 border-t border-gray-100 px-6 py-4">
+      <Modal
+        open={open}
+        onClose={() => {
+          setOpen(false);
+          setServerError(null);
+        }}
+        size="lg"
+        title={isEdit ? "Edit contact" : "Add contact"}
+        description={
+          isEdit
+            ? "Changes go live on the public directory as soon as you save."
+            : "Added straight to the directory - no review step."
+        }
+        footer={
+          <div className="flex items-center justify-end gap-2.5">
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>
               Cancel
             </Button>
-            <Button type="submit" disabled={isSubmitting}>
+            {/* Lives outside the <form>, so it submits by id */}
+            <Button type="submit" form={formId} disabled={isSubmitting}>
               {isSubmitting && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />}
               {isEdit ? "Save changes" : "Add contact"}
             </Button>
           </div>
+        }
+      >
+        <form id={formId} onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+          {/* Who */}
+          <div className="grid grid-cols-1 gap-x-5 gap-y-5 sm:grid-cols-2">
+            <Field label="Name" htmlFor="name" error={errors.name?.message}>
+              <Input
+                id="name"
+                className={inputClass}
+                {...register("name")}
+                placeholder="Shop or person's name"
+              />
+            </Field>
+            <Field label="Contact person" htmlFor="contactPerson">
+              <Input
+                id="contactPerson"
+                className={inputClass}
+                {...register("contactPerson")}
+                placeholder="e.g. Ramesh"
+              />
+            </Field>
+          </div>
+
+          {/* Numbers */}
+          <Field
+            label="Phone numbers"
+            error={
+              errors.phones?.message ??
+              errors.phones?.find?.((e) => e?.value?.message)?.value?.message
+            }
+          >
+            <div className="space-y-2">
+              {fields.map((field, i) => (
+                <div key={field.id} className="flex items-center gap-2">
+                  <Input
+                    className={inputClass}
+                    {...register(`phones.${i}.value` as const)}
+                    placeholder="98765 43210"
+                    inputMode="tel"
+                    aria-label={`Phone number ${i + 1}`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => remove(i)}
+                    disabled={fields.length === 1}
+                    aria-label={`Remove number ${i + 1}`}
+                    className="shrink-0 rounded-md p-2.5 text-gray-400 transition-colors hover:bg-red-50 hover:text-red-600 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-gray-400"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+              {fields.length < 5 ? (
+                <button
+                  type="button"
+                  onClick={() => append({ value: "" })}
+                  className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-600 transition-colors hover:text-gray-900"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  Add another number
+                </button>
+              ) : (
+                <span className="text-[11px] text-gray-400">Maximum of five numbers</span>
+              )}
+
+              <label className="flex cursor-pointer items-center gap-2">
+                <input
+                  type="checkbox"
+                  {...register("whatsapp")}
+                  className="h-4 w-4 rounded border-gray-300"
+                />
+                <span className="text-xs text-gray-600">Reachable on WhatsApp</span>
+              </label>
+            </div>
+          </Field>
+
+          {/* What and where */}
+          <div className="grid grid-cols-1 gap-x-5 gap-y-5 sm:grid-cols-2">
+            <Field label="Category">
+              <Controller
+                control={control}
+                name="category"
+                render={({ field }) => (
+                  <SearchableSelect
+                    value={field.value}
+                    onChange={field.onChange}
+                    options={CATEGORY_OPTIONS}
+                    aria-label="Category"
+                  />
+                )}
+              />
+            </Field>
+            <Field label="Locality" error={errors.locality?.message}>
+              <Controller
+                control={control}
+                name="locality"
+                render={({ field }) => (
+                  <SearchableSelect
+                    value={field.value}
+                    onChange={field.onChange}
+                    options={LOCALITY_OPTIONS}
+                    aria-label="Locality"
+                  />
+                )}
+              />
+            </Field>
+          </div>
+
+          <Field
+            label="Service"
+            htmlFor="service"
+            error={errors.service?.message}
+            hint="Shown under the name on the public directory"
+          >
+            <Input
+              id="service"
+              className={inputClass}
+              {...register("service")}
+              placeholder="e.g. AC repair and servicing"
+            />
+          </Field>
+
+          <div className="grid grid-cols-1 gap-x-5 gap-y-5 sm:grid-cols-2">
+            <Field label="Address" htmlFor="address">
+              <Input
+                id="address"
+                className={inputClass}
+                {...register("address")}
+                placeholder="Shop / building / landmark"
+              />
+            </Field>
+            <Field label="Hours" htmlFor="hours">
+              <Input
+                id="hours"
+                className={inputClass}
+                {...register("hours")}
+                placeholder="e.g. Mon to Sat, 9am to 8pm"
+              />
+            </Field>
+          </div>
+
+          {/* Publishing */}
+          <div className="grid grid-cols-1 gap-x-5 gap-y-5 sm:grid-cols-2">
+            <Field label="Status">
+              <Controller
+                control={control}
+                name="status"
+                render={({ field }) => (
+                  <SearchableSelect
+                    value={field.value}
+                    onChange={field.onChange}
+                    options={STATUS_OPTIONS}
+                    searchable={false}
+                    aria-label="Status"
+                  />
+                )}
+              />
+            </Field>
+            <Field label="Verification">
+              <label className="flex h-10 cursor-pointer items-center gap-2.5 rounded-lg border border-gray-200 px-3">
+                <input
+                  type="checkbox"
+                  {...register("verified")}
+                  className="h-4 w-4 rounded border-gray-300"
+                />
+                <span className="text-sm text-gray-600">Verified by the team</span>
+              </label>
+            </Field>
+          </div>
+
+          <Field label="Internal notes" htmlFor="notes" hint="Never shown publicly">
+            <Textarea
+              id="notes"
+              rows={4}
+              className="min-h-24 resize-y leading-relaxed"
+              {...register("notes")}
+            />
+          </Field>
+
+          {serverError && (
+            <p className="rounded-lg border border-red-100 bg-red-50 px-3.5 py-2.5 text-sm text-red-600">
+              {serverError}
+            </p>
+          )}
         </form>
-      </DialogContent>
-    </Dialog>
+      </Modal>
+    </>
   );
 }
