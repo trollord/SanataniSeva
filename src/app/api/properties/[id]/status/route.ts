@@ -68,7 +68,7 @@ export async function PATCH(
         await getResend().emails.send({
           from: EMAIL_FROM,
           to: inquiry.seeker.email,
-          subject: "Property no longer available - Sanatani Community",
+          subject: "Property no longer available - Sanatani Seva",
           html: `<p>Hi ${escapeHtml(inquiry.seeker.name ?? "there")},</p><p>The property "<b>${escapeHtml(property.title)}</b>" you expressed interest in has been marked as rented/sold and is no longer available.</p><p>Browse other properties at ${process.env.NEXTAUTH_URL}/listings</p>`,
         });
       } catch {

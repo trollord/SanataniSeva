@@ -56,7 +56,7 @@ Test credentials after seeding:
 
 | Role  | Email                       | Password |
 |-------|-----------------------------|----------|
-| Admin | admin@sanatanicommunity.in   | admin123 |
+| Admin | admin@sanataniseva.com   | admin123 |
 | Owner | owner@example.com           | owner123 |
 
 ---

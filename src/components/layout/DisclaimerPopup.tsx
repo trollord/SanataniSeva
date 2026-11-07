@@ -41,7 +41,7 @@ export default function DisclaimerPopup() {
         </h2>
 
         <p className="text-[13px] text-gray-500 leading-relaxed">
-          Sanatani Community (hiranandaniproperties.in) is an <b>independent property listing
+          Sanatani Seva (sanataniseva.com) is an <b>independent property listing
           platform</b> for homes located in the Hiranandani Estate locality of
           Thane. We are <b>not affiliated with, endorsed by, or connected to
           the Hiranandani Group</b> or any of its companies. The name

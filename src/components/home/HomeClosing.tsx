@@ -158,7 +158,7 @@ const LOCALITIES = [
 /* The honesty ledger. Wording is fixed: do not condense, merge, reorder
    or soften these four. */
 const NOTICES = [
-  "Sanatani Community lists; it does not mediate. We do not employ or endorse the vendors in the directory, so check credentials before you hire anyone.",
+  "Sanatani Seva lists; it does not mediate. We do not employ or endorse the vendors in the directory, so check credentials before you hire anyone.",
   "Prices and condition notes on the marketplace are written by sellers. See the item in person before you pay for it.",
   "Directory entries marked as samples are placeholders, kept visible while we confirm real listings with residents one at a time.",
   "Browsing, listing and contacting anyone on this portal is free. There is no charge to residents at any point.",

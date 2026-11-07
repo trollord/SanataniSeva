@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { Resend } from "resend";
 import { itemInterestEmail, EMAIL_FROM } from "@/lib/email/templates";
+import { SITE_URL } from "@/lib/constants";
 
 const getResend = () => new Resend(process.env.RESEND_API_KEY!);
 
@@ -51,7 +52,7 @@ export async function POST(
         itemTitle: item.title,
         message,
         callbackTime,
-        baseUrl: process.env.NEXTAUTH_URL ?? "https://www.hiranandaniproperties.in",
+        baseUrl: SITE_URL,
       });
       await getResend().emails.send({
         from: EMAIL_FROM,

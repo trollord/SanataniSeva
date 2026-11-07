@@ -10,6 +10,7 @@ import {
   whatsAppShareUrl,
   type ShareableProperty,
 } from "@/lib/utils/whatsapp";
+import { SITE_URL } from "@/lib/constants";
 
 export function WhatsAppShareModal({
   open,
@@ -32,7 +33,7 @@ export function WhatsAppShareModal({
     const origin =
       typeof window !== "undefined"
         ? window.location.origin
-        : "https://www.hiranandaniproperties.in";
+        : SITE_URL;
     return buildWhatsAppMessage(property, `${origin}/listings/${property.id}`);
   }, [property]);
 

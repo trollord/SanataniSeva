@@ -4,7 +4,7 @@ import { useRef, useState } from "react";
 import Papa from "papaparse";
 import * as XLSX from "xlsx";
 import { Upload, Download, FileSpreadsheet, CheckCircle2, XCircle, Loader2 } from "lucide-react";
-import { COMMUNITY_CATEGORIES, COMMUNITY_LOCALITIES } from "@/lib/community";
+import { COMMUNITY_CATEGORIES } from "@/lib/community";
 import { HIRANANDANI_LOCALITIES } from "@/lib/constants";
 
 /* ── Category label ↔ key maps ─────────────────────────────────────────── */
@@ -102,8 +102,6 @@ function downloadTemplate() {
   /* Column widths */
   ws["!cols"] = [22, 16, 16, 36, 22, 18, 32, 22, 10].map((w) => ({ wch: w }));
 
-  /* Data validation — category dropdown (column C, index 2) */
-  const categoryLabels = COMMUNITY_CATEGORIES.map((c) => c.label);
   const localityList = [...HIRANANDANI_LOCALITIES];
 
   if (!ws["!dataValidations"]) ws["!dataValidations"] = [];

@@ -42,7 +42,6 @@ export function Navbar({
   const [internalMobileOpen, setInternalMobileOpen] = useState(false);
   const mobileOpen = mobileOpenProp ?? internalMobileOpen;
   const setMobileOpen = onMobileOpenChange ?? setInternalMobileOpen;
-  const pathname = usePathname();
 
   // Landing page now has a light cream hero — no dark hero pages
   const darkHero = false;
@@ -120,7 +119,7 @@ export function NavbarLogo() {
     <Link href="/" className="flex items-center gap-1.5 group shrink-0">
       <span className="font-bold text-xl tracking-tight">
         <span style={{ color: "#C8541A" }}>Sanatani</span>
-        <span className="transition-colors duration-300" style={{ color: subtleColor }}> Community</span>
+        <span className="transition-colors duration-300" style={{ color: subtleColor }}> Seva</span>
       </span>
       <span
         className="h-1.5 w-1.5 rounded-full mt-1 group-hover:scale-125 transition-transform duration-300"

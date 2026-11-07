@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { validatePhone } from "@/lib/validations/phone";
 import { newInquiryEmail, EMAIL_FROM } from "@/lib/email/templates";
 import { Resend } from "resend";
+import { SITE_URL } from "@/lib/constants";
 
 const getResend = () => new Resend(process.env.RESEND_API_KEY!);
 
@@ -76,7 +77,7 @@ export async function POST(
         seekerName: session.user.name ?? null,
         seekerPhone: phone,
         propertyTitle: property.title,
-        baseUrl: process.env.NEXTAUTH_URL ?? "https://www.hiranandaniproperties.in",
+        baseUrl: SITE_URL,
         message: message || undefined,
         callbackTime: callbackTime || undefined,
       });

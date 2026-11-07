@@ -85,7 +85,7 @@ export default async function CommunityPage() {
             <span>
               This directory currently shows sample entries - names and phone
               numbers are placeholders while we collect and verify real listings
-              from residents. Sanatani Community does not employ or endorse the vendors
+              from residents. Sanatani Seva does not employ or endorse the vendors
               listed here; please verify credentials before hiring.
             </span>
           </p>

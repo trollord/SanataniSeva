@@ -33,6 +33,7 @@ import {
   PROPERTY_TYPE_LABELS,
   LISTING_TYPE_LABELS,
   FURNISHED_LABELS,
+  SITE_URL,
 } from "@/lib/constants";
 import type { Metadata } from "next";
 
@@ -262,7 +263,7 @@ export default async function PropertyDetailPage({
           "@type": "RealEstateListing",
           name: property.title,
           description: property.description.slice(0, 300),
-          url: `${process.env.NEXTAUTH_URL ?? "https://www.hiranandaniproperties.in"}/listings/${property.id}`,
+          url: `${SITE_URL}/listings/${property.id}`,
           image: property.images.filter((i) => !i.url.match(/\.(mp4|webm|mov)$/i)).map((i) => i.url),
           datePosted: property.createdAt.toISOString(),
           address: {

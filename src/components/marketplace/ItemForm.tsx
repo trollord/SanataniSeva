@@ -18,7 +18,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import {
-  ITEM_CATEGORY_LABELS, ITEM_CATEGORIES,
+  ITEM_CATEGORIES,
   ITEM_CONDITION_LABELS, ITEM_CONDITIONS,
   VEHICLE_TYPE_LABELS, VEHICLE_TYPES,
   HIRANANDANI_LOCALITIES,

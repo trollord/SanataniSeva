@@ -7,6 +7,7 @@ import { auth } from "@/lib/auth";
 import SessionProvider from "@/components/layout/SessionProvider";
 import DisclaimerPopup from "@/components/layout/DisclaimerPopup";
 import WarmDB from "@/components/WarmDB";
+import { SITE_URL } from "@/lib/constants";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 const playfair = Playfair_Display({
@@ -24,10 +25,10 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXTAUTH_URL ?? "https://www.hiranandaniproperties.in"),
+  metadataBase: new URL(SITE_URL),
   title: {
-    default: "Sanatani Community - Houses, Marketplace & Local Services in Hiranandani Estate, Thane",
-    template: "%s | Sanatani Community",
+    default: "Sanatani Seva - Houses, Marketplace & Local Services in Hiranandani Estate, Thane",
+    template: "%s | Sanatani Seva",
   },
   description:
     "Find verified houses and flats for rent and sale in Hiranandani Estate, Thane. Connect directly with owners - no middlemen, free to browse and register interest.",
@@ -49,7 +50,7 @@ export const metadata: Metadata = {
     type: "website",
     locale: "en_IN",
     url: "/",
-    siteName: "Sanatani Community",
+    siteName: "Sanatani Seva",
   },
 };
 
@@ -73,8 +74,8 @@ export default async function RootLayout({
               {
                 "@context": "https://schema.org",
                 "@type": "Organization",
-                name: "Sanatani Community",
-                url: process.env.NEXTAUTH_URL ?? "https://www.hiranandaniproperties.in",
+                name: "Sanatani Seva",
+                url: SITE_URL,
                 description:
                   "Independent, direct-to-owner property listing platform for Hiranandani Estate, Thane.",
                 areaServed: "Hiranandani Estate, Thane, Maharashtra, India",
@@ -82,8 +83,8 @@ export default async function RootLayout({
               {
                 "@context": "https://schema.org",
                 "@type": "WebSite",
-                name: "Sanatani Community",
-                url: process.env.NEXTAUTH_URL ?? "https://www.hiranandaniproperties.in",
+                name: "Sanatani Seva",
+                url: SITE_URL,
               },
             ]),
           }}

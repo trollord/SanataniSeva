@@ -105,7 +105,8 @@ export default function NewsViewer({ id, title, pageCount, extraOffset = 0 }: Ne
   // tap half on mobile
   const onTap = (e: React.MouseEvent) => {
     if (isDesktop) return;
-    e.clientX < window.innerWidth / 2 ? goPrev() : goNext();
+    if (e.clientX < window.innerWidth / 2) goPrev();
+    else goNext();
   };
 
   const readerH = `calc(100dvh - ${NAVBAR_H + extraOffset}px)`;

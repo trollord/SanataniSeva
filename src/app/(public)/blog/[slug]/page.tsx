@@ -48,8 +48,8 @@ export default async function BlogPostPage({
     headline: post.title,
     description: post.excerpt,
     datePublished: post.date,
-    author: { "@type": "Organization", name: "Sanatani Community" },
-    publisher: { "@type": "Organization", name: "Sanatani Community", url: SITE_URL },
+    author: { "@type": "Organization", name: "Sanatani Seva" },
+    publisher: { "@type": "Organization", name: "Sanatani Seva", url: SITE_URL },
     mainEntityOfPage: `${SITE_URL}/blog/${post.slug}`,
   };
 

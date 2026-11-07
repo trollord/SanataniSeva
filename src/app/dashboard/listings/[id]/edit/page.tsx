@@ -920,7 +920,7 @@ export default function EditListingPage({
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Edit Listing</h1>
         <p className="text-sm text-gray-500 mt-1">
-          Update your property details on Sanatani Community
+          Update your property details on Sanatani Seva
         </p>
       </div>
 

@@ -4,7 +4,7 @@ import Link from "next/link";
 export const metadata: Metadata = {
   title: "Terms & Conditions",
   description:
-    "Terms and conditions for using Sanatani Community - an independent property listing platform for Hiranandani Estate, Thane.",
+    "Terms and conditions for using Sanatani Seva - an independent property listing platform for Hiranandani Estate, Thane.",
 };
 
 const LAST_UPDATED = "19 July 2026";
@@ -34,7 +34,7 @@ export default function TermsPage() {
 
         <Section title="1. Acceptance of These Terms">
           <p>
-            By accessing or using Sanatani Community, accessible at hiranandaniproperties.in (the &ldquo;Platform&rdquo;), you agree
+            By accessing or using Sanatani Seva, accessible at sanataniseva.com (the &ldquo;Platform&rdquo;), you agree
             to be bound by these Terms &amp; Conditions. If you do not agree with any part of
             these terms, please do not use the Platform.
           </p>
@@ -42,7 +42,7 @@ export default function TermsPage() {
 
         <Section title="2. About the Platform">
           <p>
-            Sanatani Community is an independent online property listing platform that
+            Sanatani Seva is an independent online property listing platform that
             helps property seekers discover residential and commercial properties located in
             the Hiranandani Estate locality of Thane, Maharashtra, and connect directly with
             the owners of those properties. The Platform is a product of <b>ByteLights</b>.

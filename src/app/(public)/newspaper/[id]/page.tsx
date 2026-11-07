@@ -56,7 +56,7 @@ export default async function EditionPage({
         {/* Wordmark */}
         <Link href="/" className="flex items-center gap-1.5 shrink-0 group">
           <span className="font-bold text-sm text-white leading-none tracking-tight">Sanatani</span>
-          <span className="text-sm text-white/40 leading-none hidden sm:inline"> Community</span>
+          <span className="text-sm text-white/40 leading-none hidden sm:inline"> Seva</span>
           <span className="h-1.5 w-1.5 rounded-full bg-[#C8541A] ml-0.5 mb-px group-hover:scale-125 transition-transform" />
         </Link>
 

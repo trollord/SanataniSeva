@@ -157,7 +157,7 @@ export default function HomeMasthead({ hasNews }: HomeMastheadProps) {
         {/* Row 0 — the issue line, and the rule that sets the page. */}
         <motion.div {...load(0)}>
           <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#1C1C1C]">
-            SANATANI COMMUNITY · HIRANANDANI ESTATE, THANE · RESIDENT HELP DESK
+            SANATANI SEVA · HIRANANDANI ESTATE, THANE · RESIDENT HELP DESK
           </p>
         </motion.div>
         <div className="mt-4">
@@ -194,7 +194,7 @@ export default function HomeMasthead({ hasNews }: HomeMastheadProps) {
 
             <motion.div {...load(0.12)}>
               <p className="mt-7 max-w-[58ch] text-[17px] leading-[1.65] text-[#6B6B6B]">
-                Sanatani Community is a neighbourhood portal run for Hiranandani Estate, Thane — and
+                Sanatani Seva is a neighbourhood portal run for Hiranandani Estate, Thane — and
                 for Hiranandani Meadows, Rodas Enclave and One Hiranandani Park beside it. It does
                 five things, and no more. Start with whichever one brought you here.
               </p>

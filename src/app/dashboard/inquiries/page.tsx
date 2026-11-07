@@ -7,7 +7,7 @@ import WhatsAppIcon from "@/components/ui/WhatsAppIcon";
 import { MessageSquare } from "lucide-react";
 
 function contactMessage(seekerName: string | null, propertyTitle: string): string {
-  return `Hi ${seekerName ?? "there"}, this is regarding your inquiry for "${propertyTitle}" on Sanatani Community. Happy to discuss the details!`;
+  return `Hi ${seekerName ?? "there"}, this is regarding your inquiry for "${propertyTitle}" on Sanatani Seva. Happy to discuss the details!`;
 }
 
 const STATUS_STYLE: Record<string, string> = {

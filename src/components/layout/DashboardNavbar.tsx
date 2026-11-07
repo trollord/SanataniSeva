@@ -55,7 +55,7 @@ export default function DashboardNavbar() {
       {/* Logo */}
       <Link href="/" className="flex items-center gap-1.5 group shrink-0">
         <span className="font-bold text-xl tracking-tight text-[#C8541A]">
-          Sanatani<span className="text-[#6B6B6B] font-medium"> Community</span>
+          Sanatani<span className="text-[#6B6B6B] font-medium"> Seva</span>
         </span>
         <span className="h-1.5 w-1.5 rounded-full mt-1 bg-[#FF5F15] group-hover:scale-125 transition-transform duration-300" />
       </Link>
