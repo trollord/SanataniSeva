@@ -116,14 +116,19 @@ export default function SearchableSelect({
     };
   }, [open]);
 
-  useEffect(() => {
-    if (open) {
-      setQuery("");
-      const i = options.findIndex((o) => o.value === value);
-      setActiveIndex(i < 0 ? 0 : i);
-      if (showSearch) requestAnimationFrame(() => searchRef.current?.focus());
-    }
-  }, [open, options, value, showSearch]);
+  /**
+   * Opening resets the filter and highlights the current value. Done here
+   * rather than in an effect keyed on `open`: setting state in an effect just
+   * to react to a state change you already control causes a second render
+   * pass, which react-hooks/set-state-in-effect flags.
+   */
+  function openPanel() {
+    setQuery("");
+    const i = options.findIndex((o) => o.value === value);
+    setActiveIndex(i < 0 ? 0 : i);
+    setOpen(true);
+    if (showSearch) requestAnimationFrame(() => searchRef.current?.focus());
+  }
 
   function commit(v: string) {
     onChange(v);
@@ -134,7 +139,7 @@ export default function SearchableSelect({
   function onTriggerKeyDown(e: React.KeyboardEvent) {
     if (e.key === "ArrowDown" || e.key === "Enter" || e.key === " ") {
       e.preventDefault();
-      setOpen(true);
+      openPanel();
     }
   }
 
@@ -163,7 +168,7 @@ export default function SearchableSelect({
         type="button"
         id={id}
         ref={triggerRef}
-        onClick={() => setOpen((o) => !o)}
+        onClick={() => (open ? setOpen(false) : openPanel())}
         onKeyDown={onTriggerKeyDown}
         aria-haspopup="listbox"
         aria-expanded={open}

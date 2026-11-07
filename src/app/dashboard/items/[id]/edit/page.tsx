@@ -1,13 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { use, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import ItemForm, { type DetailsData, type UploadedImage } from "@/components/marketplace/ItemForm";
 
-export default function EditItemPage({ params }: { params: { id: string } }) {
-  const { id } = params;
+export default function EditItemPage({ params }: { params: Promise<{ id: string }> }) {
+  // Client component, so the params Promise is unwrapped with use(), not await.
+  const { id } = use(params);
   const router = useRouter();
   const [loading,    setLoading]    = useState(true);
   const [submitting, setSubmitting] = useState(false);

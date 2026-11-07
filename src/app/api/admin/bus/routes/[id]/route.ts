@@ -9,7 +9,8 @@ async function guard() {
   return session && session.user.role === "ADMIN" ? null : NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 }
 
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const denied = await guard();
   if (denied) return denied;
 
@@ -27,7 +28,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   if (Number.isInteger(body.sortOrder)) data.sortOrder = body.sortOrder;
 
   try {
-    await prisma.busRoute.update({ where: { id: params.id }, data });
+    await prisma.busRoute.update({ where: { id }, data });
   } catch {
     return NextResponse.json({ error: "Route not found" }, { status: 404 });
   }
@@ -36,13 +37,14 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   return NextResponse.json({ ok: true });
 }
 
-export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const denied = await guard();
   if (denied) return denied;
 
   try {
     // Schedules and exceptions cascade from the schema.
-    await prisma.busRoute.delete({ where: { id: params.id } });
+    await prisma.busRoute.delete({ where: { id } });
   } catch {
     return NextResponse.json({ error: "Route not found" }, { status: 404 });
   }

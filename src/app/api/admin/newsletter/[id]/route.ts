@@ -6,15 +6,16 @@ import { revalidatePath } from "next/cache";
 
 export async function DELETE(
   _req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   const session = await auth();
   if (!session || session.user.role !== "ADMIN") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const newsletter = await prisma.newsletter.findUnique({
-    where: { id: params.id },
+    where: { id },
     select: { publicId: true },
   });
   if (!newsletter) {
@@ -27,7 +28,7 @@ export async function DELETE(
     // continue even if S3 delete fails
   }
 
-  await prisma.newsletter.delete({ where: { id: params.id } });
+  await prisma.newsletter.delete({ where: { id } });
   revalidatePath("/newspaper");
   return NextResponse.json({ ok: true });
 }
