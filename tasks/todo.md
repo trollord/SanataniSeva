@@ -1,96 +1,90 @@
-# One dropdown, one popup
+# Rent default, news image uploads
 
-The admin contact dialog exposed that the app has three dropdown
-implementations and two popup implementations. Converge on one of each.
+Three asks. One of them turns out to need no change.
 
-## Audit
+## 1. Listings should default to Rent
 
-**Popups** — `ui/Modal` is already the house design (Playfair title, `#FF5F15`,
-rounded-2xl, bottom-sheet on mobile with a drag handle) and 6 files use it:
-`InterestModal`, `BecomeOwnerModal`, `ItemInterestModal`, `WhatsAppShare`,
-`DashboardListings`, `admin/listings/[id]`.
+Today, with no `?listingType=` in the URL:
+- `api/properties/route.ts:69` applies no filter, so **both** rent and sale come back
+- `FilterPanel.tsx:19` highlights **SALE** (`searchParams.get("listingType") || "SALE"`)
+- `ListingsContent.tsx:96` labels the count "available for sale"
 
-The outliers are the ones to convert:
-- `admin/community/ContactFormDialog` — Base UI `ui/dialog` (mine)
-- `dashboard/new/page.tsx` — Base UI `ui/dialog`
-- `community/AddContactModal` — hand-rolled `fixed inset-0`
+So the UI claims sale, the data is everything, and nothing says rent. Default
+to RENT in all three, and send `listingType=RENT` on the fetch when the param
+is absent so the copy and the results agree.
 
-Not converted, deliberately — these are not form popups and share nothing with
-the dialog pattern: `PropertyGallery` (lightbox), `Navbar` /
-`MobileFilterToggle` / `AdminShell` / `ui/sheet` (nav drawers), `GuidedTour`
-(coach marks), `DisclaimerPopup` (full-bleed first-visit notice).
+## 2. Community sort — already correct
 
-**Dropdowns** — 18 files across three implementations:
-- Base UI `ui/select` (7): `dashboard/new`, `dashboard/listings/[id]/edit`,
-  `ContactForm`, `SearchBar`, `ItemForm`, `MarketplaceGrid`, `AddContactModal`
-- native `<select>` (11): `ListingActions`, `CreateNewsForm`, `admin/users`,
-  `ItemAdminActions`, `CommunityAdminActions`, `dashboard/new`, `PhoneInput`,
-  `ListingsContent`, `NewspaperIndex`, `FilterPanel`, `CommunityDirectory`
-- `SearchableSelect` (1, new)
+`(public)/community/page.tsx:34` is already `orderBy: { createdAt: "desc" }`,
+and `createdAt` **is** the date added. Verified against the live table: the two
+helpline rows re-created at 14:36 sit above rows created at 14:22. The table
+renders in query order - nothing re-sorts it - so a newly added contact does
+land on top.
 
-## Decisions
+What probably looks wrong: all 250 imported rows were created within the same
+six minutes, so their order is just reverse-import order and reads as arbitrary.
 
-**One component, two shapes.** `SearchableSelect` gains a `variant`: `default`
-(rounded-lg, grey border — forms and admin) and `pill` (rounded-full,
-`#e4e9ea` — the public filter bars, where it sits beside a pill search box).
-Forcing one shape would break whichever context it was not designed for;
-CLAUDE.md says match the surrounding pattern, so the component is shared and
-the shape follows its neighbours.
+No change made. The open question is whether "recently added" should also mean
+"recently edited" - that would be `updatedAt`, and is a one-line change if
+wanted.
 
-**Search appears only when it earns its place** — default is on above 7
-options. A 3-item status picker gets no search box.
+## 3. News: multiple images, drag and drop, S3
 
-**`ui/Modal` grows a `size` and a `footer` slot** rather than the form dialog
-keeping its own chrome. That is what makes the admin dialog look like the rest
-of the app instead of like Base UI's default.
+`NewsItem.imageUrl String?` holds one pasted URL. Replace with uploads.
 
-**`PhoneInput`'s country selector stays as-is.** It is a flag + dial-code combo
-widget, not a value picker, and routing it through a generic select would lose
-the flag column.
+- `imageUrl String?` -> `imageUrls String[]`, backfilled from the existing
+  column, matching how `phones` was done
+- New `ImageDropzone` component. `react-dropzone@15` is already a dependency and
+  the upload flow already exists: `GET /api/upload` returns a presigned S3 URL,
+  the browser PUTs the file, and `publicUrl` is stored. Same contract the
+  marketplace and listing forms use, so no new S3 surface.
+- Consumers to update: `api/news/route.ts`, `admin/news/CreateNewsForm.tsx`,
+  `(public)/newspaper/page.tsx`, `components/newspaper/TodaysNewsFeed.tsx`
+
+Constraints inherited from `/api/upload`: 2 MB per image, jpeg/png/webp/heic,
+20 uploads per user per day, auth required.
 
 ## Tasks
 
-- [x] `SearchableSelect`: `variant` (default | pill), `size` (sm | md),
-      `disabled`, `invalid`, `leadingIcon`, hidden input for `name`
-- [x] `ui/Modal`: `size` (sm | lg) and a `footer` slot that switches the panel
-      to fixed header / scrolling body / fixed footer. Existing six callers
-      untouched — the new layout only engages when `footer` is passed.
-- [x] 3 popups converted: `ContactFormDialog`, `AddContactModal`,
-      `dashboard/new` skip-photos confirm
-- [x] 11 native `<select>` converted directly
-- [x] 17 Base UI `Select` blocks converted *without touching their files* —
-      `ui/select.tsx` is now a shim over `SearchableSelect`
-- [x] `next build` exit 0 (69 routes, same 4 pre-existing warnings)
-- [x] Verified in Chrome: community pill filter, marketplace condition filter
-      (shim path), admin edit dialog
+- [x] Listings default to RENT - `DEFAULT_LISTING_TYPE` in `ListingsContent`,
+      matching default in `FilterPanel`, injected into both fetches
+- [x] Migration `20261108090000_news_item_image_urls`: `imageUrls text[]`,
+      backfilled, `imageUrl` dropped; Prisma ledger baselined
+- [x] `ImageDropzone` - drag and drop, instant previews, per-file errors,
+      remove, 2 MB / 6 image caps
+- [x] Wired into the news admin form, replacing the URL input
+- [x] Display updated: `newspaper/page.tsx`, `TodaysNewsFeed`
+- [x] `build:check` clean; verified in Chrome - Rent pill is default, dropzone
+      renders, `/api/upload` returns a signed URL for the bucket
 - [ ] Commit
 
 ## Review
 
-Every dropdown in the app is now one component and every form popup is one
-shell.
+Two changed, one did not need changing.
 
-The leverage was in `ui/select.tsx`. Rewriting 17 `<Select><SelectTrigger>…`
-blocks by hand across 7 files would have been slow and easy to get wrong, so
-that module became a compatibility shim instead: `Select` walks its children,
-reads the placeholder off `SelectValue` and the options off the `SelectItem`s,
-and renders `SearchableSelect`. The descriptor components return null and are
-never mounted. Every call site kept its own trigger classes — several use `!`
-utilities for sizing, which still win — so nothing had to change in those files
-and nothing about their layout moved.
+**Rent default** was three disagreeing defaults, not one: the API filtered
+nothing, the filter pills highlighted SALE, and the result count said "available
+for sale". All three now derive from `DEFAULT_LISTING_TYPE`, and the fetch sends
+it explicitly so the copy and the results cannot drift apart again.
 
-Shapes, not uniformity: `variant="pill"` for the public filter bars, where the
-control sits beside a rounded-full search box, and the default rounded-lg
-elsewhere. One shape everywhere would have looked wrong in whichever context it
-was not designed for.
+**News images** follow the `phones` precedent - a real `text[]`, backfilled,
+old column dropped. The uploader reuses the existing presigned-URL flow, so
+files go browser -> S3 without passing through the server and there is no new
+upload surface.
 
-Deliberately left alone, because they are not dropdowns or form popups:
-`PropertyGallery` (lightbox), `Navbar` / `MobileFilterToggle` / `AdminShell` /
-`ui/sheet` (nav drawers), `GuidedTour` (coach marks), `DisclaimerPopup`
-(first-visit notice), and `PhoneInput`'s country picker, which is a flag +
-dial-code widget rather than a value list.
+Worth knowing:
+- `/api/upload` writes every object under the `properties/` prefix regardless of
+  what is being uploaded, so news images land there too. Harmless, but the
+  prefix name is now a lie. Changing it means touching the shared route.
+- The API only accepts URLs under `NEXT_PUBLIC_AWS_S3_BUCKET_URL`. It fails
+  closed when that is unset - an earlier draft fell back to `"https://"`, which
+  `startsWith` matches for any HTTPS URL, i.e. no check at all.
+- Inherited caps: 2 MB per image, jpeg/png/webp/heic, 20 uploads per user per
+  day, 6 images per news item.
 
-One visual change worth flagging: the newspaper archive's month/year filters
-used that page's editorial palette (`#E5DDD4` border, `#C8541A` focus). They now
-use the shared control, so they look like the rest of the app rather than like
-the newspaper page.
+**Community sort needed no change.** It was already `createdAt desc`, and
+`createdAt` is the date added - verified against the live table. The 250
+imported rows were all created within six minutes of each other, so their order
+reads as arbitrary, which is probably what looked wrong. If "recently added"
+should also surface "recently edited", that is `updatedAt` and a one-line
+change.
