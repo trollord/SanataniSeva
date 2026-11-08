@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import SearchableSelect from "@/components/ui/searchable-select";
+import ImageDropzone from "@/components/ui/ImageDropzone";
 
 const CATEGORIES = [
   { value: "EVENTS",        label: "Events" },
@@ -23,12 +24,16 @@ export default function CreateNewsForm() {
     headline: "",
     body: "",
     category: "GENERAL",
-    imageUrl: "",
+    imageUrls: [] as string[],
     publishedAt: todayIso(),
   });
 
   function set(field: string, value: string) {
     setForm((f) => ({ ...f, [field]: value }));
+  }
+
+  function setImages(urls: string[]) {
+    setForm((f) => ({ ...f, imageUrls: urls }));
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -46,7 +51,7 @@ export default function CreateNewsForm() {
         setError(j.error ?? "Something went wrong.");
         return;
       }
-      setForm({ headline: "", body: "", category: "GENERAL", imageUrl: "", publishedAt: todayIso() });
+      setForm({ headline: "", body: "", category: "GENERAL", imageUrls: [], publishedAt: todayIso() });
       router.refresh();
     } finally {
       setLoading(false);
@@ -101,16 +106,10 @@ export default function CreateNewsForm() {
         </div>
 
         <div className="sm:col-span-2">
-          <label className="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-1">
-            Image URL <span className="normal-case font-normal text-gray-400">(optional)</span>
+          <label className="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-2">
+            Images <span className="normal-case font-normal text-gray-400">(optional)</span>
           </label>
-          <input
-            type="url"
-            value={form.imageUrl}
-            onChange={(e) => set("imageUrl", e.target.value)}
-            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#C8541A] transition-colors"
-            placeholder="https://..."
-          />
+          <ImageDropzone value={form.imageUrls} onChange={setImages} max={6} disabled={loading} />
         </div>
 
         <div>

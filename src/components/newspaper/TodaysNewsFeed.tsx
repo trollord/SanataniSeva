@@ -9,7 +9,7 @@ export interface NewsItemMeta {
   headline: string;
   body: string;
   category: string;
-  imageUrl?: string | null;
+  imageUrls?: string[];
   publishedAt: string;
 }
 
@@ -123,9 +123,9 @@ export default function TodaysNewsFeed({ items }: { items: NewsItemMeta[] }) {
             className="absolute inset-0 cursor-grab active:cursor-grabbing"
           >
             {/* Image or fallback */}
-            {item.imageUrl ? (
+            {item.imageUrls?.[0] ? (
               <img
-                src={item.imageUrl}
+                src={item.imageUrls[0]}
                 alt={item.headline}
                 className="absolute inset-0 w-full h-full object-cover"
                 draggable={false}

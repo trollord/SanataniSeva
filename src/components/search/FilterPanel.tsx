@@ -16,7 +16,9 @@ export default function FilterPanel({ onClose }: { onClose?: () => void }) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const listingType = searchParams.get("listingType") || "SALE";
+  // Matches DEFAULT_LISTING_TYPE in ListingsContent - the pills must show the
+  // same default the results are filtered by.
+  const listingType = searchParams.get("listingType") || "RENT";
   const type = searchParams.get("type") || "";
   const locality = searchParams.get("locality") || "";
   const bedrooms = searchParams.get("bedrooms") || "";

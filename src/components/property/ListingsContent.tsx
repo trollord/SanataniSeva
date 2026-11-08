@@ -27,6 +27,9 @@ const MapView = dynamic(() => import("@/components/map/MapView"), {
   ),
 });
 
+/** Listings open on rentals - that is the bulk of what the estate searches for. */
+const DEFAULT_LISTING_TYPE = "RENT";
+
 const PAGE_SIZE = 6;
 
 interface PropertyCardData {
@@ -92,7 +95,11 @@ export default function ListingsContent() {
 
   const view = searchParams.get("view") ?? "grid";
   const locality = searchParams.get("locality") ?? "All Localities";
-  const listingType = searchParams.get("listingType");
+  // Rent is the default view: with no ?listingType= the API returned both rent
+  // and sale while the UI claimed "for sale", so the copy and the results
+  // disagreed. DEFAULT_LISTING_TYPE keeps the label, the filter pills and the
+  // fetch in step.
+  const listingType = searchParams.get("listingType") ?? DEFAULT_LISTING_TYPE;
   const listingTypeLabel = listingType === "RENT" ? "available for rent" : "available for sale";
   const listingWord = total === 1 ? "property" : "properties";
   const isGrid = view !== "list";
@@ -106,6 +113,7 @@ export default function ListingsContent() {
     for (const [key, val] of searchParams.entries()) {
       if (key !== "view") params.set(key, val);
     }
+    if (!params.has("listingType")) params.set("listingType", DEFAULT_LISTING_TYPE);
     params.set("take", view === "map" ? "50" : String(PAGE_SIZE));
     params.set("skip", "0");
 
@@ -128,6 +136,7 @@ export default function ListingsContent() {
     for (const [key, val] of searchParams.entries()) {
       if (key !== "view") params.set(key, val);
     }
+    if (!params.has("listingType")) params.set("listingType", DEFAULT_LISTING_TYPE);
     params.set("skip", String(properties.length));
     params.set("take", String(PAGE_SIZE));
 

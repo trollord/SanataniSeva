@@ -31,7 +31,7 @@ function toNewsItemMeta(n: {
   headline: string;
   body: string;
   category: string;
-  imageUrl: string | null;
+  imageUrls: string[];
   publishedAt: Date;
 }): NewsItemMeta {
   return {
@@ -39,7 +39,7 @@ function toNewsItemMeta(n: {
     headline: n.headline,
     body: n.body,
     category: n.category,
-    imageUrl: n.imageUrl,
+    imageUrls: n.imageUrls,
     publishedAt: n.publishedAt.toLocaleDateString("en-IN", {
       day: "numeric",
       month: "long",
@@ -58,7 +58,7 @@ export default async function NewspaperIndexPage() {
     prisma.newsItem.findMany({
       where: { status: "PUBLISHED" },
       orderBy: { publishedAt: "desc" },
-      select: { id: true, headline: true, body: true, category: true, imageUrl: true, publishedAt: true },
+      select: { id: true, headline: true, body: true, category: true, imageUrls: true, publishedAt: true },
     }),
   ]);
 

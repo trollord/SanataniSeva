@@ -263,7 +263,7 @@ model NewsItem {
   headline    String
   body        String
   category    String   @default("GENERAL") // EVENTS | COMMUNITY | ANNOUNCEMENTS | SPORTS | GENERAL
-  imageUrl    String?
+  imageUrls   String[] // S3 public URLs, first one is the lead image
   status      String   @default("DRAFT")   // DRAFT | PUBLISHED
   publishedAt DateTime @default(now())
   createdAt   DateTime @default(now())
