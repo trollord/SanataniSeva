@@ -56,6 +56,30 @@ Three numbers were stored as bare 10-digit landlines and are now
 on the estate post office - mechanically correct from the digits, but worth a
 human check.
 
+## Adding a toll-free or short code
+
+The add path had four bugs that only showed up when actually exercised:
+
+| picked | typed | was | now |
+|---|---|---|---|
+| 1800 | `1800229944` | `18001800229944` | `1800 229 944` |
+| +91 | `+91 98765 43210` | `+91919876543210` | `+91 98765 43210` |
+| 022 | `022 2597 2040` | `02202225972040` | `022 2597 2040` |
+| +91 | `100` | **`91100`, saved silently** | rejected with guidance |
+
+The last was the dangerous one: concatenating gave `91100`, which then parsed
+as a valid 5-digit short code and stored nonsense with no error.
+
+`combinePhone()` replaces the raw concatenation - tolerant of a pasted whole
+number (what was typed wins if it already carries its own code), strict about a
+dialling code paired with a 3-digit body, since short codes take no code at all.
+Used by the form, the APIs and the CSV importer alike.
+
+Two UI fixes found by testing the real form: the error did not clear when the
+code was corrected (the error hangs off the sibling `number` field, so changing
+the select has to `trigger()` its revalidation), and the labels truncated to
+`None — e…` in a 132px trigger.
+
 ## Review
 
 Verified rather than assumed: the parser was run over every real shape in the

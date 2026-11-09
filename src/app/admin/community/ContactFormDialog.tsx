@@ -14,7 +14,7 @@ import Modal from "@/components/ui/Modal";
 import SearchableSelect from "@/components/ui/searchable-select";
 import { COMMUNITY_CATEGORIES } from "@/lib/community";
 import { HIRANANDANI_LOCALITIES } from "@/lib/constants";
-import { PHONE_EXTENSIONS, formatPhone, parsePhone } from "@/lib/phone";
+import { PHONE_EXTENSIONS, combinePhone, formatPhone, parsePhone } from "@/lib/phone";
 
 const CATEGORY_KEYS = COMMUNITY_CATEGORIES.map((c) => c.key) as [string, ...string[]];
 
@@ -43,11 +43,19 @@ const schema = z.object({
           extension: z.string(),
           number: z.string().trim().min(1, "Enter a number"),
         })
-        // Validated by the same parser the API and the importer use, so the
-        // dialog cannot accept something the server will reject.
-        .refine((v) => parsePhone(`${v.extension}${v.number}`).valid, {
-          message: "Not a valid Indian number for that code",
-          path: ["number"],
+        // combinePhone, not a raw concatenation: it tolerates a pasted whole
+        // number and rejects a code paired with a short code. Same function the
+        // API and the CSV importer use, so the dialog cannot accept something
+        // the server will reject.
+        .superRefine((v, ctx) => {
+          const r = combinePhone(v.extension, v.number);
+          if (!r.valid) {
+            ctx.addIssue({
+              code: "custom",
+              message: r.reason ?? "Not a valid Indian number for that code",
+              path: ["number"],
+            });
+          }
         })
     )
     .min(1, "At least one number")
@@ -123,6 +131,7 @@ export default function ContactFormDialog({
     control,
     handleSubmit,
     reset,
+    trigger,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -262,14 +271,20 @@ export default function ContactFormDialog({
             <div className="space-y-2">
               {fields.map((field, i) => (
                 <div key={field.id} className="flex items-center gap-2">
-                  <div className="w-[132px] shrink-0">
+                  <div className="w-[150px] shrink-0">
                     <Controller
                       control={control}
                       name={`phones.${i}.extension` as const}
                       render={({ field: ext }) => (
                         <SearchableSelect
                           value={ext.value}
-                          onChange={ext.onChange}
+                          onChange={(v) => {
+                            ext.onChange(v);
+                            // The error lives on the sibling `number` field, so
+                            // changing the code has to re-run its validation -
+                            // otherwise a fixed row keeps showing a stale error.
+                            void trigger(`phones.${i}.number` as const);
+                          }}
                           options={PHONE_EXTENSIONS.map((e) => ({ value: e.value, label: e.label }))}
                           searchable={false}
                           aria-label={`Dialling code for number ${i + 1}`}

@@ -143,15 +143,53 @@ export function parsePhone(raw: string): ParsedPhone {
 }
 
 /**
- * Builds a display string from the two fields the admin form and the CSV use.
- * Round-trips with parsePhone, so `format(p.extension, p.number)` === p.display.
+ * Combines the two fields the admin form and the CSV use into one number.
+ *
+ * Deliberately tolerant in one direction and strict in the other:
+ * - Tolerant: an admin will paste a whole number ("+91 98765 43210",
+ *   "022 2597 2040", "1800 229 944") into the number field. Naively
+ *   concatenating would double the prefix and yield "+91919876543210".
+ *   If what was typed already carries its own code, that wins.
+ * - Strict: a dialling code plus a 3-digit body is a contradiction. "+91" with
+ *   "100" previously concatenated to "91100", which then parsed as a valid
+ *   5-digit short code and stored silent nonsense. Short codes carry no code
+ *   at all, so that combination is now rejected outright.
+ */
+export function combinePhone(extension: string, number: string): ParsedPhone {
+  const ext = (extension ?? "").trim();
+  const raw = (number ?? "").trim();
+  const digits = raw.replace(/\D/g, "");
+  if (!digits) return INVALID(raw, "Enter a number");
+
+  // Already carries its own dialling code - trust it over the select.
+  const asTyped = parsePhone(raw);
+  if (asTyped.valid && asTyped.extension) return asTyped;
+
+  if (!ext) {
+    // "None" selected: a short code is the only thing that is legitimately
+    // dialled without a prefix.
+    return asTyped.valid && asTyped.kind === "shortcode"
+      ? asTyped
+      : INVALID(raw, "Choose a dialling code, or enter a 3-5 digit short code such as 100");
+  }
+
+  if (digits.length < 6) {
+    return INVALID(
+      raw,
+      `${digits} is too short for a ${ext} number. Emergency and helpline numbers like 100 take no code - choose "None".`
+    );
+  }
+
+  return parsePhone(`${ext}${digits}`);
+}
+
+/**
+ * Display string for the two form fields. Round-trips with parsePhone, so
+ * `formatPhone(p.extension, p.number)` === `p.display`.
  */
 export function formatPhone(extension: string, number: string): string {
-  const ext = (extension ?? "").trim();
-  const digits = (number ?? "").replace(/\D/g, "");
-  if (!digits) return "";
-  if (!ext) return digits; // short code
-  return parsePhone(`${ext}${digits}`).display || `${ext} ${digits}`;
+  const combined = combinePhone(extension, number);
+  return combined.valid ? combined.display : "";
 }
 
 /** Convenience for list fields: normalises and drops anything unusable. */
@@ -171,9 +209,11 @@ export function normalisePhones(raw: string[]): {
 
 /** Dialling codes offered in the admin form. */
 export const PHONE_EXTENSIONS = [
-  { value: "+91", label: "+91 — mobile" },
-  { value: "022", label: "022 — Mumbai / Thane landline" },
-  { value: "020", label: "020 — Pune landline" },
-  { value: "1800", label: "1800 — toll-free" },
-  { value: "", label: "None — emergency / helpline short code" },
+  // Kept short: these render inside a narrow trigger, and a truncated
+  // "None — e…" tells an admin nothing.
+  { value: "+91", label: "+91 mobile" },
+  { value: "022", label: "022 landline" },
+  { value: "020", label: "020 landline" },
+  { value: "1800", label: "1800 toll-free" },
+  { value: "", label: "No code (100)" },
 ] as const;
