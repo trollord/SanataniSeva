@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { COMMUNITY_CATEGORIES } from "@/lib/community";
 import { HIRANANDANI_LOCALITIES } from "@/lib/constants";
+import { parsePhone } from "@/lib/phone";
 
 const CATEGORY_KEYS = COMMUNITY_CATEGORIES.map((c) => c.key) as [string, ...string[]];
 
@@ -20,7 +21,21 @@ const patchSchema = z
     category: z.enum(CATEGORY_KEYS),
     service: z.string().trim().min(2).max(200),
     phones: z
-      .array(z.string().trim().min(3).max(20).regex(/^[+\d\s\-()]+$/))
+      .array(
+        z
+          .string()
+          .trim()
+          .transform((v, ctx) => {
+          const parsed = parsePhone(v);
+          if (!parsed.valid) {
+            // Surfaces the specific reason ("…has 9 digits") rather than a
+            // generic rejection, so an admin can see what to fix.
+            ctx.addIssue({ code: "custom", message: parsed.reason ?? "Invalid phone number" });
+            return z.NEVER;
+          }
+          return parsed.display;
+        })
+      )
       .max(5),
     whatsapp: z.boolean(),
     locality: z

@@ -6,6 +6,7 @@ import * as XLSX from "xlsx";
 import { Upload, Download, FileSpreadsheet, CheckCircle2, XCircle, Loader2 } from "lucide-react";
 import { COMMUNITY_CATEGORIES } from "@/lib/community";
 import { HIRANANDANI_LOCALITIES } from "@/lib/constants";
+import { formatPhone, parsePhone } from "@/lib/phone";
 
 /* ── Category label ↔ key maps ─────────────────────────────────────────── */
 const LABEL_TO_KEY = Object.fromEntries(
@@ -17,7 +18,7 @@ const KEY_TO_LABEL = Object.fromEntries(
 const VALID_KEYS = new Set<string>(COMMUNITY_CATEGORIES.map((c) => c.key));
 const VALID_LOCALITIES = new Set(HIRANANDANI_LOCALITIES as readonly string[]);
 
-const REQUIRED_COLS = ["name", "phones", "category", "service", "locality"];
+const REQUIRED_COLS = ["name", "extension", "number", "category", "service", "locality"];
 const ALL_COLS = [...REQUIRED_COLS, "contactPerson", "address", "hours", "whatsapp"];
 
 type ParsedRow = {
@@ -45,19 +46,27 @@ function validateRow(raw: Record<string, string>, index: number): ParsedRow {
   const errors: string[] = [];
 
   const name = raw.name?.trim() ?? "";
-  // One vendor often has several numbers; pipe-separated, same as `tags`.
-  const phones = (raw.phones ?? "")
-    .split("|")
-    .map((p) => p.trim())
-    .filter(Boolean);
+  // Two aligned columns, pipe-separated when a vendor has several numbers:
+  //   extension  +91|022
+  //   number     9876543210|25972040
+  // A sheet exported before this change had a single `phones` column, so that
+  // is still accepted rather than failing every historic file.
+  const exts = (raw.extension ?? "").split("|").map((v) => v.trim());
+  const nums = (raw.number ?? "").split("|").map((v) => v.trim()).filter(Boolean);
+  const phones = nums.length
+    ? nums.map((n, i) => formatPhone(exts[i] ?? exts[0] ?? "+91", n))
+    : (raw.phones ?? "").split("|").map((v) => v.trim()).filter(Boolean);
   const service = raw.service?.trim() ?? "";
   const whatsappRaw = raw.whatsapp?.trim().toLowerCase() ?? "";
 
   if (name.length < 2 || name.length > 120) errors.push("Name must be 2–120 chars");
   if (phones.length === 0) errors.push("At least one phone number is required");
   else if (phones.length > 5) errors.push("At most five numbers");
-  else if (!phones.every((p) => /^[+\d\s\-()]{3,20}$/.test(p)))
-    errors.push("Invalid phone number");
+  else
+    phones.forEach((p) => {
+      const parsed = parsePhone(p);
+      if (!parsed.valid) errors.push(`"${p}": ${parsed.reason}`);
+    });
   if (service.length < 5 || service.length > 200) errors.push("Service must be 5–200 chars");
 
   const category = resolveCategory(raw.category ?? "");
@@ -94,7 +103,8 @@ function downloadTemplate() {
   const headers = ALL_COLS;
   const exampleRow = [
     "Ramesh Plumbing Works",
-    "9876543210|9820011223",
+    "+91",
+    "9876543210",
     "plumber",
     "All plumbing repairs, pipe fitting, tap replacement",
     "Hiranandani Estate",
@@ -107,7 +117,7 @@ function downloadTemplate() {
   const ws = XLSX.utils.aoa_to_sheet([headers, exampleRow]);
 
   /* Column widths */
-  ws["!cols"] = [22, 16, 16, 36, 22, 18, 32, 22, 10].map((w) => ({ wch: w }));
+  ws["!cols"] = [22, 10, 16, 16, 36, 22, 18, 32, 22, 10].map((w) => ({ wch: w }));
 
   const localityList = [...HIRANANDANI_LOCALITIES];
 
@@ -316,7 +326,7 @@ export default function CommunityCSVTools() {
                     <td className="px-3 py-2 font-medium text-gray-900 max-w-[140px] truncate">
                       {row.data.name || "—"}
                     </td>
-                    <td className="px-3 py-2 text-gray-600">{row.data.phones || "—"}</td>
+                    <td className="px-3 py-2 text-gray-600">{[row.data.extension, row.data.number].filter(Boolean).join(" ") || row.data.phones || "—"}</td>
                     <td className="px-3 py-2 text-gray-600">
                       {row.mapped
                         ? KEY_TO_LABEL[row.mapped.category as string] ?? row.data.category

@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { COMMUNITY_CATEGORIES } from "@/lib/community";
 import { HIRANANDANI_LOCALITIES } from "@/lib/constants";
+import { parsePhone } from "@/lib/phone";
 
 const CATEGORY_KEYS = COMMUNITY_CATEGORIES.map((c) => c.key) as [string, ...string[]];
 
@@ -14,9 +15,16 @@ const submitSchema = z.object({
       z
         .string()
         .trim()
-        .min(3, "Enter a valid phone number")
-        .max(20)
-        .regex(/^[+\d\s\-()]+$/, "Enter a valid phone number")
+        .transform((v, ctx) => {
+          const parsed = parsePhone(v);
+          if (!parsed.valid) {
+            // Surfaces the specific reason ("…has 9 digits") rather than a
+            // generic rejection, so an admin can see what to fix.
+            ctx.addIssue({ code: "custom", message: parsed.reason ?? "Enter a valid phone number" });
+            return z.NEVER;
+          }
+          return parsed.display;
+        })
     )
     .min(1, "At least one phone number is required")
     .max(5, "At most five numbers"),

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { parsePhone } from "@/lib/phone";
 
 export async function GET() {
   const session = await auth();
@@ -28,7 +29,7 @@ export async function GET() {
   });
 
   const headers = [
-    "name", "phones", "category", "service", "locality",
+    "name", "extension", "number", "category", "service", "locality",
     "contactPerson", "address", "hours", "whatsapp", "status", "verified", "createdAt", "tags",
   ];
 
@@ -36,7 +37,10 @@ export async function GET() {
 
   const rows = contacts.map((c) => [
     escape(c.name),
-    escape(c.phones.join("|")),
+    // One column per part, pipe-separated and index-aligned when a contact has
+    // several numbers: extension "+91|022" lines up with number "9876543210|25972040".
+    escape(c.phones.map((x) => parsePhone(x).extension).join("|")),
+    escape(c.phones.map((x) => parsePhone(x).number).join("|")),
     escape(c.category),
     escape(c.service),
     escape(c.locality),
