@@ -77,7 +77,11 @@ export async function GET(req: NextRequest) {
   const safeExt = ["jpg", "jpeg", "png", "webp", "heic", "mp4", "webm", "mov"].includes(rawExt)
     ? rawExt
     : isVideo ? "mp4" : "jpg";
-  const s3Key = `properties/${session.user.id}/${randomUUID()}.${safeExt}`;
+  // Everything lives under this prefix: it is what the bucket policy makes
+  // publicly readable and what the IAM user is scoped to. The old key was
+  // "properties/", which was also where news images and item photos landed -
+  // a misleading name for a shared upload route.
+  const s3Key = `sanatani-seva-folder/${session.user.id}/${randomUUID()}.${safeExt}`;
 
   const presignedUrl = await getPresignedUploadUrl(s3Key, contentType);
   const base = (process.env.NEXT_PUBLIC_AWS_S3_BUCKET_URL ?? "").replace(/\/$/, "");
