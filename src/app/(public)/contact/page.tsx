@@ -13,9 +13,11 @@ export const metadata: Metadata = {
 };
 
 // Placeholder contact details - swap for real ones before launch
-const CONTACT_PHONE = "+91 90000 00000";
+// Same line for calls and WhatsApp. whatsAppContactUrl() strips the
+// formatting, so the readable form is safe to pass straight in.
+const CONTACT_PHONE = "+91 99300 09144";
 const CONTACT_EMAIL = "hello@sanataniseva.com";
-const WHATSAPP_NUMBER = "+91 90000 00000";
+const WHATSAPP_NUMBER = CONTACT_PHONE;
 
 const FAQS: { q: string; a: string }[] = [
   {

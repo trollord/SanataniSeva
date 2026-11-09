@@ -31,7 +31,10 @@ export default function ItemContactSection({
   const [showModal, setShowModal] = useState(false);
   const [sent, setSent] = useState(false);
 
-  if (phonePublic) {
+  // A seller with a public listing but no number on file would otherwise render
+  // a Call button to "tel:" and a WhatsApp link to a placeholder number that
+  // belongs to nobody. Fall through to the message form instead.
+  if (phonePublic && sellerPhone?.trim()) {
     return (
       <div className="grid grid-cols-2 gap-2 sm:gap-3 pt-2">
         <a
@@ -41,7 +44,7 @@ export default function ItemContactSection({
           <Phone className="w-4 h-4" /> Call
         </a>
         <a
-          href={whatsAppContactUrl(sellerPhone || "+91 9000000000", whatsAppMsg)}
+          href={whatsAppContactUrl(sellerPhone, whatsAppMsg)}
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex items-center justify-center gap-1.5 sm:gap-2 bg-white border border-gray-300 text-[#FF5F15] px-3 py-3 rounded-xl text-[11px] sm:text-xs font-bold uppercase tracking-wider whitespace-nowrap hover:border-gray-400 transition-colors"
