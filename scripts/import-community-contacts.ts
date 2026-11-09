@@ -24,6 +24,7 @@
 import { PrismaClient } from "@prisma/client";
 import * as XLSX from "xlsx";
 import { COMMUNITY_CATEGORIES } from "../src/lib/community";
+import { parsePhone } from "../src/lib/phone";
 
 const prisma = new PrismaClient();
 
@@ -43,6 +44,13 @@ const SUB_OVERRIDES: Record<string, string> = {
   "service|garden": "pets",
   "service|tempo local": "movers",
   "service|water proofing": "painter",
+  // The new block files dance and galleries under "Art", which otherwise means
+  // paintings and decor.
+  "art|classical dance": "classes",
+  "art|dance class": "classes",
+  "art|udyan art gallery": "classes",
+  // ...and a CCTV installer under "Furniture".
+  "furniture|cctv": "appliance",
 };
 
 const CATEGORY_MAP: Record<string, string> = {
@@ -84,6 +92,25 @@ const CATEGORY_MAP: Record<string, string> = {
   // Pets, movers, retail
   pet: "pets", courrier: "movers",
   jewelers: "shopping", sports: "shopping",
+
+  // ── Added for the second batch of contacts ──────────────────────────────
+  printing: "printing", stationery: "printing",
+  ngo: "ngo",
+  electronics: "appliance", water: "appliance",
+  "water filter": "appliance", "gas stove mechanic": "appliance",
+  fabricator: "carpenter", "glass supplier": "carpenter", "décor": "carpenter",
+  decor: "carpenter",
+  painter: "painter",
+  classes: "classes",
+  spirtual: "religious", spiritual: "religious",
+  hardware: "shopping", "school uniform": "shopping", clothes: "shopping",
+  "flag shop": "shopping", rental: "shopping", costumes: "shopping",
+  "banquet hall": "food", "club house": "food",
+  gorssry: "grocery", grocery: "grocery", supplier: "grocery",
+  gardner: "pets",
+  "accounting services": "finance",
+  "local tempo": "movers",
+  notriasation: "professional", notarisation: "professional",
 };
 
 /* ── Locality mapping ───────────────────────────────────────────────────────
@@ -289,6 +316,16 @@ async function main() {
       : catService;
     if (service.toLowerCase() === name.toLowerCase()) service = catService;
     const { primary, alts } = splitPhones(rawPhone);
+    // Normalise through the same parser the app uses, so a re-import writes the
+    // canonical "+91 98765 43210" form rather than whatever the sheet contained.
+    // Without this a re-run would both undo the formatting and fail to match
+    // existing rows, creating a duplicate of every contact.
+    const parsedPrimary = parsePhone(primary);
+    const displayPrimary = parsedPrimary.valid ? parsedPrimary.display : primary;
+    const displayAlts = alts.map((a) => {
+      const pa = parsePhone(a);
+      return pa.valid ? pa.display : a;
+    });
     const address = [plot, area].filter(Boolean).join(", ");
 
     const tags = Array.from(
@@ -318,7 +355,7 @@ async function main() {
         contactPerson: person || null,
         category,
         service,
-        phones: primary ? [primary, ...alts] : [],
+        phones: displayPrimary ? [displayPrimary, ...displayAlts] : [],
         whatsapp: false,
         locality: mapLocality(area),
         address,
@@ -367,8 +404,17 @@ async function main() {
   let created = 0;
   let updated = 0;
   for (const p of prepared) {
+    // Match on the normalised number. Older rows were stored unformatted, so
+    // fall back to the raw digits before concluding a contact is new.
+    const primaryDigits = p.data.phones[0]?.replace(/\D/g, "") ?? "";
     const where = p.data.phones.length
-      ? { name: p.data.name, phones: { has: p.data.phones[0] } }
+      ? {
+          name: p.data.name,
+          OR: [
+            { phones: { has: p.data.phones[0] } },
+            { phones: { has: primaryDigits } },
+          ],
+        }
       : { name: p.data.name, category: p.data.category };
     const existing = await prisma.communityContact.findFirst({
       where,

@@ -28,6 +28,8 @@ export const COMMUNITY_CATEGORIES = [
   { key: "plumber",      label: "Plumbers",                   icon: "Wrench" },
   { key: "painter",      label: "Painters & Repairs",         icon: "PaintRoller" },
   { key: "shopping",     label: "Shops & Retail",             icon: "ShoppingBag" },
+  { key: "printing",     label: "Printing & Stationery",       icon: "Printer" },
+  { key: "ngo",          label: "NGOs & Donations",            icon: "HeartHandshake" },
   { key: "grocery",      label: "Grocery & Kirana",           icon: "ShoppingBag" },
   { key: "laundry",      label: "Laundry & Tailor",           icon: "Shirt" },
 ] as const;

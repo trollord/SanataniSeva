@@ -29,6 +29,8 @@ import {
   Landmark,
   Briefcase,
   Palette,
+  Printer,
+  HeartHandshake,
   type LucideIcon,
 } from "lucide-react";
 import WhatsAppIcon from "@/components/ui/WhatsAppIcon";
@@ -64,6 +66,8 @@ const ICONS: Record<string, LucideIcon> = {
   Landmark,
   Briefcase,
   Palette,
+  Printer,
+  HeartHandshake,
 };
 
 /** 250 contacts is a lot to scroll; the table pages instead. */
