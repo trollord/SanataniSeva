@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 
 interface Props {
   id: string;
@@ -11,6 +12,7 @@ interface Props {
 
 export default function NewsAdminActions({ id, status }: Props) {
   const router = useRouter();
+  const confirm = useConfirm();
   const [loading, setLoading] = useState(false);
 
   async function toggle() {
@@ -25,7 +27,13 @@ export default function NewsAdminActions({ id, status }: Props) {
   }
 
   async function del() {
-    if (!confirm("Delete this news item? This cannot be undone.")) return;
+    const ok = await confirm({
+      title: "Delete this news item?",
+      description: "It will be removed from the feed immediately. This cannot be undone.",
+      confirmLabel: "Delete",
+      danger: true,
+    });
+    if (!ok) return;
     setLoading(true);
     await fetch(`/api/news/${id}`, { method: "DELETE" });
     router.refresh();

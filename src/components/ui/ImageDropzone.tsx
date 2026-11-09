@@ -20,6 +20,50 @@ import { ImagePlus, Loader2, X, AlertCircle } from "lucide-react";
 
 const MAX_BYTES = 2 * 1024 * 1024;
 
+/**
+ * Shrinks a photo in the browser before uploading.
+ *
+ * A phone photo is typically 3-6 MB and far larger than any slot that displays
+ * it, so uploading the original is slow and often blows the 2 MB limit for no
+ * visible gain. Downscaling to 1600px and re-encoding as JPEG usually lands
+ * around 200-400 KB - roughly a tenfold cut in upload time.
+ *
+ * Falls back to the original file if anything goes wrong (HEIC that the browser
+ * cannot decode, for instance), so a failure here never blocks an upload that
+ * would otherwise have succeeded.
+ */
+const MAX_EDGE = 1600;
+
+async function compress(file: File): Promise<File> {
+  if (!file.type.startsWith("image/")) return file;
+  try {
+    const bitmap = await createImageBitmap(file);
+    const scale = Math.min(1, MAX_EDGE / Math.max(bitmap.width, bitmap.height));
+    // Already small enough and within budget - leave it alone.
+    if (scale === 1 && file.size <= MAX_BYTES) {
+      bitmap.close?.();
+      return file;
+    }
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.round(bitmap.width * scale);
+    canvas.height = Math.round(bitmap.height * scale);
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return file;
+    ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    bitmap.close?.();
+
+    const blob: Blob | null = await new Promise((res) =>
+      canvas.toBlob(res, "image/jpeg", 0.82)
+    );
+    if (!blob || blob.size >= file.size) return file;
+
+    const name = file.name.replace(/\.[^.]+$/, "") + ".jpg";
+    return new File([blob], name, { type: "image/jpeg", lastModified: Date.now() });
+  } catch {
+    return file;
+  }
+}
+
 type Pending = {
   id: string;
   preview: string;
@@ -48,10 +92,14 @@ export default function ImageDropzone({
         return;
       }
 
-      const tooBig = accepted.filter((f) => f.size > MAX_BYTES);
-      tooBig.forEach((f) => toast.error(`"${f.name}" is over 2 MB.`));
+      // Compress first: a 5 MB phone photo becomes a few hundred KB, so it both
+      // uploads far faster and stops being rejected for size.
+      const shrunk = await Promise.all(accepted.slice(0, room).map(compress));
 
-      const files = accepted.filter((f) => f.size <= MAX_BYTES).slice(0, room);
+      const tooBig = shrunk.filter((f) => f.size > MAX_BYTES);
+      tooBig.forEach((f) => toast.error(`"${f.name}" is still over 2 MB after compressing.`));
+
+      const files = shrunk.filter((f) => f.size <= MAX_BYTES);
       if (!files.length) return;
 
       // Show previews immediately; the uploads resolve behind them.
@@ -138,7 +186,7 @@ export default function ImageDropzone({
           {isDragActive ? "Drop to upload" : "Drag images here, or click to choose"}
         </p>
         <p className="mt-1 text-[11px] text-gray-400">
-          JPEG, PNG, WebP or HEIC · up to 2 MB each · {value.length + pending.length} of {max}
+          JPEG, PNG, WebP or HEIC · resized automatically · {value.length + pending.length} of {max}
         </p>
       </div>
 

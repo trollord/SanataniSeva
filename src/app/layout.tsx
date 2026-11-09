@@ -6,6 +6,7 @@ import { Toaster } from "sonner";
 import { auth } from "@/lib/auth";
 import SessionProvider from "@/components/layout/SessionProvider";
 import WarmDB from "@/components/WarmDB";
+import { ConfirmProvider } from "@/components/ui/ConfirmDialog";
 import { SITE_URL } from "@/lib/constants";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
@@ -147,9 +148,11 @@ export default async function RootLayout({
           `}
         </Script>
         <SessionProvider session={session}>
-          <WarmDB />
-          {children}
-          <Toaster richColors position="top-right" />
+          <ConfirmProvider>
+            <WarmDB />
+            {children}
+            <Toaster richColors position="top-right" />
+          </ConfirmProvider>
         </SessionProvider>
       </body>
     </html>

@@ -5,13 +5,20 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { CheckCircle2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 
 export default function MarkSoldButton({ itemId }: { itemId: string }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const confirm = useConfirm();
 
   async function handleMarkSold() {
-    if (!confirm("Mark this item as sold? It will still be visible in the marketplace.")) return;
+    const ok = await confirm({
+      title: "Mark this item as sold?",
+      description: "It stays visible in the marketplace, labelled as sold.",
+      confirmLabel: "Mark as sold",
+    });
+    if (!ok) return;
     setLoading(true);
     try {
       const res = await fetch(`/api/items/${itemId}`, { method: "PATCH" });

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Plus, Trash2, CalendarClock, Repeat, ChevronDown } from "lucide-react";
 import { DAY_SHORT, formatTime, type ResolvedDay } from "@/lib/bus";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 
 interface Schedule {
   id: string;
@@ -70,6 +71,7 @@ export default function BusAdminClient({
   formatted?: Record<string, string>;
 }) {
   const router = useRouter();
+  const confirm = useConfirm();
   const [busy, setBusy] = useState(false);
   const [openRoute, setOpenRoute] = useState<string | null>(routes[0]?.id ?? null);
   const [showNewRoute, setShowNewRoute] = useState(routes.length === 0);
@@ -286,8 +288,14 @@ export default function BusAdminClient({
                   </button>
                   <button
                     disabled={busy}
-                    onClick={() => {
-                      if (!confirm(`Delete route ${r.routeNumber} and all its timings?`)) return;
+                    onClick={async () => {
+                      const ok = await confirm({
+                        title: `Delete route ${r.routeNumber}?`,
+                        description: "Its timings and exceptions go too. This cannot be undone.",
+                        confirmLabel: "Delete route",
+                        danger: true,
+                      });
+                      if (!ok) return;
                       run(() => send(`/api/admin/bus/routes/${r.id}`, "DELETE"), "Route deleted");
                     }}
                     className="text-xs font-semibold text-red-600 hover:text-red-700"

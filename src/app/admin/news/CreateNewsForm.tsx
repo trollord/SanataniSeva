@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import SearchableSelect from "@/components/ui/searchable-select";
 import ImageDropzone from "@/components/ui/ImageDropzone";
+import { toast } from "sonner";
 
 const CATEGORIES = [
   { value: "EVENTS",        label: "Events" },
@@ -39,23 +40,31 @@ export default function CreateNewsForm() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
-    setLoading(true);
-    try {
-      const res = await fetch("/api/news", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
-      });
+
+    // Don't hold the form hostage to the round trip: clear it straight away and
+    // let a toast carry the outcome. The write itself is fast; what the admin
+    // felt was the request, and a frozen button reads as a broken one.
+    const payload = form;
+    const request = fetch("/api/news", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    }).then(async (res) => {
       if (!res.ok) {
         const j = await res.json().catch(() => ({}));
-        setError(j.error ?? "Something went wrong.");
-        return;
+        throw new Error(j.error ?? "Something went wrong.");
       }
-      setForm({ headline: "", body: "", category: "GENERAL", imageUrls: [], publishedAt: todayIso() });
       router.refresh();
-    } finally {
-      setLoading(false);
-    }
+      return res;
+    });
+
+    toast.promise(request, {
+      loading: "Publishing…",
+      success: `Published “${payload.headline}”`,
+      error: (err: Error) => err.message,
+    });
+
+    setForm({ headline: "", body: "", category: "GENERAL", imageUrls: [], publishedAt: todayIso() });
   }
 
   return (

@@ -7,6 +7,7 @@ import { formatDate } from "@/lib/utils/formatters";
 import { Loader2 } from "lucide-react";
 import SearchableSelect from "@/components/ui/searchable-select";
 import { ClientPager, paginate } from "@/components/admin/TablePager";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 
 interface UserRow {
   id: string;
@@ -27,6 +28,7 @@ export default function AdminUsersPage() {
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState<string | null>(null);
   const [page, setPage] = useState(1);
+  const confirm = useConfirm();
   const [tab, setTab] = useState<FilterTab>("all");
 
   useEffect(() => {
@@ -40,9 +42,11 @@ export default function AdminUsersPage() {
   async function updateRole(userId: string, role: string) {
     if (role === "ADMIN") {
       const user = users.find((u) => u.id === userId);
-      const ok = window.confirm(
-        `Make ${user?.name ?? user?.email ?? "this user"} an Admin? They will get full access to the admin panel.`
-      );
+      const ok = await confirm({
+        title: `Make ${user?.name ?? user?.email ?? "this user"} an admin?`,
+        description: "They will get full access to the admin panel, including every resident's contact details.",
+        confirmLabel: "Make admin",
+      });
       if (!ok) return;
     }
     setUpdating(userId);
