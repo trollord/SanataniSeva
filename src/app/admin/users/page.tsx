@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { formatDate } from "@/lib/utils/formatters";
 import { Loader2 } from "lucide-react";
 import SearchableSelect from "@/components/ui/searchable-select";
+import { ClientPager, paginate } from "@/components/admin/TablePager";
 
 interface UserRow {
   id: string;
@@ -25,6 +26,7 @@ export default function AdminUsersPage() {
   const [users, setUsers] = useState<UserRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
   const [tab, setTab] = useState<FilterTab>("all");
 
   useEffect(() => {
@@ -88,6 +90,11 @@ export default function AdminUsersPage() {
     return true;
   });
 
+  // Rows live in component state here, so paging slices in memory rather than
+  // re-querying. `paginate` clamps, so switching tabs cannot strand you on a
+  // page that no longer exists.
+  const paged = paginate(filteredUsers, page);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -105,7 +112,7 @@ export default function AdminUsersPage() {
         {(["all", "owners", "disabled"] as FilterTab[]).map((t) => (
           <button
             key={t}
-            onClick={() => setTab(t)}
+            onClick={() => { setTab(t); setPage(1); }}
             className={`px-3 sm:px-4 py-1.5 rounded-full text-xs sm:text-sm font-medium capitalize transition-colors ${
               tab === t
                 ? "bg-[#FF5F15] text-white"
@@ -119,7 +126,7 @@ export default function AdminUsersPage() {
 
       {/* Mobile cards */}
       <div className="sm:hidden space-y-3">
-        {filteredUsers.map((u) => (
+        {paged.rows.map((u) => (
           <div key={u.id} className="bg-white rounded-xl border border-gray-200 p-4">
             <div className="flex items-start justify-between gap-2 mb-2">
               <div className="min-w-0">
@@ -202,7 +209,7 @@ export default function AdminUsersPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {filteredUsers.map((u) => (
+              {paged.rows.map((u) => (
                 <tr key={u.id} className="hover:bg-gray-50">
                   <td className="px-4 py-3 font-medium text-gray-900">{u.name ?? "-"}</td>
                   <td className="px-4 py-3 text-gray-500 max-w-[180px] truncate">{u.email}</td>
@@ -269,6 +276,15 @@ export default function AdminUsersPage() {
           <p className="text-center py-12 text-gray-400">No users found.</p>
         )}
       </div>
+
+      <ClientPager
+        page={paged.page}
+        pageCount={paged.pageCount}
+        total={paged.total}
+        from={paged.from}
+        to={paged.to}
+        onPage={setPage}
+      />
     </div>
   );
 }

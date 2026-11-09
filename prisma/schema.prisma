@@ -254,6 +254,12 @@ model CommunityContact {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
+  /// DB-generated (GENERATED ALWAYS ... STORED) and never written by the app -
+  /// see migration 20261109090000. Present here only so searches can filter on
+  /// it through Prisma; `prisma migrate dev` would try to recreate it as a
+  /// plain column, so migrations for this table stay hand-written.
+  searchText    String?
+
   @@index([status, category])
 }
 

@@ -18,6 +18,7 @@ import { turnaroundDays, formatPrice, formatDate } from "@/lib/utils/formatters"
 import { Building2, PlusCircle, Loader2 } from "lucide-react";
 import Link from "next/link";
 import Modal from "@/components/ui/Modal";
+import { ClientPager, paginate } from "@/components/admin/TablePager";
 
 interface PropertyImage {
   url: string;
@@ -86,6 +87,7 @@ export default function DashboardListings({
 }) {
   const router = useRouter();
   const [properties, setProperties] = useState(initialProperties);
+  const [page, setPage] = useState(1);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [interests, setInterests] = useState<Inquiry[]>([]);
   const [interestsLoading, setInterestsLoading] = useState(false);
@@ -184,6 +186,10 @@ export default function DashboardListings({
     );
   }
 
+  // Paged in memory: these rows are component state and mutate in place when
+  // a listing's status changes, so re-querying per page would lose that.
+  const paged = paginate(properties, page);
+
   return (
     <>
       {/* Stats - only shown when the owner has more than 5 listings */}
@@ -207,7 +213,7 @@ export default function DashboardListings({
 
       {/* Listings */}
       <div className="space-y-4">
-        {properties.map((property) => {
+        {paged.rows.map((property) => {
           const badge = STATUS_BADGE[property.status] ?? STATUS_BADGE.INACTIVE;
           const thumb = property.images[0]?.url;
           const isLoading = statusLoading === property.id;
@@ -353,6 +359,15 @@ export default function DashboardListings({
             </div>
           );
         })}
+
+        <ClientPager
+          page={paged.page}
+          pageCount={paged.pageCount}
+          total={paged.total}
+          from={paged.from}
+          to={paged.to}
+          onPage={setPage}
+        />
       </div>
 
       {/* Interests Sheet */}

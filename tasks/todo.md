@@ -1,90 +1,93 @@
-# Rent default, news image uploads
+# Phone numbers: validate, split, format
 
-Three asks. One of them turns out to need no change.
+Numbers were stored however the spreadsheet happened to write them - "9867856939",
+"98678 56939", "022 2536 6401", "100". Now parsed, validated and stored in one
+canonical form, with the dialling code separated from the local number.
 
-## 1. Listings should default to Rent
+## The numbering plan
 
-Today, with no `?listingType=` in the URL:
-- `api/properties/route.ts:69` applies no filter, so **both** rent and sale come back
-- `FilterPanel.tsx:19` highlights **SALE** (`searchParams.get("listingType") || "SALE"`)
-- `ListingsContent.tsx:96` labels the count "available for sale"
+Confirmed against the DoT/TRAI plan and corroborated by the data:
+- Every Indian number is exactly 10 digits once +91 and the trunk "0" are removed
+- Mobile: 10 digits beginning 6, 7, 8 or 9 -> `+91 98765 43210`
+- Landline: STD + subscriber = 10 digits. Metro STD codes are two digits
+  (Delhi 11, Mumbai 22, Pune 20, Kolkata 33, Hyderabad 40, Chennai 44,
+  Ahmedabad 79, Bengaluru 80), others three or four. Dialled domestically with
+  a leading 0 -> `022 2597 2040`
+- Toll-free begins 1800 -> `1800 229 944`
+- **Emergency and helpline short codes are 3-5 digits and take no prefix at
+  all** - 100, 101, 102, 108, 112, 14567. They must never be rewritten as +91,
+  which is exactly what a naive "prepend the country code" rule would do.
 
-So the UI claims sale, the data is everything, and nothing says rent. Default
-to RENT in all three, and send `listingType=RENT` on the fetch when the param
-is absent so the copy and the results agree.
+## What changed
 
-## 2. Community sort — already correct
+`src/lib/phone.ts` - one parser used by the form, all three APIs, the CSV
+importer and the normalisation script, so nothing can disagree about what a
+valid number is. Returns `{ extension, number, kind, display, e164, valid,
+reason }`.
 
-`(public)/community/page.tsx:34` is already `orderBy: { createdAt: "desc" }`,
-and `createdAt` **is** the date added. Verified against the live table: the two
-helpline rows re-created at 14:36 sit above rows created at 14:22. The table
-renders in query order - nothing re-sorts it - so a newly added contact does
-land on top.
+- Admin dialog: a dialling-code select plus a number field, per number
+- All three APIs validate through the same parser and store the canonical form,
+  reporting the specific reason ("…has 9 digits") rather than a generic error
+- CSV gains `extension` and `number` columns, pipe-separated and index-aligned
+  for multiple numbers; a legacy single `phones` column is still accepted
+- WhatsApp is now offered only for mobiles - wa.me on a landline, a toll-free
+  line or `100` is a dead link
 
-What probably looks wrong: all 250 imported rows were created within the same
-six minutes, so their order is just reverse-import order and reads as arbitrary.
+## The data
 
-No change made. The open question is whether "recently added" should also mean
-"recently edited" - that would be `updatedAt`, and is a one-line change if
-wanted.
+250 contacts, 273 numbers. 216 contacts reformatted.
 
-## 3. News: multiple images, drag and drop, S3
+| kind | count | stored as |
+|---|---|---|
+| mobile | 243 | `+91 98765 43210` |
+| landline | 16 | `022 2597 2040` |
+| short code | 8 | `100` |
+| toll-free | 1 | `1800 229 944` |
+| unformatted | 5 | left exactly as found |
 
-`NewsItem.imageUrl String?` holds one pasted URL. Replace with uploads.
+Those 5 are 9-digit numbers - a digit was lost before this project existed.
+They were **not** guessed at or padded: a directory showing a confidently
+formatted wrong number is worse than one showing the original. All 5 are
+already PENDING, so they are invisible publicly and listed in the admin panel
+for repair.
 
-- `imageUrl String?` -> `imageUrls String[]`, backfilled from the existing
-  column, matching how `phones` was done
-- New `ImageDropzone` component. `react-dropzone@15` is already a dependency and
-  the upload flow already exists: `GET /api/upload` returns a presigned S3 URL,
-  the browser PUTs the file, and `publicUrl` is stored. Same contract the
-  marketplace and listing forms use, so no new S3 surface.
-- Consumers to update: `api/news/route.ts`, `admin/news/CreateNewsForm.tsx`,
-  `(public)/newspaper/page.tsx`, `components/newspaper/TodaysNewsFeed.tsx`
+Three numbers were stored as bare 10-digit landlines and are now
+`022 3504 7727`, `022 6855 6855` and `020 2714 6668`. The last is a Pune code
+on the estate post office - mechanically correct from the digits, but worth a
+human check.
 
-Constraints inherited from `/api/upload`: 2 MB per image, jpeg/png/webp/heic,
-20 uploads per user per day, auth required.
+## Adding a toll-free or short code
 
-## Tasks
+The add path had four bugs that only showed up when actually exercised:
 
-- [x] Listings default to RENT - `DEFAULT_LISTING_TYPE` in `ListingsContent`,
-      matching default in `FilterPanel`, injected into both fetches
-- [x] Migration `20261108090000_news_item_image_urls`: `imageUrls text[]`,
-      backfilled, `imageUrl` dropped; Prisma ledger baselined
-- [x] `ImageDropzone` - drag and drop, instant previews, per-file errors,
-      remove, 2 MB / 6 image caps
-- [x] Wired into the news admin form, replacing the URL input
-- [x] Display updated: `newspaper/page.tsx`, `TodaysNewsFeed`
-- [x] `build:check` clean; verified in Chrome - Rent pill is default, dropzone
-      renders, `/api/upload` returns a signed URL for the bucket
-- [ ] Commit
+| picked | typed | was | now |
+|---|---|---|---|
+| 1800 | `1800229944` | `18001800229944` | `1800 229 944` |
+| +91 | `+91 98765 43210` | `+91919876543210` | `+91 98765 43210` |
+| 022 | `022 2597 2040` | `02202225972040` | `022 2597 2040` |
+| +91 | `100` | **`91100`, saved silently** | rejected with guidance |
+
+The last was the dangerous one: concatenating gave `91100`, which then parsed
+as a valid 5-digit short code and stored nonsense with no error.
+
+`combinePhone()` replaces the raw concatenation - tolerant of a pasted whole
+number (what was typed wins if it already carries its own code), strict about a
+dialling code paired with a 3-digit body, since short codes take no code at all.
+Used by the form, the APIs and the CSV importer alike.
+
+Two UI fixes found by testing the real form: the error did not clear when the
+code was corrected (the error hangs off the sibling `number` field, so changing
+the select has to `trigger()` its revalidation), and the labels truncated to
+`None — e…` in a 132px trigger.
 
 ## Review
 
-Two changed, one did not need changing.
+Verified rather than assumed: the parser was run over every real shape in the
+table before any row was touched, and the rendered page was checked for all
+four `tel:` forms - `tel:+91…`, `tel:0…`, `tel:1800…`, and a bare `tel:NNN`
+for short codes. WhatsApp links produce `wa.me/919867856939`, not a doubled 91.
 
-**Rent default** was three disagreeing defaults, not one: the API filtered
-nothing, the filter pills highlighted SALE, and the result count said "available
-for sale". All three now derive from `DEFAULT_LISTING_TYPE`, and the fetch sends
-it explicitly so the copy and the results cannot drift apart again.
-
-**News images** follow the `phones` precedent - a real `text[]`, backfilled,
-old column dropped. The uploader reuses the existing presigned-URL flow, so
-files go browser -> S3 without passing through the server and there is no new
-upload surface.
-
-Worth knowing:
-- `/api/upload` writes every object under the `properties/` prefix regardless of
-  what is being uploaded, so news images land there too. Harmless, but the
-  prefix name is now a lie. Changing it means touching the shared route.
-- The API only accepts URLs under `NEXT_PUBLIC_AWS_S3_BUCKET_URL`. It fails
-  closed when that is unset - an earlier draft fell back to `"https://"`, which
-  `startsWith` matches for any HTTPS URL, i.e. no check at all.
-- Inherited caps: 2 MB per image, jpeg/png/webp/heic, 20 uploads per user per
-  day, 6 images per news item.
-
-**Community sort needed no change.** It was already `createdAt desc`, and
-`createdAt` is the date added - verified against the live table. The 250
-imported rows were all created within six minutes of each other, so their order
-reads as arbitrary, which is probably what looked wrong. If "recently added"
-should also surface "recently edited", that is `updatedAt` and a one-line
-change.
+Environment note: `.next/dev/types/` keeps acquiring `"… 2.ts"` conflict copies,
+the signature of iCloud Drive syncing `~/Desktop`. One of them broke
+typechecking with a duplicate identifier. tsconfig now excludes `**/* 2.ts`.
+Worth turning off Desktop sync for this folder.

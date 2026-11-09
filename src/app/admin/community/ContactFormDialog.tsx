@@ -14,6 +14,7 @@ import Modal from "@/components/ui/Modal";
 import SearchableSelect from "@/components/ui/searchable-select";
 import { COMMUNITY_CATEGORIES } from "@/lib/community";
 import { HIRANANDANI_LOCALITIES } from "@/lib/constants";
+import { PHONE_EXTENSIONS, combinePhone, formatPhone, parsePhone } from "@/lib/phone";
 
 const CATEGORY_KEYS = COMMUNITY_CATEGORIES.map((c) => c.key) as [string, ...string[]];
 
@@ -37,14 +38,25 @@ const schema = z.object({
   service: z.string().trim().min(2, "Describe the service").max(200),
   phones: z
     .array(
-      z.object({
-        value: z
-          .string()
-          .trim()
-          .min(3, "Enter a valid number")
-          .max(20)
-          .regex(/^[+\d\s\-()]+$/, "Digits, spaces, + - ( ) only"),
-      })
+      z
+        .object({
+          extension: z.string(),
+          number: z.string().trim().min(1, "Enter a number"),
+        })
+        // combinePhone, not a raw concatenation: it tolerates a pasted whole
+        // number and rejects a code paired with a short code. Same function the
+        // API and the CSV importer use, so the dialog cannot accept something
+        // the server will reject.
+        .superRefine((v, ctx) => {
+          const r = combinePhone(v.extension, v.number);
+          if (!r.valid) {
+            ctx.addIssue({
+              code: "custom",
+              message: r.reason ?? "Not a valid Indian number for that code",
+              path: ["number"],
+            });
+          }
+        })
     )
     .min(1, "At least one number")
     .max(5, "At most five numbers"),
@@ -119,6 +131,7 @@ export default function ContactFormDialog({
     control,
     handleSubmit,
     reset,
+    trigger,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -128,8 +141,11 @@ export default function ContactFormDialog({
       category: (contact?.category as FormValues["category"]) ?? "health",
       service: contact?.service ?? "",
       phones: contact?.phones.length
-        ? contact.phones.map((value) => ({ value }))
-        : [{ value: "" }],
+        ? contact.phones.map((raw) => {
+            const parsed = parsePhone(raw);
+            return { extension: parsed.extension, number: parsed.number };
+          })
+        : [{ extension: "+91", number: "" }],
       whatsapp: contact?.whatsapp ?? false,
       locality: contact?.locality ?? "Hiranandani Estate",
       address: contact?.address ?? "",
@@ -146,7 +162,9 @@ export default function ContactFormDialog({
     setServerError(null);
     const payload = {
       ...values,
-      phones: values.phones.map((p) => p.value).filter(Boolean),
+      phones: values.phones
+        .map((p) => formatPhone(p.extension, p.number))
+        .filter(Boolean),
       contactPerson: values.contactPerson || null,
       notes: values.notes || null,
     };
@@ -247,15 +265,36 @@ export default function ContactFormDialog({
             label="Phone numbers"
             error={
               errors.phones?.message ??
-              errors.phones?.find?.((e) => e?.value?.message)?.value?.message
+              errors.phones?.find?.((e) => e?.number?.message)?.number?.message
             }
           >
             <div className="space-y-2">
               {fields.map((field, i) => (
                 <div key={field.id} className="flex items-center gap-2">
+                  <div className="w-[150px] shrink-0">
+                    <Controller
+                      control={control}
+                      name={`phones.${i}.extension` as const}
+                      render={({ field: ext }) => (
+                        <SearchableSelect
+                          value={ext.value}
+                          onChange={(v) => {
+                            ext.onChange(v);
+                            // The error lives on the sibling `number` field, so
+                            // changing the code has to re-run its validation -
+                            // otherwise a fixed row keeps showing a stale error.
+                            void trigger(`phones.${i}.number` as const);
+                          }}
+                          options={PHONE_EXTENSIONS.map((e) => ({ value: e.value, label: e.label }))}
+                          searchable={false}
+                          aria-label={`Dialling code for number ${i + 1}`}
+                        />
+                      )}
+                    />
+                  </div>
                   <Input
                     className={inputClass}
-                    {...register(`phones.${i}.value` as const)}
+                    {...register(`phones.${i}.number` as const)}
                     placeholder="98765 43210"
                     inputMode="tel"
                     aria-label={`Phone number ${i + 1}`}
@@ -277,7 +316,7 @@ export default function ContactFormDialog({
               {fields.length < 5 ? (
                 <button
                   type="button"
-                  onClick={() => append({ value: "" })}
+                  onClick={() => append({ extension: "+91", number: "" })}
                   className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-600 transition-colors hover:text-gray-900"
                 >
                   <Plus className="h-3.5 w-3.5" />

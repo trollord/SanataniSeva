@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ExternalLink, FileText } from "lucide-react";
 import UploadForm from "./UploadForm";
 import DeleteButton from "./DeleteButton";
+import TablePager, { resolvePage } from "@/components/admin/TablePager";
 
 export const dynamic = "force-dynamic";
 
@@ -12,12 +13,21 @@ function fmtDate(d: Date) {
   return d.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
 }
 
-export default async function AdminNewsletterPage() {
+export default async function AdminNewsletterPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string }>;
+}) {
   const session = await auth();
   if (!session || session.user.role !== "ADMIN") redirect("/login");
 
+  const total = await prisma.newsletter.count();
+  const { page, pageCount, skip, take, from, to } = resolvePage((await searchParams).page, total);
+
   const editions = await prisma.newsletter.findMany({
     orderBy: { date: "desc" },
+    skip,
+    take,
     select: { id: true, title: true, date: true, pageCount: true, status: true, pdfUrl: true },
   });
 
@@ -76,6 +86,15 @@ export default async function AdminNewsletterPage() {
           </table>
         </div>
       )}
+
+      <TablePager
+        basePath="/admin/newsletter"
+        page={page}
+        pageCount={pageCount}
+        total={total}
+        from={from}
+        to={to}
+      />
     </div>
   );
 }

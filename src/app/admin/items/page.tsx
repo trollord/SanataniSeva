@@ -9,6 +9,7 @@ import {
   ITEM_CONDITION_LABELS,
 } from "@/lib/constants";
 import ItemAdminActions from "./ItemAdminActions";
+import TablePager, { resolvePage } from "@/components/admin/TablePager";
 
 export const dynamic = "force-dynamic";
 
@@ -20,7 +21,7 @@ const STATUS_STYLES: Record<string, string> = {
 };
 
 interface PageProps {
-  searchParams: Promise<{ status?: string }>;
+  searchParams: Promise<{ status?: string; page?: string }>;
 }
 
 export default async function AdminItemsPage({ searchParams }: PageProps) {
@@ -30,10 +31,15 @@ export default async function AdminItemsPage({ searchParams }: PageProps) {
   const filters = await searchParams;
   const statusFilter = filters.status ?? "PENDING";
 
+  const itemWhere = statusFilter === "ALL" ? {} : { status: statusFilter };
+  const total = await prisma.item.count({ where: itemWhere });
+  const { page, pageCount, skip, take, from, to } = resolvePage(filters.page, total);
+
   const items = await prisma.item.findMany({
-    where: statusFilter === "ALL" ? {} : { status: statusFilter },
+    where: itemWhere,
     orderBy: { createdAt: "desc" },
-    take: 100,
+    skip,
+    take,
     select: {
       id: true,
       title: true,
@@ -147,6 +153,16 @@ export default async function AdminItemsPage({ searchParams }: PageProps) {
           </table>
         </div>
       )}
+
+      <TablePager
+        basePath="/admin/items"
+        params={{ status: statusFilter }}
+        page={page}
+        pageCount={pageCount}
+        total={total}
+        from={from}
+        to={to}
+      />
     </div>
   );
 }

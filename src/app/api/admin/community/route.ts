@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { COMMUNITY_CATEGORIES } from "@/lib/community";
 import { HIRANANDANI_LOCALITIES } from "@/lib/constants";
+import { parsePhone } from "@/lib/phone";
 
 const CATEGORY_KEYS = COMMUNITY_CATEGORIES.map((c) => c.key) as [string, ...string[]];
 
@@ -19,8 +20,24 @@ const createSchema = z.object({
   contactPerson: z.string().trim().max(80).optional().default(""),
   category: z.enum(CATEGORY_KEYS),
   service: z.string().trim().min(2).max(200),
+  // Stored in the canonical display form, so every surface shows the same
+  // thing and tel: links stay dialable.
   phones: z
-    .array(z.string().trim().min(3).max(20).regex(/^[+\d\s\-()]+$/, "Invalid phone number"))
+    .array(
+      z
+        .string()
+        .trim()
+        .transform((v, ctx) => {
+          const parsed = parsePhone(v);
+          if (!parsed.valid) {
+            // Surfaces the specific reason ("…has 9 digits") rather than a
+            // generic rejection, so an admin can see what to fix.
+            ctx.addIssue({ code: "custom", message: parsed.reason ?? "Invalid phone number" });
+            return z.NEVER;
+          }
+          return parsed.display;
+        })
+    )
     .min(1, "At least one phone number is required")
     .max(5),
   whatsapp: z.boolean().default(false),

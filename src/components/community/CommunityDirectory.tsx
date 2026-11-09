@@ -34,6 +34,7 @@ import {
 import WhatsAppIcon from "@/components/ui/WhatsAppIcon";
 import { whatsAppContactUrl } from "@/lib/utils/whatsapp";
 import SearchableSelect from "@/components/ui/searchable-select";
+import { parsePhone } from "@/lib/phone";
 import {
   COMMUNITY_CATEGORIES,
   type CommunityContact,
@@ -358,6 +359,9 @@ function ContactRow({ contact: c }: { contact: CommunityContact }) {
   const Icon = meta ? ICONS[meta.icon] : Users;
   // The page filters out numberless contacts, so there is always a primary.
   const primary = c.phones[0];
+  // WhatsApp only exists on mobile numbers - offering it for a landline, a
+  // toll-free line or an emergency short code produces a dead wa.me link.
+  const canWhatsApp = c.whatsapp && parsePhone(primary).kind === "mobile";
 
   return (
     <tr className="hover:bg-[#f9fafa] transition-colors align-top">
@@ -427,7 +431,7 @@ function ContactRow({ contact: c }: { contact: CommunityContact }) {
             <Phone className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">Call</span>
           </a>
-          {c.whatsapp && (
+          {canWhatsApp && (
             <a
               href={whatsAppContactUrl(
                 primary,

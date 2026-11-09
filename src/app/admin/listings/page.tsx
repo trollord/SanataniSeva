@@ -6,6 +6,7 @@ import { formatPrice, formatDate, turnaroundDays } from "@/lib/utils/formatters"
 import { PROPERTY_TYPE_LABELS, LISTING_TYPE_LABELS } from "@/lib/constants";
 import type { PropertyFilters } from "@/types/property";
 import ListingActions from "./ListingActions";
+import TablePager, { resolvePage } from "@/components/admin/TablePager";
 
 export const dynamic = "force-dynamic";
 
@@ -18,7 +19,7 @@ const STATUS_STYLES: Record<string, string> = {
 };
 
 interface PageProps {
-  searchParams: Promise<PropertyFilters & { status?: string }>;
+  searchParams: Promise<PropertyFilters & { status?: string; page?: string }>;
 }
 
 export default async function AdminListingsPage({ searchParams }: PageProps) {
@@ -30,10 +31,15 @@ export default async function AdminListingsPage({ searchParams }: PageProps) {
   const filters = await searchParams;
   const statusFilter = filters.status ?? "PENDING";
 
+  const listingWhere = statusFilter === "ALL" ? {} : { status: statusFilter as never };
+  const total = await prisma.property.count({ where: listingWhere });
+  const { page, pageCount, skip, take, from, to } = resolvePage(filters.page, total);
+
   const properties = await prisma.property.findMany({
-    where: statusFilter === "ALL" ? {} : { status: statusFilter as never },
+    where: listingWhere,
     orderBy: { createdAt: "desc" },
-    take: 50,
+    skip,
+    take,
     select: {
       id: true,
       title: true,
@@ -172,6 +178,16 @@ export default async function AdminListingsPage({ searchParams }: PageProps) {
               </table>
             </div>
           </div>
+
+          <TablePager
+            basePath="/admin/listings"
+            params={{ status: statusFilter }}
+            page={page}
+            pageCount={pageCount}
+            total={total}
+            from={from}
+            to={to}
+          />
         </>
       )}
     </div>
