@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider  = "postgresql"
   // Supavisor transaction pooler (port 6543) — serverless-safe.
   url       = env("DATABASE_URL")
   // Session-mode pooler (port 5432) — migrations and introspection, which
@@ -48,6 +48,7 @@ model Account {
   user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
+  @@index([userId])
 }
 
 model Session {
@@ -56,6 +57,8 @@ model Session {
   userId       String
   expires      DateTime
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model VerificationToken {
@@ -106,6 +109,7 @@ model Property {
   images           PropertyImage[]
 
   @@index([status, listingType, type])
+  @@index([status, createdAt(sort: Desc)])
   @@index([ownerId])
   @@index([locality])
 }
@@ -137,6 +141,8 @@ model PropertyImage {
   isPrimary  Boolean  @default(false)
   createdAt  DateTime @default(now())
   property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@index([propertyId])
 }
 
 model PriceHistory {
@@ -146,6 +152,8 @@ model PriceHistory {
   recordedAt DateTime @default(now())
   source     String   @default("LISTING")
   property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@index([propertyId])
 }
 
 model Inquiry {
@@ -162,19 +170,24 @@ model Inquiry {
   seeker            User     @relation(fields: [seekerId], references: [id])
 
   @@unique([propertyId, seekerId])
+  @@index([seekerId])
 }
 
 model AdminVerification {
-  id         String   @id @default(cuid())
+  id         String    @id @default(cuid())
   propertyId String?
   itemId     String?
   adminId    String
   action     String
   notes      String?
-  createdAt  DateTime @default(now())
-  admin      User     @relation(fields: [adminId], references: [id])
+  createdAt  DateTime  @default(now())
+  admin      User      @relation(fields: [adminId], references: [id])
   property   Property? @relation(fields: [propertyId], references: [id])
-  item       Item?    @relation(fields: [itemId], references: [id], onDelete: SetNull)
+  item       Item?     @relation(fields: [itemId], references: [id], onDelete: SetNull)
+
+  @@index([adminId])
+  @@index([propertyId])
+  @@index([itemId])
 }
 
 // Marketplace: used-items (sell/purchase). Mirrors the Property posting
@@ -184,8 +197,8 @@ model Item {
   id              String              @id @default(cuid())
   title           String
   description     String
-  category        String              // OFFICE_FURNITURE | HOME_FURNITURE | ELECTRONICS | COMPUTERS | VEHICLES | OTHERS
-  vehicleType     String?             // CAR | TWO_WHEELER | CYCLE (only when category = VEHICLES)
+  category        String // OFFICE_FURNITURE | HOME_FURNITURE | ELECTRONICS | COMPUTERS | VEHICLES | OTHERS
+  vehicleType     String? // CAR | TWO_WHEELER | CYCLE (only when category = VEHICLES)
   condition       String              @default("GOOD") // NEW | LIKE_NEW | GOOD | FAIR
   brand           String?
   yearPurchased   Int?
@@ -193,7 +206,7 @@ model Item {
   priceNegotiable Boolean             @default(false)
   phonePublic     Boolean             @default(true)
   pickupLocality  String
-  pickupArea      String?             // free-text landmark / tower
+  pickupArea      String? // free-text landmark / tower
   status          String              @default("PENDING") // PENDING | ACTIVE | SOLD | CLOSED
   views           Int                 @default(0)
   activatedAt     DateTime?
@@ -207,6 +220,7 @@ model Item {
   updatedAt       DateTime            @updatedAt
 
   @@index([status, category])
+  @@index([status, createdAt(sort: Desc)])
   @@index([sellerId])
 }
 
@@ -218,6 +232,8 @@ model ItemImage {
   isPrimary Boolean  @default(false)
   createdAt DateTime @default(now())
   item      Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@index([itemId])
 }
 
 model ItemInquiry {
@@ -231,6 +247,7 @@ model ItemInquiry {
   seeker    User     @relation(fields: [seekerId], references: [id])
 
   @@unique([itemId, seekerId])
+  @@index([seekerId])
 }
 
 // Community directory: local vendors & service providers submitted by residents.
@@ -239,7 +256,7 @@ model CommunityContact {
   id            String   @id @default(cuid())
   name          String
   contactPerson String?
-  category      String   // key from COMMUNITY_CATEGORIES
+  category      String // key from COMMUNITY_CATEGORIES
   service       String
   phones        String[] // one vendor often has two or more numbers
   whatsapp      Boolean  @default(false)
@@ -249,8 +266,8 @@ model CommunityContact {
   tags          String   @default("[]") // JSON array of strings
   verified      Boolean  @default(false)
   status        String   @default("PENDING") // PENDING | ACTIVE | REJECTED
-  submittedBy   String?  // email of submitter
-  notes         String?  // admin notes
+  submittedBy   String? // email of submitter
+  notes         String? // admin notes
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -258,7 +275,7 @@ model CommunityContact {
   /// see migration 20261109090000. Present here only so searches can filter on
   /// it through Prisma; `prisma migrate dev` would try to recreate it as a
   /// plain column, so migrations for this table stay hand-written.
-  searchText    String?
+  searchText String?
 
   @@index([status, category])
 }
@@ -270,7 +287,7 @@ model NewsItem {
   body        String
   category    String   @default("GENERAL") // EVENTS | COMMUNITY | ANNOUNCEMENTS | SPORTS | GENERAL
   imageUrls   String[] // S3 public URLs, first one is the lead image
-  status      String   @default("DRAFT")   // DRAFT | PUBLISHED
+  status      String   @default("DRAFT") // DRAFT | PUBLISHED
   publishedAt DateTime @default(now())
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -283,8 +300,8 @@ model Newsletter {
   id        String   @id @default(cuid())
   title     String
   date      DateTime
-  pdfUrl    String   // original PDF URL on Cloudinary
-  publicId  String   // Cloudinary public_id — used to generate per-page image URLs
+  pdfUrl    String // original PDF URL on Cloudinary
+  publicId  String // Cloudinary public_id — used to generate per-page image URLs
   pageCount Int
   status    String   @default("PUBLISHED") // DRAFT | PUBLISHED
   createdAt DateTime @default(now())
@@ -300,20 +317,20 @@ model Newsletter {
 // server runs UTC, where a naive getDay() rolls the day at 05:30 IST.
 
 model BusRoute {
-  id          String          @id @default(cuid())
-  routeNumber String          // "TMT 45", "AC-103"
-  name        String          // "Hiranandani Estate → Thane Station"
+  id          String         @id @default(cuid())
+  routeNumber String // "TMT 45", "AC-103"
+  name        String // "Hiranandani Estate → Thane Station"
   origin      String
   destination String
   via         String?
-  operator    String?         // TMT / NMMT / estate shuttle
-  note        String?         // "Runs via Rodas Enclave on request"
-  active      Boolean         @default(true)
-  sortOrder   Int             @default(0)
+  operator    String? // TMT / NMMT / estate shuttle
+  note        String? // "Runs via Rodas Enclave on request"
+  active      Boolean        @default(true)
+  sortOrder   Int            @default(0)
   schedules   BusSchedule[]
   exceptions  BusException[]
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
 
   @@index([active, sortOrder])
 }
@@ -326,8 +343,8 @@ model BusSchedule {
   label      String   @default("") // "Weekday service", "Sunday service"
   daysOfWeek String   @default("[]") // JSON array of 0-6, 0 = Sunday
   times      String   @default("[]") // JSON array of "HH:MM"
-  validFrom  String?  // "YYYY-MM-DD", null = always
-  validUntil String?  // "YYYY-MM-DD", null = forever
+  validFrom  String? // "YYYY-MM-DD", null = always
+  validUntil String? // "YYYY-MM-DD", null = forever
   active     Boolean  @default(true)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
@@ -341,10 +358,10 @@ model BusException {
   routeId   String
   route     BusRoute @relation(fields: [routeId], references: [id], onDelete: Cascade)
   type      String   @default("CANCELLED") // CANCELLED | REPLACED | EXTRA
-  startDate String   // "YYYY-MM-DD"
-  endDate   String   // "YYYY-MM-DD", same as startDate for a single day
+  startDate String // "YYYY-MM-DD"
+  endDate   String // "YYYY-MM-DD", same as startDate for a single day
   times     String   @default("[]") // JSON array, used by REPLACED and EXTRA
-  reason    String?  // shown to residents: "Diwali holiday timetable"
+  reason    String? // shown to residents: "Diwali holiday timetable"
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
