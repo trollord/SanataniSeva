@@ -5,6 +5,7 @@ import { formatDate } from "@/lib/utils/formatters";
 import { whatsAppContactUrl } from "@/lib/utils/whatsapp";
 import WhatsAppIcon from "@/components/ui/WhatsAppIcon";
 import { MessageSquare } from "lucide-react";
+import TablePager, { resolvePage } from "@/components/admin/TablePager";
 
 function contactMessage(seekerName: string | null, propertyTitle: string): string {
   return `Hi ${seekerName ?? "there"}, this is regarding your inquiry for "${propertyTitle}" on Sanatani Seva. Happy to discuss the details!`;
@@ -16,15 +17,23 @@ const STATUS_STYLE: Record<string, string> = {
   COMPLETED: "bg-blue-100 text-blue-700 border-blue-200",
 };
 
-export default async function InquiriesPage() {
+export default async function InquiriesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string }>;
+}) {
   const session = await auth();
   if (!session) redirect("/login");
 
+  const inquiryWhere = { property: { ownerId: session.user.id } };
+  const total = await prisma.inquiry.count({ where: inquiryWhere });
+  const { page, pageCount, skip, take, from, to } = resolvePage((await searchParams).page, total);
+
   const inquiries = await prisma.inquiry.findMany({
-    where: {
-      property: { ownerId: session.user.id },
-    },
+    where: inquiryWhere,
     orderBy: { createdAt: "desc" },
+    skip,
+    take,
     select: {
       id: true,
       status: true,
@@ -152,6 +161,15 @@ export default async function InquiriesPage() {
           </div>
         </div>
       )}
+
+      <TablePager
+        basePath="/dashboard/inquiries"
+        page={page}
+        pageCount={pageCount}
+        total={total}
+        from={from}
+        to={to}
+      />
     </div>
   );
 }

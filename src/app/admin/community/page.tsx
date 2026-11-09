@@ -7,6 +7,8 @@ import { COMMUNITY_CATEGORIES } from "@/lib/community";
 import CommunityAdminActions from "./CommunityAdminActions";
 import CommunityCSVTools from "./CommunityCSVTools";
 import ContactFormDialog from "./ContactFormDialog";
+import TablePager, { resolvePage } from "@/components/admin/TablePager";
+import CommunitySearch from "./CommunitySearch";
 
 export const dynamic = "force-dynamic";
 
@@ -20,11 +22,8 @@ const CATEGORY_MAP = Object.fromEntries(
   COMMUNITY_CATEGORIES.map((c) => [c.key, c.label])
 );
 
-/** Small enough to render fast, large enough to scan. */
-const PER_PAGE = 50;
-
 interface PageProps {
-  searchParams: Promise<{ status?: string; page?: string }>;
+  searchParams: Promise<{ status?: string; page?: string; q?: string }>;
 }
 
 export default async function AdminCommunityPage({ searchParams }: PageProps) {
@@ -33,24 +32,28 @@ export default async function AdminCommunityPage({ searchParams }: PageProps) {
 
   const filters = await searchParams;
   const statusFilter = filters.status ?? "PENDING";
-  const where = statusFilter === "ALL" ? {} : { status: statusFilter };
+  const q = (filters.q ?? "").trim();
+
+  // searchText is a generated column covering name, contact person, service,
+  // category, locality, address, tags and phones (spaced and digits-only),
+  // backed by a trigram index - so this stays an index scan rather than an
+  // OR across eight ILIKEs.
+  const where = {
+    ...(statusFilter === "ALL" ? {} : { status: statusFilter }),
+    ...(q ? { searchText: { contains: q.toLowerCase() } } : {}),
+  };
 
   const total = await prisma.communityContact.count({ where });
-  const pageCount = Math.max(1, Math.ceil(total / PER_PAGE));
-  // Clamped: a stale ?page= from a previous filter would otherwise show an
-  // empty table with no hint that the rows are elsewhere.
-  const page = Math.min(Math.max(1, Number(filters.page) || 1), pageCount);
+  const { page, pageCount, skip, take, from, to } = resolvePage(filters.page, total);
 
   const contacts = await prisma.communityContact.findMany({
     where,
     orderBy: { createdAt: "desc" },
-    skip: (page - 1) * PER_PAGE,
-    take: PER_PAGE,
+    skip,
+    take,
   });
 
   const tabs = ["PENDING", "ACTIVE", "REJECTED", "ALL"];
-  const from = total === 0 ? 0 : (page - 1) * PER_PAGE + 1;
-  const to = Math.min(page * PER_PAGE, total);
 
   return (
     <div className="p-4 sm:p-6 lg:p-8">
@@ -63,11 +66,13 @@ export default async function AdminCommunityPage({ searchParams }: PageProps) {
 
       <CommunityCSVTools />
 
+      <CommunitySearch />
+
       <div className="flex gap-1 mb-5 sm:mb-6 bg-gray-100 rounded-lg p-1 w-full sm:w-fit overflow-x-auto">
         {tabs.map((tab) => (
           <Link
             key={tab}
-            href={`/admin/community?status=${tab}`}
+            href={`/admin/community?status=${tab}${q ? `&q=${encodeURIComponent(q)}` : ""}`}
             className={`px-3 sm:px-4 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-colors whitespace-nowrap ${
               statusFilter === tab
                 ? "bg-white shadow-sm text-gray-900"
@@ -81,7 +86,11 @@ export default async function AdminCommunityPage({ searchParams }: PageProps) {
 
       {contacts.length === 0 ? (
         <div className="text-center py-16 sm:py-20 text-gray-400 bg-white rounded-xl border border-gray-200">
-          <p>No contacts with status: {statusFilter}</p>
+          <p>
+            {q
+              ? `No contacts match “${q}”${statusFilter === "ALL" ? "" : ` with status ${statusFilter}`}.`
+              : `No contacts with status: ${statusFilter}`}
+          </p>
         </div>
       ) : (
         <>
@@ -168,61 +177,17 @@ export default async function AdminCommunityPage({ searchParams }: PageProps) {
             </table>
           </div>
 
-          {/* Row count and pager - without these the table silently truncated */}
-          <div className="flex items-center justify-between gap-4 mt-4">
-            <p className="text-xs text-gray-500">
-              Showing {from}–{to} of {total}
-            </p>
-            {pageCount > 1 && (
-              <div className="flex items-center gap-1">
-                <PagerLink
-                  status={statusFilter}
-                  page={page - 1}
-                  disabled={page === 1}
-                  label="Previous"
-                />
-                <span className="text-xs text-gray-500 px-2">
-                  Page {page} of {pageCount}
-                </span>
-                <PagerLink
-                  status={statusFilter}
-                  page={page + 1}
-                  disabled={page === pageCount}
-                  label="Next"
-                />
-              </div>
-            )}
-          </div>
+          <TablePager
+            basePath="/admin/community"
+            params={{ status: statusFilter, q }}
+            page={page}
+            pageCount={pageCount}
+            total={total}
+            from={from}
+            to={to}
+          />
         </>
       )}
     </div>
-  );
-}
-
-function PagerLink({
-  status,
-  page,
-  disabled,
-  label,
-}: {
-  status: string;
-  page: number;
-  disabled: boolean;
-  label: string;
-}) {
-  if (disabled) {
-    return (
-      <span className="px-3 py-1.5 text-xs font-medium text-gray-300 border border-gray-200 rounded-md cursor-not-allowed">
-        {label}
-      </span>
-    );
-  }
-  return (
-    <Link
-      href={`/admin/community?status=${status}&page=${page}`}
-      className="px-3 py-1.5 text-xs font-medium text-gray-700 border border-gray-200 rounded-md hover:bg-gray-50 transition-colors"
-    >
-      {label}
-    </Link>
   );
 }

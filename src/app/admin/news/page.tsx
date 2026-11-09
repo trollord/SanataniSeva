@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import CreateNewsForm from "./CreateNewsForm";
 import NewsAdminActions from "./NewsAdminActions";
+import TablePager, { resolvePage } from "@/components/admin/TablePager";
 
 export const dynamic = "force-dynamic";
 
@@ -23,13 +24,21 @@ function fmtDate(d: Date) {
   return d.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
 }
 
-export default async function AdminNewsPage() {
+export default async function AdminNewsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string }>;
+}) {
   const session = await auth();
   if (!session || session.user.role !== "ADMIN") redirect("/login");
 
+  const total = await prisma.newsItem.count();
+  const { page, pageCount, skip, take, from, to } = resolvePage((await searchParams).page, total);
+
   const items = await prisma.newsItem.findMany({
     orderBy: { publishedAt: "desc" },
-    take: 100,
+    skip,
+    take,
   });
 
   return (
@@ -85,6 +94,15 @@ export default async function AdminNewsPage() {
           </table>
         </div>
       )}
+
+      <TablePager
+        basePath="/admin/news"
+        page={page}
+        pageCount={pageCount}
+        total={total}
+        from={from}
+        to={to}
+      />
     </div>
   );
 }

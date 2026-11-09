@@ -1,90 +1,64 @@
-# Rent default, news image uploads
+# Pagination everywhere, searchable community table
 
-Three asks. One of them turns out to need no change.
+## 1. Pagination at 25
 
-## 1. Listings should default to Rent
+One shared module, `components/admin/TablePager.tsx`, rather than eight copies:
+`PAGE_SIZE`, `resolvePage()` (clamps a stale `?page=`), a link-based
+`TablePager` for server-rendered tables, and `ClientPager` + `paginate()` for
+the two tables whose rows live in component state.
 
-Today, with no `?listingType=` in the URL:
-- `api/properties/route.ts:69` applies no filter, so **both** rent and sale come back
-- `FilterPanel.tsx:19` highlights **SALE** (`searchParams.get("listingType") || "SALE"`)
-- `ListingsContent.tsx:96` labels the count "available for sale"
+| table | before | after |
+|---|---|---|
+| admin/community | 50/page | 25/page |
+| admin/listings | `take: 50`, no pager | 25/page |
+| admin/items | `take: 100`, no pager | 25/page |
+| admin/news | `take: 100`, no pager | 25/page |
+| admin/newsletter | unbounded | 25/page |
+| admin/users (client) | unbounded | 25/page |
+| dashboard/inquiries | unbounded | 25/page |
+| dashboard listings (client) | unbounded | 25/page |
+| public community directory | already 25 | unchanged |
 
-So the UI claims sale, the data is everything, and nothing says rent. Default
-to RENT in all three, and send `listingType=RENT` on the fetch when the param
-is absent so the copy and the results agree.
+Pager links carry the page's existing query string, so status tabs and the
+search term survive paging. Not paginated, deliberately: `admin/analytics`
+(a fixed top-8 summary), the listing detail page, and the CSV preview table -
+none are browsable record lists.
 
-## 2. Community sort — already correct
+## 2. Community search across all columns
 
-`(public)/community/page.tsx:34` is already `orderBy: { createdAt: "desc" }`,
-and `createdAt` **is** the date added. Verified against the live table: the two
-helpline rows re-created at 14:36 sit above rows created at 14:22. The table
-renders in query order - nothing re-sorts it - so a newly added contact does
-land on top.
+A `searchText` column, `GENERATED ALWAYS ... STORED`, concatenating name,
+contact person, service, category, locality, address, tags and phones - the
+phones twice, as written and digits-only, so `9820886428` finds a number stored
+as `98208 86428`.
 
-What probably looks wrong: all 250 imported rows were created within the same
-six minutes, so their order is just reverse-import order and reads as arbitrary.
+**Why generated rather than an OR of eight ILIKEs:** a single column can carry a
+single index. With `pg_trgm` + GIN, `LIKE '%term%'` is an index scan - confirmed
+with EXPLAIN:
 
-No change made. The open question is whether "recently added" should also mean
-"recently edited" - that would be `updatedAt`, and is a one-line change if
-wanted.
+    Bitmap Heap Scan on "CommunityContact"
+      ->  Bitmap Index Scan on "CommunityContact_searchText_trgm_idx"
+            Index Cond: ("searchText" ~~ '%9876999%')
+    Execution Time: 0.221 ms
 
-## 3. News: multiple images, drag and drop, S3
+A leading wildcard cannot use a B-tree, so the OR form would seq-scan every row
+eight times per keystroke. Generated also means it can never drift from the row.
 
-`NewsItem.imageUrl String?` holds one pasted URL. Replace with uploads.
+`array_to_string()` is only STABLE and is rejected in a generated expression, so
+phones are listed by subscript, 1..5, matching the cap the API enforces.
 
-- `imageUrl String?` -> `imageUrls String[]`, backfilled from the existing
-  column, matching how `phones` was done
-- New `ImageDropzone` component. `react-dropzone@15` is already a dependency and
-  the upload flow already exists: `GET /api/upload` returns a presigned S3 URL,
-  the browser PUTs the file, and `publicUrl` is stored. Same contract the
-  marketplace and listing forms use, so no new S3 surface.
-- Consumers to update: `api/news/route.ts`, `admin/news/CreateNewsForm.tsx`,
-  `(public)/newspaper/page.tsx`, `components/newspaper/TodaysNewsFeed.tsx`
+Search lives in the URL (`?q=`), debounced 300ms, and resets to page 1.
 
-Constraints inherited from `/api/upload`: 2 MB per image, jpeg/png/webp/heic,
-20 uploads per user per day, auth required.
+## Note for later
 
-## Tasks
-
-- [x] Listings default to RENT - `DEFAULT_LISTING_TYPE` in `ListingsContent`,
-      matching default in `FilterPanel`, injected into both fetches
-- [x] Migration `20261108090000_news_item_image_urls`: `imageUrls text[]`,
-      backfilled, `imageUrl` dropped; Prisma ledger baselined
-- [x] `ImageDropzone` - drag and drop, instant previews, per-file errors,
-      remove, 2 MB / 6 image caps
-- [x] Wired into the news admin form, replacing the URL input
-- [x] Display updated: `newspaper/page.tsx`, `TodaysNewsFeed`
-- [x] `build:check` clean; verified in Chrome - Rent pill is default, dropzone
-      renders, `/api/upload` returns a signed URL for the bucket
-- [ ] Commit
+`searchText` is in the Prisma model so filtering is typed, but the DB owns it.
+`prisma migrate dev` would try to recreate it as a plain column - migrations for
+this table stay hand-written. Flagged in the schema comment.
 
 ## Review
 
-Two changed, one did not need changing.
-
-**Rent default** was three disagreeing defaults, not one: the API filtered
-nothing, the filter pills highlighted SALE, and the result count said "available
-for sale". All three now derive from `DEFAULT_LISTING_TYPE`, and the fetch sends
-it explicitly so the copy and the results cannot drift apart again.
-
-**News images** follow the `phones` precedent - a real `text[]`, backfilled,
-old column dropped. The uploader reuses the existing presigned-URL flow, so
-files go browser -> S3 without passing through the server and there is no new
-upload surface.
-
-Worth knowing:
-- `/api/upload` writes every object under the `properties/` prefix regardless of
-  what is being uploaded, so news images land there too. Harmless, but the
-  prefix name is now a lie. Changing it means touching the shared route.
-- The API only accepts URLs under `NEXT_PUBLIC_AWS_S3_BUCKET_URL`. It fails
-  closed when that is unset - an earlier draft fell back to `"https://"`, which
-  `startsWith` matches for any HTTPS URL, i.e. no check at all.
-- Inherited caps: 2 MB per image, jpeg/png/webp/heic, 20 uploads per user per
-  day, 6 images per news item.
-
-**Community sort needed no change.** It was already `createdAt desc`, and
-`createdAt` is the date added - verified against the live table. The 250
-imported rows were all created within six minutes of each other, so their order
-reads as arbitrary, which is probably what looked wrong. If "recently added"
-should also surface "recently edited", that is `updatedAt` and a one-line
-change.
+Verified against live data, not just compiled:
+- Typing `9820886428` (no spaces) returned the two contacts stored as
+  `98208 86428`, and the URL became shareable
+- `Showing 1–25 of 250`, `Page 1 of 10`, Previous disabled on page 1
+- admin/users, the client-paged table, shows `Showing 1–4 of 4` with both its
+  mobile and desktop renderers on the same slice
