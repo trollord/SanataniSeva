@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { useFieldArray, useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -169,7 +170,12 @@ export default function ContactFormDialog({
       notes: values.notes || null,
     };
 
-    const res = await fetch(
+    // The write itself is ~17ms in Postgres; the wait the admin feels is the
+    // round trip to the database's region plus any serverless cold start.
+    // Blocking the dialog on that makes a fast save look broken, so the dialog
+    // closes immediately and a toast carries the outcome - including failure,
+    // so nothing is silently lost.
+    const request = fetch(
       isEdit ? `/api/admin/community/${contact!.id}` : "/api/admin/community",
       {
         method: isEdit ? "PATCH" : "POST",
@@ -178,17 +184,23 @@ export default function ContactFormDialog({
           isEdit ? payload : { ...payload, contactPerson: values.contactPerson }
         ),
       }
-    );
+    ).then(async (res) => {
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error ?? "Could not save. Please try again.");
+      }
+      router.refresh();
+      return res;
+    });
 
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({}));
-      setServerError(body.error ?? "Could not save. Please try again.");
-      return;
-    }
+    toast.promise(request, {
+      loading: isEdit ? "Saving changes…" : "Adding contact…",
+      success: isEdit ? `Saved ${values.name}` : `Added ${values.name}`,
+      error: (e: Error) => e.message,
+    });
 
     setOpen(false);
     if (!isEdit) reset();
-    router.refresh();
   }
 
   const inputClass = "h-10";
