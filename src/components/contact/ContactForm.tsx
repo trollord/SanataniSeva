@@ -27,18 +27,30 @@ const SUBJECTS = [
   { value: "feedback",    label: "Feedback or suggestion" },
 ] as const;
 
+function looksLikeEmail(v: string) {
+  return /^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(v);
+}
+
+/** 10 digits for an Indian mobile, up to 13 once a country code is included. */
+function looksLikePhone(v: string) {
+  if (!/^[+\d\s\-()]+$/.test(v)) return false;
+  const digits = v.replace(/\D/g, "").length;
+  return digits >= 10 && digits <= 13;
+}
+
 const contactSchema = z.object({
-  name: z.string().min(2, "Please enter your full name"),
-  email: z.string().email("Enter a valid email"),
-  phone: z
-    .string()
-    .optional()
-    .refine(
-      (v) => !v || /^[+\d\s\-()]{7,15}$/.test(v),
-      "Enter a valid phone number"
-    ),
   subject: z.string().min(1, "Pick a subject"),
   message: z.string().min(10, "Please write at least 10 characters"),
+  name: z.string().min(2, "Please enter your full name"),
+  // One field for either, so nobody is turned away for not having an email.
+  contact: z
+    .string()
+    .trim()
+    .min(1, "Leave a contact number or an email so we can reply")
+    .refine(
+      (v) => looksLikeEmail(v) || looksLikePhone(v),
+      "Enter a valid phone number or email address"
+    ),
 });
 
 type ContactFormData = z.infer<typeof contactSchema>;
@@ -56,20 +68,20 @@ export default function ContactForm() {
   } = useForm<ContactFormData>({
     resolver: zodResolver(contactSchema),
     defaultValues: {
-      name: "",
-      email: "",
-      phone: "",
       subject: "",
       message: "",
+      name: "",
+      contact: "",
     },
   });
 
   const onSubmit = async (data: ContactFormData) => {
     setSubmitting(true);
     try {
-      // TODO(backend): replace this stub with a real POST /api/contact
-      // handler. Persist { name, email, phone, subject, message } and route
-      // the alert (email / Slack / admin inbox) once the backend is decided.
+      // TODO(backend): this is still a stub - nothing is sent or stored, the
+      // visitor is simply told the message went through. Replace with a real
+      // POST /api/contact that persists { subject, message, name, contact }
+      // and routes the alert, before this page is promoted to residents.
       await new Promise((r) => setTimeout(r, 700));
       void data;
 
@@ -93,8 +105,8 @@ export default function ContactForm() {
           Message received
         </h3>
         <p className="text-gray-500 text-sm leading-relaxed max-w-sm mx-auto mb-6">
-          Thanks for reaching out. We&apos;ll reply to the email you provided within
-          24 hours.
+          Thanks for reaching out. We&apos;ll get back to you on the contact you
+          shared within 24 hours.
         </p>
         <Button
           variant="outline"
@@ -112,81 +124,33 @@ export default function ContactForm() {
       onSubmit={handleSubmit(onSubmit)}
       className="bg-white border border-gray-200 rounded-2xl p-6 sm:p-8 space-y-5"
     >
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div className="space-y-1.5">
-          <Label htmlFor="name">Full name *</Label>
-          <Input
-            id="name"
-            placeholder="Your name"
-            aria-invalid={!!errors.name}
-            {...register("name")}
-          />
-          {errors.name && (
-            <p className="text-xs text-red-500">{errors.name.message}</p>
+      {/* Subject first: it frames the message someone is about to write. */}
+      <div className="space-y-1.5">
+        <Label>Subject *</Label>
+        <Controller
+          control={control}
+          name="subject"
+          render={({ field }) => (
+            <Select
+              value={field.value ?? ""}
+              onValueChange={(v) => field.onChange(v ?? "")}
+            >
+              <SelectTrigger className="w-full" aria-invalid={!!errors.subject}>
+                <SelectValue placeholder="Pick a subject" />
+              </SelectTrigger>
+              <SelectContent>
+                {SUBJECTS.map((s) => (
+                  <SelectItem key={s.value} value={s.value}>
+                    {s.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           )}
-        </div>
-
-        <div className="space-y-1.5">
-          <Label htmlFor="email">Email *</Label>
-          <Input
-            id="email"
-            type="email"
-            placeholder="you@example.com"
-            aria-invalid={!!errors.email}
-            {...register("email")}
-          />
-          {errors.email && (
-            <p className="text-xs text-red-500">{errors.email.message}</p>
-          )}
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div className="space-y-1.5">
-          <Label htmlFor="phone">
-            Phone <span className="text-gray-400 font-normal">(optional)</span>
-          </Label>
-          <Input
-            id="phone"
-            placeholder="+91 98765 43210"
-            aria-invalid={!!errors.phone}
-            {...register("phone")}
-          />
-          {errors.phone && (
-            <p className="text-xs text-red-500">{errors.phone.message}</p>
-          )}
-        </div>
-
-        <div className="space-y-1.5">
-          <Label>Subject *</Label>
-          <Controller
-            control={control}
-            name="subject"
-            render={({ field }) => (
-              <Select
-                value={field.value ?? ""}
-                onValueChange={(v) => field.onChange(v ?? "")}
-              >
-                <SelectTrigger
-                  className="w-full"
-                  aria-invalid={!!errors.subject}
-                >
-                  <SelectValue placeholder="Pick a subject" />
-                </SelectTrigger>
-                <SelectContent>
-                  {SUBJECTS.map((s) => (
-                    <SelectItem key={s.value} value={s.value}>
-                      {s.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-          />
-          {errors.subject && (
-            <p className="text-xs text-red-500">{errors.subject.message}</p>
-          )}
-        </div>
+        />
+        {errors.subject && (
+          <p className="text-xs text-red-500">{errors.subject.message}</p>
+        )}
       </div>
 
       <div className="space-y-1.5">
@@ -203,15 +167,39 @@ export default function ContactForm() {
         )}
       </div>
 
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="space-y-1.5">
+          <Label htmlFor="name">Name *</Label>
+          <Input
+            id="name"
+            placeholder="Your name"
+            aria-invalid={!!errors.name}
+            {...register("name")}
+          />
+          {errors.name && (
+            <p className="text-xs text-red-500">{errors.name.message}</p>
+          )}
+        </div>
+
+        <div className="space-y-1.5">
+          <Label htmlFor="contact">Contact no / Email *</Label>
+          <Input
+            id="contact"
+            placeholder="+91 98765 43210 or you@example.com"
+            aria-invalid={!!errors.contact}
+            {...register("contact")}
+          />
+          {errors.contact && (
+            <p className="text-xs text-red-500">{errors.contact.message}</p>
+          )}
+        </div>
+      </div>
+
       <div className="flex items-center justify-between pt-2">
         <p className="text-[11px] text-gray-400">
           We&apos;ll never share your details.
         </p>
-        <Button
-          type="submit"
-          disabled={submitting}
-          className="gap-2 rounded-xl"
-        >
+        <Button type="submit" disabled={submitting} className="gap-2 rounded-xl">
           {submitting ? (
             <>
               <Loader2 className="h-4 w-4 animate-spin" /> Sending…

@@ -52,7 +52,7 @@ export default function ContactPage() {
               Send a message
             </p>
             <h2 className="font-[family-name:var(--font-playfair)] text-2xl sm:text-3xl font-bold text-[#0B0B0C] mb-6">
-              We&apos;d love to hear from you
+              We love to hear you
             </h2>
             <ContactForm />
           </div>
