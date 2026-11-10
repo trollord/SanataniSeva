@@ -40,7 +40,9 @@ export async function POST(req: NextRequest) {
     console.log("[newsletter] pageCount:", pageCount);
 
     step = "s3-upload";
-    const s3Key = `newspapers/${randomUUID()}.pdf`;
+    // The IAM user is scoped to sanatani-seva-folder/*; a key outside that
+    // prefix is refused with a 403 at PutObject.
+    const s3Key = `sanatani-seva-folder/newspapers/${randomUUID()}.pdf`;
     const pdfUrl = await uploadBufferToS3(s3Key, buffer, "application/pdf");
     console.log("[newsletter] S3 upload ok:", pdfUrl);
 

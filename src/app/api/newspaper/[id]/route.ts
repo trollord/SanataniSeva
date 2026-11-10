@@ -18,6 +18,16 @@ export async function GET(
 
   const isDownload = new URL(req.url).searchParams.get("download") === "1";
 
+  // Content-Disposition is a ByteString, so any character above U+00FF throws
+  // when the header is constructed - an em dash in a title is enough, and a
+  // Devanagari one would never work at all. Send an ASCII-safe filename for
+  // old clients plus the RFC 5987 form that every current browser prefers.
+  const asciiName =
+    newsletter.title.replace(/[^\x20-\x7E]/g, "-").replace(/["\\]/g, "").trim() || "edition";
+  const disposition =
+    `${isDownload ? "attachment" : "inline"}; filename="${asciiName}.pdf"; ` +
+    `filename*=UTF-8''${encodeURIComponent(newsletter.title + ".pdf")}`;
+
   try {
     const obj = await s3.send(
       new GetObjectCommand({
@@ -29,11 +39,11 @@ export async function GET(
     const body = obj.Body;
     if (!body) return NextResponse.json({ error: "Empty file" }, { status: 500 });
 
-    const stream = body as unknown as ReadableStream;
-    const disposition = isDownload
-      ? `attachment; filename="${newsletter.title}.pdf"`
-      : `inline; filename="${newsletter.title}.pdf"`;
-
+    // The SDK hands back a Node Readable here, which is not valid BodyInit -
+    // constructing the response with it throws. transformToWebStream() gives
+    // the web stream the Response constructor actually accepts, and keeps the
+    // PDF streaming rather than buffering 20-30 MB into memory.
+    const stream = body.transformToWebStream();
     return new NextResponse(stream, {
       headers: {
         "Content-Type": "application/pdf",
@@ -41,7 +51,10 @@ export async function GET(
         "Cache-Control": "private, max-age=3600",
       },
     });
-  } catch {
+  } catch (err) {
+    // Swallowing this made a broken edition indistinguishable from a missing
+    // one, which is how it went unnoticed until the first upload.
+    console.error("[newspaper] failed to stream", newsletter.publicId, err);
     return NextResponse.json({ error: "Failed to fetch PDF" }, { status: 500 });
   }
 }
