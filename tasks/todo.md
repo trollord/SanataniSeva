@@ -1,60 +1,64 @@
-# Community directory — single-screen redesign
+# News section revamp
 
-**Goal.** `/community` fits one viewport. No document scroll; the table scrolls
-inside itself. Paging resets the table to the top. Categories move to a left
-rail with multi-select and a clear control.
-
-**Why the chrome had to go.** Hero (200px) + tabs (84) + search (54) + 25
-wrapping pills (190) + count row (76) + pager (60) + disclaimer (104) + page
-padding (224) ≈ 990px of furniture before a single row — more than a laptop
-viewport. Adding `overflow` to the table alone would not have fixed it.
+**Problem.** A post's body is clamped to three lines in a carousel with no way
+through, so the registration link in the Dr Hema post — the whole reason it was
+posted — is unreachable. Line breaks collapse into one run-on paragraph and URLs
+render as dead text. Portrait flyers are cropped to a landscape hero, losing
+their titles, and the headline sits on top of busy artwork.
 
 ## Tasks
-- [x] Route group `(fullscreen)` — navbar, no footer; move `community/` into it
-- [x] Page shell: `h-dvh` flex column at `lg+`, normal document flow below
-- [x] `CommunityHero` — compact variant (drop the duplicated eyebrow)
-- [x] `CommunityTabs` — panels stretch instead of stacking
-- [x] `CommunityDirectory` — left rail, multi-select, sticky head, inner scroll
-- [x] Reset table scroll on page change and on filter change
-- [x] `BusTimings` — scrolls inside the same shell
-- [x] `loading.tsx` — match the new layout so nothing shifts on swap
-- [x] Build, verify, commit
+- [x] `NewsBody` — preserve line breaks, linkify URLs and phone numbers
+- [x] `/news/[id]` — own page per post: full poster, full text, live links
+- [x] SEO + share metadata (OpenGraph image = the poster)
+- [x] Replace the hero carousel with a featured card + grid, each linking out
+- [x] Posters shown contained, never cropped through their own titles
+- [x] Drafts 404 for the public, readable by an admin
+- [x] Polish pass: empty states, spacing, content clearing the fixed navbar
+- [x] Build, verify at three widths, commit
 
 ## Decisions
-- Footer hidden here (user's call) — `/community` is an app screen, not a
-  document. Disclaimer survives as a compact line inside the shell.
-- Multi-select categories: empty set means "All". Facet counts respect the
-  search box and locality, so a visible count is never a dead end.
-- Full-height shell applies at `lg+` only. A phone cannot show rail, chrome
-  and table at once; below `lg` the rail becomes the existing pill row and the
-  page scrolls normally.
+- A post gets a real URL (user's call), so it can be pasted into the estate
+  WhatsApp group and indexed. A modal would have left it unshareable.
+- Carousel replaced by a grid rather than restyled: with three or four posts
+  nothing should be hidden behind a rotation, and auto-advance interrupts
+  someone mid-read.
+- Posters are `object-contain`, not `cover`. These are dense A4 flyers whose
+  value is the text printed on them; cropping removes the title.
 
 ## Review
 
-Done. `/community` is one viewport from `md` up; phones keep document scroll.
+Every item above is done and checked in a running build.
 
-Measured with puppeteer at three widths:
+**What changed**
+- `src/components/news/NewsBody.tsx` — new. Keeps the line structure of a post
+  pasted from WhatsApp and turns its URLs and phone numbers into live links.
+  Splits on a token regex rather than replacing inside the text, so a phone
+  number sitting inside a URL cannot match twice, and trailing punctuation is
+  kept out of the href.
+- `src/app/(public)/news/[id]/page.tsx` — new. The post's own page: poster at
+  full size, body as written, OpenGraph image for WhatsApp previews. A draft
+  404s for the public and renders for an admin behind a "only you can see this"
+  banner.
+- `src/components/newspaper/TodaysNewsFeed.tsx` — rewritten. The carousel is
+  gone; a lead card and a grid now show every post at once, each linking to its
+  page. Also dropped `framer-motion` and the client boundary from this file —
+  it is a server component now.
+- `src/app/sitemap.ts` — `/newspaper` and each published post added. Drafts are
+  excluded.
+- `MarketplaceGrid.tsx`, `ListingsContent.tsx` — an empty catalogue no longer
+  claims "no match for your filters" when the visitor set no filters.
 
-| width | horizontal overflow | page scroll | table |
-|---|---|---|---|
-| 390 (phone) | none | 3291px — by design | 348px in a 348px box |
-| 820 (tablet) | none | none | fits |
-| 1440 (laptop) | none | none | 1472px of rows in a 560px box |
+**Verified, not assumed**
+- Clicked feed → post in a real browser: lands on `/news/<id>`, 37 line breaks
+  preserved, and all three links live — the Instagram reel, the Art of Living
+  registration URL, and `tel:+919833581950`. That registration link was the
+  reachability bug this work existed to fix.
+- Draft post: anonymous 404 with no headline in the body; signed in as ADMIN,
+  200 with the draft banner. Draft absent from the sitemap.
+- No horizontal overflow at 390, 820 or 1440px.
+- `npm run build` compiles clean, 58/58 static pages.
 
-Behaviour: paging resets the table to the top (scrollTop 400 → 0); two ticked
-categories return their union (61 + 31 = 92 shown); both stay ticked; the bus
-panel is `display:none` when inactive rather than merely `hidden`.
-
-### Two bugs found while building this
-- Every flex ancestor of the table needed `min-w-0`. Without it `min-width:auto`
-  let the 640px table widen the whole page, and `html{overflow-x:clip}` in
-  globals.css hid the symptom by cropping rather than scrolling — the page
-  looked merely "cut off" on a phone.
-- `hidden` on a tab panel loses to a `flex` class: equal specificity, and
-  preflight loses on source order. The inactive panel was still laid out.
-  Fixed with `[&[hidden]]:hidden`.
-
-### Not done
-- The table's `min-w-[640px]` still applies from `md` up, so a narrow tablet in
-  portrait scrolls the table sideways rather than dropping a column. Dropping
-  the Category column earlier would avoid it.
+**Left alone, deliberately**
+- The floating navbar still passes over content on scroll. That is how the
+  navbar behaves on every page, so changing it is a site-wide design decision
+  rather than a news fix.

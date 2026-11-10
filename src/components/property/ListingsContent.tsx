@@ -105,6 +105,12 @@ export default function ListingsContent() {
   const isGrid = view !== "list";
   const paramsKey = searchParams.toString();
 
+  // "view" and "listingType" are always present as the default presentation,
+  // so they do not count as a filter the visitor chose to apply.
+  const hasFilters = Array.from(searchParams.keys()).some(
+    (k) => k !== "view" && k !== "listingType"
+  );
+
   useEffect(() => {
     setLoading(true);
     setProperties([]);
@@ -194,7 +200,9 @@ export default function ListingsContent() {
               ? "Loading properties…"
               : total > 0
               ? `${total} ${listingWord} ${listingTypeLabel}`
-              : "No properties match your filters"}
+              : hasFilters
+              ? "No properties match your filters"
+              : "No properties listed yet"}
           </p>
         </div>
 
@@ -250,15 +258,28 @@ export default function ListingsContent() {
       ) : properties.length === 0 ? (
         <div className="text-center py-16 sm:py-20 text-zinc-400">
           <SlidersHorizontal className="h-8 w-8 sm:h-10 sm:w-10 mx-auto mb-4 opacity-40" />
-          <p className="font-medium text-zinc-900 text-sm sm:text-base">
-            No properties match your filters.
-          </p>
-          <Link
-            href="/listings"
-            className="text-zinc-500 hover:text-zinc-900 text-xs sm:text-sm mt-2 inline-block underline underline-offset-2"
-          >
-            Clear all filters
-          </Link>
+          {hasFilters ? (
+            <>
+              <p className="font-medium text-zinc-900 text-sm sm:text-base">
+                No properties match your filters.
+              </p>
+              <Link
+                href="/listings"
+                className="text-zinc-500 hover:text-zinc-900 text-xs sm:text-sm mt-2 inline-block underline underline-offset-2"
+              >
+                Clear all filters
+              </Link>
+            </>
+          ) : (
+            <>
+              <p className="font-medium text-zinc-900 text-sm sm:text-base">
+                No properties listed yet.
+              </p>
+              <p className="text-zinc-500 text-xs sm:text-sm mt-2">
+                New listings from residents will appear here.
+              </p>
+            </>
+          )}
         </div>
       ) : view === "map" ? (
         <MapView properties={properties} />

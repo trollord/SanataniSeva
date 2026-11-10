@@ -6,7 +6,7 @@ import { BLOG_POSTS } from "@/lib/blog";
 export const dynamic = "force-dynamic";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const [properties, items] = await Promise.all([
+  const [properties, items, news] = await Promise.all([
     prisma.property.findMany({
       where: { status: "ACTIVE" },
       select: { id: true, updatedAt: true },
@@ -14,6 +14,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     prisma.item.findMany({
       where: { status: "ACTIVE" },
       select: { id: true, updatedAt: true },
+    }),
+    prisma.newsItem.findMany({
+      where: { status: "PUBLISHED" },
+      select: { id: true, publishedAt: true },
     }),
   ]);
 
@@ -25,6 +29,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${base}/marketplace`, lastModified: new Date(), changeFrequency: "hourly", priority: 0.8 },
     { url: `${base}/how-it-works`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.5 },
     { url: `${base}/community`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.6 },
+    { url: `${base}/newspaper`, lastModified: new Date(), changeFrequency: "daily", priority: 0.7 },
     { url: `${base}/blog`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.6 },
     { url: `${base}/contact`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.5 },
     { url: `${base}/terms`, lastModified: new Date(), changeFrequency: "yearly", priority: 0.2 },
@@ -45,6 +50,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: i.updatedAt,
       changeFrequency: "weekly" as const,
       priority: 0.7,
+    })),
+    ...news.map((n) => ({
+      url: `${base}/news/${n.id}`,
+      lastModified: n.publishedAt,
+      changeFrequency: "monthly" as const,
+      priority: 0.6,
     })),
   ];
 }

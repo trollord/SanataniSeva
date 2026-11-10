@@ -1,8 +1,6 @@
-"use client";
-
-import { useState, useEffect, useCallback, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, ChevronRight, FileText } from "lucide-react";
+import Link from "next/link";
+import Image from "next/image";
+import { ArrowUpRight, Calendar, Newspaper } from "lucide-react";
 
 export interface NewsItemMeta {
   id: string;
@@ -14,215 +12,192 @@ export interface NewsItemMeta {
 }
 
 const CATEGORY: Record<string, { label: string; chip: string }> = {
-  EVENTS:        { label: "Events",        chip: "bg-[#FFF3EC]/90 text-[#C8541A] border-[#FDDCC8]/60"  },
-  COMMUNITY:     { label: "Community",     chip: "bg-green-50/90 text-green-700 border-green-200/60"    },
-  ANNOUNCEMENTS: { label: "Announcements", chip: "bg-amber-50/90 text-amber-700 border-amber-200/60"    },
-  SPORTS:        { label: "Sports",        chip: "bg-blue-50/90 text-blue-700 border-blue-200/60"       },
-  GENERAL:       { label: "General",       chip: "bg-white/90 text-gray-600 border-gray-200/60"         },
+  EVENTS:        { label: "Events",        chip: "bg-[#FFF3EC] text-[#C8541A] border-[#FDDCC8]" },
+  COMMUNITY:     { label: "Community",     chip: "bg-green-50  text-green-700 border-green-200" },
+  ANNOUNCEMENTS: { label: "Announcements", chip: "bg-amber-50  text-amber-700 border-amber-200" },
+  SPORTS:        { label: "Sports",        chip: "bg-blue-50   text-blue-700  border-blue-200"  },
+  GENERAL:       { label: "General",       chip: "bg-white     text-gray-600  border-gray-200"  },
 };
 
-const BG_FALLBACK: Record<string, string> = {
-  EVENTS:        "bg-gradient-to-br from-[#7C2D00] to-[#C8541A]",
-  COMMUNITY:     "bg-gradient-to-br from-green-900 to-green-600",
-  ANNOUNCEMENTS: "bg-gradient-to-br from-amber-900 to-amber-600",
-  SPORTS:        "bg-gradient-to-br from-blue-900 to-blue-600",
-  GENERAL:       "bg-gradient-to-br from-gray-800 to-gray-600",
-};
+/**
+ * Builds a preview from a post pasted out of WhatsApp.
+ *
+ * Such a post is a stack of short lines rather than prose, and the lines
+ * carrying a link exist only to hold that link - surfacing one as the preview
+ * shows the reader a bare URL. So links are dropped here (they are live on the
+ * post page) and what remains is joined back into a readable run.
+ */
+function excerpt(body: string, max = 180): string {
+  const text = body
+    .split("\n")
+    .map((l) => l.trim())
+    .filter((l) => l && !/https?:\/\/|www\./i.test(l))
+    .join(" · ")
+    .replace(/\s{2,}/g, " ")
+    .trim();
 
-const SLIDE_DURATION = 5000;
-
-function usePausableInterval(cb: () => void, delay: number) {
-  const paused = useRef(false);
-  const cbRef  = useRef(cb);
-  cbRef.current = cb;
-
-  useEffect(() => {
-    const id = setInterval(() => { if (!paused.current) cbRef.current(); }, delay);
-    return () => clearInterval(id);
-  }, [delay]);
-
-  return {
-    pause: () => { paused.current = true; },
-    resume: () => { paused.current = false; },
-  };
+  return text.length > max ? `${text.slice(0, max).trimEnd()}…` : text;
 }
 
-export default function TodaysNewsFeed({ items }: { items: NewsItemMeta[] }) {
-  const [index, setIndex]       = useState(0);
-  const [direction, setDirection] = useState(1);
-  const [dragging, setDragging] = useState(false);
-
-  const go = useCallback((next: number, dir: number) => {
-    setDirection(dir);
-    setIndex((next + items.length) % items.length);
-  }, [items.length]);
-
-  const advance = useCallback(() => go(index + 1, 1), [go, index]);
-  const { pause, resume } = usePausableInterval(advance, SLIDE_DURATION);
-
-  function prev() { pause(); go(index - 1, -1); setTimeout(resume, 8000); }
-  function next() { pause(); go(index + 1,  1); setTimeout(resume, 8000); }
-
-  const variants = {
-    enter:  (d: number) => ({ x: d > 0 ? "100%" : "-100%", opacity: 0   }),
-    center:              ({ x: 0,                           opacity: 1   }),
-    exit:   (d: number) => ({ x: d < 0 ? "100%" : "-100%", opacity: 0   }),
-  };
-
-  /* ── Empty state ──────────────────────────────────────────────────────── */
-  if (items.length === 0) {
-    return (
-      <div>
-        <SectionHeader />
-        <div className="flex flex-col items-center justify-center py-16 sm:py-20 text-center text-gray-400 bg-white border border-[#EDE5D8] rounded-2xl">
-          <FileText className="h-9 w-9 mb-3 opacity-35" />
-          <p className="font-medium text-gray-500 text-sm">No news posted yet.</p>
-          <p className="text-xs mt-1 text-gray-400">Check back soon for community updates.</p>
-        </div>
-      </div>
-    );
-  }
-
-  const item = items[index];
-  const cat  = CATEGORY[item.category] ?? CATEGORY.GENERAL;
-
+function Chip({ category }: { category: string }) {
+  const meta = CATEGORY[category] ?? CATEGORY.GENERAL;
   return (
-    <div>
-      <SectionHeader />
-
-      {/* ── Carousel ────────────────────────────────────────────────────── */}
-      <div
-        className="relative overflow-hidden rounded-2xl select-none"
-        style={{ aspectRatio: "16/7" }}
-        onMouseEnter={pause}
-        onMouseLeave={resume}
-        onTouchStart={pause}
-        onTouchEnd={resume}
-      >
-        <AnimatePresence initial={false} custom={direction} mode="popLayout">
-          <motion.div
-            key={item.id}
-            custom={direction}
-            variants={variants}
-            initial="enter"
-            animate="center"
-            exit="exit"
-            transition={{ type: "tween", ease: [0.32, 0, 0.67, 0], duration: 0.42 }}
-            drag="x"
-            dragConstraints={{ left: 0, right: 0 }}
-            dragElastic={0.12}
-            onDragStart={() => { setDragging(true); pause(); }}
-            onDragEnd={(_e, info) => {
-              setDragging(false);
-              if (Math.abs(info.offset.x) > 60) {
-                if (info.offset.x < 0) go(index + 1, 1);
-                else go(index - 1, -1);
-              }
-              setTimeout(resume, 8000);
-            }}
-            className="absolute inset-0 cursor-grab active:cursor-grabbing"
-          >
-            {/* Image or fallback */}
-            {item.imageUrls?.[0] ? (
-              <img
-                src={item.imageUrls[0]}
-                alt={item.headline}
-                className="absolute inset-0 w-full h-full object-cover"
-                draggable={false}
-              />
-            ) : (
-              <div className={`absolute inset-0 ${BG_FALLBACK[item.category] ?? BG_FALLBACK.GENERAL}`} />
-            )}
-
-            {/* Gradient overlay for text legibility */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/15 to-transparent" />
-
-            {/* Content */}
-            <div className={`absolute inset-0 flex flex-col justify-end p-5 sm:p-8 ${dragging ? "pointer-events-none" : ""}`}>
-              {/* Category + date row */}
-              <div className="flex items-center gap-2 mb-2.5 sm:mb-3">
-                <span className={`inline-flex text-[9px] sm:text-[10px] font-bold uppercase tracking-[0.15em] px-2.5 py-1 rounded-full border backdrop-blur-sm ${cat.chip}`}>
-                  {cat.label}
-                </span>
-                <span className="text-[10px] sm:text-xs text-white/55">{item.publishedAt}</span>
-              </div>
-
-              {/* Headline */}
-              <h3 className="font-bold text-white text-lg sm:text-2xl lg:text-3xl leading-snug max-w-2xl drop-shadow-sm line-clamp-2">
-                {item.headline}
-              </h3>
-
-              {/* Body */}
-              <p className="text-white/75 text-xs sm:text-sm leading-relaxed mt-1.5 sm:mt-2 max-w-xl line-clamp-2 sm:line-clamp-3">
-                {item.body}
-              </p>
-            </div>
-          </motion.div>
-        </AnimatePresence>
-
-        {/* ── Prev / Next arrows ─────────────────────────────────────────── */}
-        {items.length > 1 && (
-          <>
-            <button
-              onClick={prev}
-              aria-label="Previous"
-              className="absolute left-3 top-1/2 -translate-y-1/2 z-10
-                         w-8 h-8 sm:w-10 sm:h-10 rounded-full
-                         bg-black/30 hover:bg-black/50 backdrop-blur-sm
-                         flex items-center justify-center text-white
-                         transition-colors"
-            >
-              <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
-            </button>
-            <button
-              onClick={next}
-              aria-label="Next"
-              className="absolute right-3 top-1/2 -translate-y-1/2 z-10
-                         w-8 h-8 sm:w-10 sm:h-10 rounded-full
-                         bg-black/30 hover:bg-black/50 backdrop-blur-sm
-                         flex items-center justify-center text-white
-                         transition-colors"
-            >
-              <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
-            </button>
-          </>
-        )}
-      </div>
-
-      {/* ── Dot indicators ──────────────────────────────────────────────── */}
-      {items.length > 1 && (
-        <div className="flex items-center justify-center gap-1.5 mt-3 sm:mt-4">
-          {items.map((_, i) => (
-            <button
-              key={i}
-              onClick={() => { pause(); go(i, i > index ? 1 : -1); setTimeout(resume, 8000); }}
-              aria-label={`Go to slide ${i + 1}`}
-              className={`rounded-full transition-all duration-300 ${
-                i === index
-                  ? "w-5 sm:w-6 h-1.5 bg-[#C8541A]"
-                  : "w-1.5 h-1.5 bg-[#C8541A]/25 hover:bg-[#C8541A]/50"
-              }`}
-            />
-          ))}
-        </div>
-      )}
-    </div>
+    <span
+      className={`rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em] ${meta.chip}`}
+    >
+      {meta.label}
+    </span>
   );
 }
 
-function SectionHeader() {
+/**
+ * Community news.
+ *
+ * Previously an auto-advancing carousel that cropped portrait flyers into a
+ * landscape hero and clamped the body to three lines with nowhere to go. Now
+ * every post is on the page at once and every card opens its own page, so
+ * nothing is hidden behind a rotation and nothing is unreachable.
+ */
+export default function TodaysNewsFeed({ items }: { items: NewsItemMeta[] }) {
+  if (items.length === 0) {
+    return (
+      <section>
+        <SectionHeading />
+        <div className="mt-6 rounded-2xl border border-[#EDE5D8] bg-white px-6 py-16 text-center">
+          <Newspaper className="mx-auto mb-3 h-8 w-8 text-[#D8CDBE]" />
+          <p className="text-sm font-semibold text-[#1C1C1C]">No news posted yet.</p>
+          <p className="mt-1 text-xs text-[#8A8178]">
+            Community updates and event notices will appear here.
+          </p>
+        </div>
+      </section>
+    );
+  }
+
+  const [lead, ...rest] = items;
+
   return (
-    <div className="mb-5 sm:mb-6">
-      <div className="flex items-center gap-2.5 mb-1">
-        <span className="relative flex h-2 w-2 shrink-0">
-          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#C8541A] opacity-60" />
-          <span className="relative inline-flex h-2 w-2 rounded-full bg-[#C8541A]" />
-        </span>
-        <span className="text-xs sm:text-sm font-bold uppercase tracking-[0.2em] text-[#C8541A]">
+    <section>
+      <SectionHeading />
+
+      {/* ── Lead story ──────────────────────────────────────────────────── */}
+      <Link
+        href={`/news/${lead.id}`}
+        className="group mt-6 grid overflow-hidden rounded-2xl border border-[#EDE5D8] bg-white transition-shadow hover:shadow-[0_2px_20px_rgba(28,10,0,0.07)] sm:grid-cols-[minmax(0,300px)_minmax(0,1fr)]"
+      >
+        <div className="flex items-center justify-center bg-[#F7F3EC] p-4 sm:p-5">
+          {lead.imageUrls?.[0] ? (
+            <Image
+              src={lead.imageUrls[0]}
+              alt={lead.headline}
+              width={600}
+              height={850}
+              sizes="(max-width: 640px) 100vw, 300px"
+              className="h-auto max-h-[380px] w-auto max-w-full rounded-lg object-contain"
+              priority
+            />
+          ) : (
+            <div className="flex h-48 w-full items-center justify-center rounded-lg bg-[#EDE5D8]">
+              <Newspaper className="h-8 w-8 text-[#B8AC9B]" />
+            </div>
+          )}
+        </div>
+
+        <div className="flex flex-col justify-center p-5 sm:p-8">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+            <Chip category={lead.category} />
+            <span className="inline-flex items-center gap-1.5 text-xs text-[#8A8178]">
+              <Calendar className="h-3.5 w-3.5" />
+              {lead.publishedAt}
+            </span>
+          </div>
+
+          <h3 className="mt-3 font-[family-name:var(--font-playfair)] text-2xl font-bold leading-tight tracking-tight text-[#1C1C1C] sm:text-[32px]">
+            {lead.headline}
+          </h3>
+
+          <p className="mt-3 text-[15px] leading-relaxed text-[#6B6B6B] line-clamp-3">
+            {excerpt(lead.body, 220)}
+          </p>
+
+          <span className="mt-5 inline-flex items-center gap-1.5 text-sm font-semibold text-[#C8541A]">
+            Read full post
+            <ArrowUpRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+          </span>
+        </div>
+      </Link>
+
+      {/* ── The rest ──────────────────────────────────────────────────────
+          Column count follows the post count, so two posts fill the row
+          rather than leaving a third slot conspicuously empty. */}
+      {rest.length > 0 && (
+        <div
+          className={`mt-4 grid gap-4 ${
+            rest.length === 1
+              ? "sm:grid-cols-1"
+              : rest.length === 2
+                ? "sm:grid-cols-2"
+                : "sm:grid-cols-2 lg:grid-cols-3"
+          }`}
+        >
+          {rest.map((item) => (
+            <Link
+              key={item.id}
+              href={`/news/${item.id}`}
+              className="group flex flex-col overflow-hidden rounded-2xl border border-[#EDE5D8] bg-white transition-shadow hover:shadow-[0_2px_16px_rgba(28,10,0,0.06)]"
+            >
+              <div className="flex h-44 items-center justify-center bg-[#F7F3EC] p-3">
+                {item.imageUrls?.[0] ? (
+                  <Image
+                    src={item.imageUrls[0]}
+                    alt={item.headline}
+                    width={400}
+                    height={566}
+                    sizes="(max-width: 640px) 100vw, 320px"
+                    className="h-full w-auto max-w-full rounded-md object-contain"
+                  />
+                ) : (
+                  <Newspaper className="h-7 w-7 text-[#B8AC9B]" />
+                )}
+              </div>
+
+              <div className="flex flex-1 flex-col p-4">
+                <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
+                  <Chip category={item.category} />
+                  <span className="text-[11px] text-[#8A8178]">{item.publishedAt}</span>
+                </div>
+
+                <h4 className="mt-2.5 font-semibold leading-snug tracking-tight text-[#1C1C1C] line-clamp-2">
+                  {item.headline}
+                </h4>
+
+                <p className="mt-1.5 text-[13px] leading-relaxed text-[#6B6B6B] line-clamp-2">
+                  {excerpt(item.body, 120)}
+                </p>
+
+                <span className="mt-auto pt-3 inline-flex items-center gap-1 text-xs font-semibold text-[#C8541A]">
+                  Read more
+                  <ArrowUpRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                </span>
+              </div>
+            </Link>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function SectionHeading() {
+  return (
+    <div>
+      <div className="flex items-center gap-2">
+        <span className="h-1.5 w-1.5 rounded-full bg-[#C8541A]" />
+        <h2 className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#C8541A]">
           Today&apos;s News
-        </span>
+        </h2>
       </div>
-      <p className="text-xs text-[#9E6B3F] ml-[18px]">Community events &amp; highlights</p>
+      <p className="ml-[18px] text-xs text-[#9E6B3F]">Community events &amp; highlights</p>
     </div>
   );
 }

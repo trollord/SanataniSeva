@@ -194,10 +194,27 @@ export default function MarketplaceGrid({ items }: { items: MarketplaceItemCard[
       {/* Grid */}
       {filtered.length === 0 ? (
         <div className="mt-8 sm:mt-10 bg-white border border-gray-200 rounded-2xl p-6 sm:p-10 text-center">
-          <p className="text-sm font-semibold text-[#FF5F15]">No items match your filters</p>
-          <p className="text-xs text-gray-500 mt-1">
-            Try widening your search or clearing filters.
-          </p>
+          {/* An empty catalogue is not a failed search - telling the first
+              visitor to widen filters they never set sends them nowhere. */}
+          {items.length === 0 ? (
+            <>
+              <p className="text-sm font-semibold text-gray-900">
+                Nothing listed yet
+              </p>
+              <p className="text-xs text-gray-500 mt-1">
+                Be the first to sell or donate something to your neighbours.
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="text-sm font-semibold text-[#FF5F15]">
+                No items match your filters
+              </p>
+              <p className="text-xs text-gray-500 mt-1">
+                Try widening your search or clearing filters.
+              </p>
+            </>
+          )}
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 mt-6">
