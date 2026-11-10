@@ -22,23 +22,35 @@ export default function CommunityTabs({
   directory,
   buses,
   busesAvailable,
+  heading,
 }: {
   directory: ReactNode;
   buses: ReactNode;
   busesAvailable: boolean;
+  /** Page title, rendered on the same row as the tab bar to save height. */
+  heading?: ReactNode;
 }) {
   const [tab, setTab] = useState<TabKey>("directory");
 
   // With no routes published there is nothing to switch to, so the control
   // would be a dead end. Render the directory alone.
-  if (!busesAvailable) return <>{directory}</>;
+  if (!busesAvailable) {
+    return (
+      <div className="flex flex-1 flex-col min-h-0 min-w-0">
+        {heading}
+        {directory}
+      </div>
+    );
+  }
 
   return (
-    <div>
+    <div className="flex flex-1 flex-col min-h-0 min-w-0">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 lg:gap-6 mb-4 shrink-0">
+      {heading}
       <div
         role="tablist"
         aria-label="Community sections"
-        className="flex w-full sm:w-fit gap-1 rounded-xl bg-[#F0E9DF] p-1 mb-7 sm:mb-9"
+        className="flex w-full sm:w-fit gap-1 rounded-xl bg-[#F0E9DF] p-1 shrink-0"
       >
         {TABS.map(({ key, label, short, icon: Icon }) => {
           const active = tab === key;
@@ -50,7 +62,7 @@ export default function CommunityTabs({
               aria-controls={`panel-${key}`}
               id={`tab-${key}`}
               onClick={() => setTab(key)}
-              className={`flex flex-1 sm:flex-none items-center justify-center gap-2 rounded-lg px-4 sm:px-6 py-2.5 text-[13px] font-semibold transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C8541A]/40 ${
+              className={`flex flex-1 sm:flex-none items-center justify-center gap-2 rounded-lg px-4 sm:px-6 py-2 text-[13px] font-semibold transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C8541A]/40 ${
                 active
                   ? "bg-white text-[#1C1C1C] shadow-sm"
                   : "text-[#6B6B6B] hover:text-[#1C1C1C]"
@@ -63,16 +75,24 @@ export default function CommunityTabs({
           );
         })}
       </div>
+      </div>
 
       <div
         role="tabpanel"
         id="panel-directory"
         aria-labelledby="tab-directory"
         hidden={tab !== "directory"}
+        className="flex flex-1 flex-col min-h-0 min-w-0 [&[hidden]]:hidden"
       >
         {directory}
       </div>
-      <div role="tabpanel" id="panel-buses" aria-labelledby="tab-buses" hidden={tab !== "buses"}>
+      <div
+        role="tabpanel"
+        id="panel-buses"
+        aria-labelledby="tab-buses"
+        hidden={tab !== "buses"}
+        className="flex flex-1 flex-col min-h-0 min-w-0 overflow-y-auto [&[hidden]]:hidden"
+      >
         {buses}
       </div>
     </div>

@@ -60,27 +60,30 @@ export default async function CommunityPage() {
   const busRouteCount = await prisma.busRoute.count({ where: { active: true } });
 
   return (
-    <div className="pt-24 sm:pt-32 pb-16 sm:pb-24 px-5 sm:px-8">
-      <div className="max-w-5xl mx-auto">
+    // Below lg the page scrolls as a normal document: a phone cannot show the
+    // filter rail, the chrome and a useful number of rows at once. From lg up
+    // the screen is exactly one viewport and the panes scroll themselves.
+    <div className="flex flex-1 flex-col min-h-0 px-5 sm:px-8 pt-24 pb-16 md:pt-20 md:pb-4">
+      <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col min-h-0 min-w-0">
 
-        {/* ── Header ──────────────────────────────────────────────────────── */}
-        <CommunityHero />
-
-        {/* ── Directory + buses, as sub-tabs ──────────────────────────────── */}
+        {/* ── Header + directory/buses tabs, sharing one row ──────────────── */}
         <CommunityTabs
+          heading={<CommunityHero />}
           busesAvailable={busRouteCount > 0}
           directory={<CommunityDirectory dbContacts={dbContacts} />}
           buses={<BusTimings />}
         />
 
         {/* ── Disclaimer — always shown ───────────────────────────────────── */}
-        <p className="flex items-start gap-2 text-[11px] sm:text-xs text-gray-400 leading-relaxed mt-10 sm:mt-14">
+        <p className="flex items-start gap-2 text-[11px] text-gray-400 leading-relaxed mt-5 md:mt-3 shrink-0">
           <Info className="w-3.5 h-3.5 shrink-0 mt-px" />
           <span>
             Listings are contributed by residents and are not vetted by us.
             Sanatani Seva does not employ or endorse the vendors listed here;
-            please verify credentials and agree charges before hiring. Spotted a
-            wrong number? Let us know and we will correct it.
+            please verify credentials and agree charges before hiring.
+            <span className="hidden lg:inline">
+              {" "}Spotted a wrong number? Let us know and we will correct it.
+            </span>
           </span>
         </p>
 

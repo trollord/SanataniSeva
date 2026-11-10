@@ -5,38 +5,36 @@ import { motion } from "framer-motion";
 const ease = [0.23, 1, 0.32, 1] as const;
 
 const item = (delay: number) => ({
-  initial: { opacity: 0, y: 20 },
+  initial: { opacity: 0, y: 12 },
   animate: { opacity: 1, y: 0 },
-  transition: { duration: 0.5, ease, delay },
+  transition: { duration: 0.4, ease, delay },
 });
 
 // Contacts are managed only from /admin/community, so there is no add
 // affordance on the public page - not even for admins.
+//
+// The heading is deliberately restrained: this screen is sized to one viewport
+// and every pixel spent here is a row the resident cannot see. The strapline
+// sits beside the title on a wide screen rather than under it, and the
+// display-size type is kept for phones, where vertical room is not the
+// constraint.
 export default function CommunityHero() {
   return (
-    <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8 sm:mb-10">
-      <div>
-        <motion.p
-          {...item(0)}
-          className="text-[10px] font-semibold tracking-[0.25em] text-gray-400 uppercase mb-3"
-        >
-          Service Providers
-        </motion.p>
-        <motion.h1
-          {...item(0.08)}
-          className="font-[family-name:var(--font-playfair)] text-3xl sm:text-5xl font-bold text[#0B0B0C] mb-4"
-        >
-          Service Providers
-        </motion.h1>
-        <motion.p
-          {...item(0.16)}
-          className="text-gray-500 text-sm sm:text-base leading-relaxed max-w-2xl"
-        >
-          Phone numbers for carpenters, plumbers, electricians, shopkeepers,
-          tiffin services and more. Search by trade or name, then call or
-          WhatsApp them directly.
-        </motion.p>
-      </div>
+    <div className="shrink-0 flex flex-col lg:flex-row lg:items-baseline gap-1 lg:gap-5 min-w-0">
+      <motion.h1
+        {...item(0)}
+        className="font-[family-name:var(--font-playfair)] text-3xl sm:text-4xl lg:text-[26px] font-bold text-[#0B0B0C] leading-tight shrink-0"
+      >
+        Service Providers
+      </motion.h1>
+      <motion.p
+        {...item(0.08)}
+        className="text-gray-500 text-[13px] leading-snug lg:max-w-xl min-w-0"
+      >
+        Phone numbers for carpenters, plumbers, electricians, shopkeepers,
+        tiffin services and more. Search by trade or name, then call or
+        WhatsApp them directly.
+      </motion.p>
     </div>
   );
 }

@@ -1,93 +1,60 @@
-# Phone numbers: validate, split, format
+# Community directory — single-screen redesign
 
-Numbers were stored however the spreadsheet happened to write them - "9867856939",
-"98678 56939", "022 2536 6401", "100". Now parsed, validated and stored in one
-canonical form, with the dialling code separated from the local number.
+**Goal.** `/community` fits one viewport. No document scroll; the table scrolls
+inside itself. Paging resets the table to the top. Categories move to a left
+rail with multi-select and a clear control.
 
-## The numbering plan
+**Why the chrome had to go.** Hero (200px) + tabs (84) + search (54) + 25
+wrapping pills (190) + count row (76) + pager (60) + disclaimer (104) + page
+padding (224) ≈ 990px of furniture before a single row — more than a laptop
+viewport. Adding `overflow` to the table alone would not have fixed it.
 
-Confirmed against the DoT/TRAI plan and corroborated by the data:
-- Every Indian number is exactly 10 digits once +91 and the trunk "0" are removed
-- Mobile: 10 digits beginning 6, 7, 8 or 9 -> `+91 98765 43210`
-- Landline: STD + subscriber = 10 digits. Metro STD codes are two digits
-  (Delhi 11, Mumbai 22, Pune 20, Kolkata 33, Hyderabad 40, Chennai 44,
-  Ahmedabad 79, Bengaluru 80), others three or four. Dialled domestically with
-  a leading 0 -> `022 2597 2040`
-- Toll-free begins 1800 -> `1800 229 944`
-- **Emergency and helpline short codes are 3-5 digits and take no prefix at
-  all** - 100, 101, 102, 108, 112, 14567. They must never be rewritten as +91,
-  which is exactly what a naive "prepend the country code" rule would do.
+## Tasks
+- [x] Route group `(fullscreen)` — navbar, no footer; move `community/` into it
+- [x] Page shell: `h-dvh` flex column at `lg+`, normal document flow below
+- [x] `CommunityHero` — compact variant (drop the duplicated eyebrow)
+- [x] `CommunityTabs` — panels stretch instead of stacking
+- [x] `CommunityDirectory` — left rail, multi-select, sticky head, inner scroll
+- [x] Reset table scroll on page change and on filter change
+- [x] `BusTimings` — scrolls inside the same shell
+- [x] `loading.tsx` — match the new layout so nothing shifts on swap
+- [x] Build, verify, commit
 
-## What changed
-
-`src/lib/phone.ts` - one parser used by the form, all three APIs, the CSV
-importer and the normalisation script, so nothing can disagree about what a
-valid number is. Returns `{ extension, number, kind, display, e164, valid,
-reason }`.
-
-- Admin dialog: a dialling-code select plus a number field, per number
-- All three APIs validate through the same parser and store the canonical form,
-  reporting the specific reason ("…has 9 digits") rather than a generic error
-- CSV gains `extension` and `number` columns, pipe-separated and index-aligned
-  for multiple numbers; a legacy single `phones` column is still accepted
-- WhatsApp is now offered only for mobiles - wa.me on a landline, a toll-free
-  line or `100` is a dead link
-
-## The data
-
-250 contacts, 273 numbers. 216 contacts reformatted.
-
-| kind | count | stored as |
-|---|---|---|
-| mobile | 243 | `+91 98765 43210` |
-| landline | 16 | `022 2597 2040` |
-| short code | 8 | `100` |
-| toll-free | 1 | `1800 229 944` |
-| unformatted | 5 | left exactly as found |
-
-Those 5 are 9-digit numbers - a digit was lost before this project existed.
-They were **not** guessed at or padded: a directory showing a confidently
-formatted wrong number is worse than one showing the original. All 5 are
-already PENDING, so they are invisible publicly and listed in the admin panel
-for repair.
-
-Three numbers were stored as bare 10-digit landlines and are now
-`022 3504 7727`, `022 6855 6855` and `020 2714 6668`. The last is a Pune code
-on the estate post office - mechanically correct from the digits, but worth a
-human check.
-
-## Adding a toll-free or short code
-
-The add path had four bugs that only showed up when actually exercised:
-
-| picked | typed | was | now |
-|---|---|---|---|
-| 1800 | `1800229944` | `18001800229944` | `1800 229 944` |
-| +91 | `+91 98765 43210` | `+91919876543210` | `+91 98765 43210` |
-| 022 | `022 2597 2040` | `02202225972040` | `022 2597 2040` |
-| +91 | `100` | **`91100`, saved silently** | rejected with guidance |
-
-The last was the dangerous one: concatenating gave `91100`, which then parsed
-as a valid 5-digit short code and stored nonsense with no error.
-
-`combinePhone()` replaces the raw concatenation - tolerant of a pasted whole
-number (what was typed wins if it already carries its own code), strict about a
-dialling code paired with a 3-digit body, since short codes take no code at all.
-Used by the form, the APIs and the CSV importer alike.
-
-Two UI fixes found by testing the real form: the error did not clear when the
-code was corrected (the error hangs off the sibling `number` field, so changing
-the select has to `trigger()` its revalidation), and the labels truncated to
-`None — e…` in a 132px trigger.
+## Decisions
+- Footer hidden here (user's call) — `/community` is an app screen, not a
+  document. Disclaimer survives as a compact line inside the shell.
+- Multi-select categories: empty set means "All". Facet counts respect the
+  search box and locality, so a visible count is never a dead end.
+- Full-height shell applies at `lg+` only. A phone cannot show rail, chrome
+  and table at once; below `lg` the rail becomes the existing pill row and the
+  page scrolls normally.
 
 ## Review
 
-Verified rather than assumed: the parser was run over every real shape in the
-table before any row was touched, and the rendered page was checked for all
-four `tel:` forms - `tel:+91…`, `tel:0…`, `tel:1800…`, and a bare `tel:NNN`
-for short codes. WhatsApp links produce `wa.me/919867856939`, not a doubled 91.
+Done. `/community` is one viewport from `md` up; phones keep document scroll.
 
-Environment note: `.next/dev/types/` keeps acquiring `"… 2.ts"` conflict copies,
-the signature of iCloud Drive syncing `~/Desktop`. One of them broke
-typechecking with a duplicate identifier. tsconfig now excludes `**/* 2.ts`.
-Worth turning off Desktop sync for this folder.
+Measured with puppeteer at three widths:
+
+| width | horizontal overflow | page scroll | table |
+|---|---|---|---|
+| 390 (phone) | none | 3291px — by design | 348px in a 348px box |
+| 820 (tablet) | none | none | fits |
+| 1440 (laptop) | none | none | 1472px of rows in a 560px box |
+
+Behaviour: paging resets the table to the top (scrollTop 400 → 0); two ticked
+categories return their union (61 + 31 = 92 shown); both stay ticked; the bus
+panel is `display:none` when inactive rather than merely `hidden`.
+
+### Two bugs found while building this
+- Every flex ancestor of the table needed `min-w-0`. Without it `min-width:auto`
+  let the 640px table widen the whole page, and `html{overflow-x:clip}` in
+  globals.css hid the symptom by cropping rather than scrolling — the page
+  looked merely "cut off" on a phone.
+- `hidden` on a tab panel loses to a `flex` class: equal specificity, and
+  preflight loses on source order. The inactive panel was still laid out.
+  Fixed with `[&[hidden]]:hidden`.
+
+### Not done
+- The table's `min-w-[640px]` still applies from `md` up, so a narrow tablet in
+  portrait scrolls the table sideways rather than dropping a column. Dropping
+  the Category column earlier would avoid it.
