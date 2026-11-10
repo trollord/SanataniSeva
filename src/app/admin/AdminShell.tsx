@@ -59,7 +59,7 @@ export default function AdminShell({ userName, userRole, children }: Props) {
           {userRole}
         </Badge>
       </div>
-      <nav className="flex-1 p-3 space-y-1">
+      <nav className="flex-1 min-h-0 overflow-y-auto p-3 space-y-1">
         {NAV_LINKS.map(({ href, label, icon: Icon }) => (
           <Link
             key={href}
@@ -85,7 +85,7 @@ export default function AdminShell({ userName, userRole, children }: Props) {
   );
 
   return (
-    <div className="min-h-screen flex">
+    <div className="h-dvh flex overflow-hidden">
       {/* Desktop sidebar */}
       <aside className="hidden lg:flex w-56 shrink-0 bg-[#1C0A00] text-white flex-col">
         {sidebar}
@@ -117,7 +117,7 @@ export default function AdminShell({ userName, userRole, children }: Props) {
       </aside>
 
       {/* Main content */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 min-h-0">
         {/* Mobile top bar */}
         <header className="lg:hidden flex items-center gap-3 px-4 py-3 bg-white border-b border-gray-100 sticky top-0 z-30">
           <button
@@ -133,7 +133,7 @@ export default function AdminShell({ userName, userRole, children }: Props) {
           </div>
         </header>
 
-        <main className="flex-1 bg-[#FAF8F5] overflow-auto">{children}</main>
+        <main className="flex-1 min-h-0 bg-[#FAF8F5] overflow-auto">{children}</main>
       </div>
     </div>
   );
