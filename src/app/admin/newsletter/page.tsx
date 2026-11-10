@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ExternalLink, FileText } from "lucide-react";
 import UploadForm from "./UploadForm";
 import DeleteButton from "./DeleteButton";
+import PublishToggle from "./PublishToggle";
 import TablePager, { resolvePage } from "@/components/admin/TablePager";
 
 export const dynamic = "force-dynamic";
@@ -28,7 +29,7 @@ export default async function AdminNewsletterPage({
     orderBy: { date: "desc" },
     skip,
     take,
-    select: { id: true, title: true, date: true, pageCount: true, status: true, pdfUrl: true },
+    select: { id: true, title: true, date: true, pageCount: true, status: true },
   });
 
   return (
@@ -70,14 +71,21 @@ export default async function AdminNewsletterPage({
                   <td className="px-4 py-3 text-right">
                     <div className="flex items-center justify-end gap-2">
                       <Link
-                        href={`/newspaper/${e.id}`}
+                        href={
+                          e.status === "PUBLISHED"
+                            ? `/newspaper/${e.id}`
+                            : `/api/newspaper/${e.id}`
+                        }
                         target="_blank"
                         className="text-xs text-gray-600 border border-gray-200 hover:border-gray-400 rounded-lg px-2.5 py-1.5 inline-flex items-center gap-1"
                       >
                         <ExternalLink className="h-3.5 w-3.5" />
-                        <span className="hidden sm:inline">View</span>
+                        <span className="hidden sm:inline">
+                          {e.status === "PUBLISHED" ? "View" : "Preview"}
+                        </span>
                       </Link>
-                      <DeleteButton id={e.id} />
+                      <PublishToggle id={e.id} status={e.status} title={e.title} />
+                      <DeleteButton id={e.id} title={e.title} />
                     </div>
                   </td>
                 </tr>

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/lib/auth";
 import { s3 } from "@/lib/s3";
 import { GetObjectCommand } from "@aws-sdk/client-s3";
 
@@ -9,11 +10,20 @@ export async function GET(
 ) {
   const { id } = await params;
   const newsletter = await prisma.newsletter.findUnique({
-    where: { id: id, status: "PUBLISHED" },
-    select: { publicId: true, title: true },
+    where: { id },
+    select: { publicId: true, title: true, status: true },
   });
   if (!newsletter) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  // A draft is readable only by an admin, so an edition can be reviewed before
+  // it is approved. To everyone else it is indistinguishable from missing.
+  if (newsletter.status !== "PUBLISHED") {
+    const session = await auth();
+    if (!session || session.user.role !== "ADMIN") {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
   }
 
   const isDownload = new URL(req.url).searchParams.get("download") === "1";
