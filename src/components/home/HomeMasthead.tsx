@@ -162,8 +162,7 @@ export default function HomeMasthead({ hasNews }: HomeMastheadProps) {
 
             <motion.div {...load(0.12)}>
               <p className="mt-7 max-w-[58ch] text-[17px] leading-[1.65] text-[#6B6B6B]">
-                Sanatani Seva is a neighbourhood portal run for Hiranandani Estate, Thane — and
-                for Hiranandani Meadows, Rodas Enclave and One Hiranandani Park beside it. It does
+                Sanatani Seva is a neighbourhood portal run for Hiranandani Estate, Thane. It does
                 five things, and no more. Start with whichever one brought you here.
               </p>
             </motion.div>

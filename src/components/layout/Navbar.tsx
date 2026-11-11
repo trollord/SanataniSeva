@@ -6,6 +6,7 @@ import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { PlusSquare, LayoutDashboard, Shield, LogOut, X, ArrowRight } from "lucide-react";
 import BecomeOwnerModal from "@/components/property/BecomeOwnerModal";
+import InstallAppPrompt from "@/components/layout/InstallAppPrompt";
 import FloatingActionMenu from "@/components/ui/floating-action-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -138,6 +139,8 @@ export default function SiteNavbar({ forceScrolled = false }: { forceScrolled?: 
         open={ownerModalOpen}
         onClose={() => setOwnerModalOpen(false)}
       />
+
+      <InstallAppPrompt />
 
       <Navbar
         forceScrolled={forceScrolled}

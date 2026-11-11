@@ -22,6 +22,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
+  themeColor: "#FAF8F5",
 };
 
 export const metadata: Metadata = {
@@ -86,6 +87,8 @@ export const metadata: Metadata = {
   // than letting iOS Safari linkify every number it finds.
   formatDetection: { telephone: false },
   applicationName: "Sanatani Seva",
+  // Home-screen install on iOS (see manifest.ts for everyone else)
+  appleWebApp: { capable: true, title: "Sanatani Seva", statusBarStyle: "default" },
   category: "community",
 };
 
@@ -112,7 +115,7 @@ export default async function RootLayout({
                 name: "Sanatani Seva",
                 url: SITE_URL,
                 description:
-                  "Independent, direct-to-owner property listing platform for Hiranandani Estate, Thane.",
+                  "Community portal for Hiranandani Estate, Thane: local service numbers, emergency contacts, bus timings, a resident marketplace, homes and the estate newspaper.",
                 areaServed: "Hiranandani Estate, Thane, Maharashtra, India",
               },
               {
@@ -120,6 +123,23 @@ export default async function RootLayout({
                 "@type": "WebSite",
                 name: "Sanatani Seva",
                 url: SITE_URL,
+              },
+              // The main sections, named for search engines choosing sitelinks.
+              {
+                "@context": "https://schema.org",
+                "@type": "ItemList",
+                itemListElement: [
+                  ["Service Providers", "/community"],
+                  ["Resell / Giveaway", "/marketplace"],
+                  ["Real Estate", "/listings"],
+                  ["Latest News", "/newspaper"],
+                  ["Connect", "/contact"],
+                ].map(([name, path], i) => ({
+                  "@type": "SiteNavigationElement",
+                  position: i + 1,
+                  name,
+                  url: `${SITE_URL}${path}`,
+                })),
               },
             ]),
           }}

@@ -6,7 +6,7 @@ import { BLOG_POSTS } from "@/lib/blog";
 export const dynamic = "force-dynamic";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const [properties, items, news] = await Promise.all([
+  const [properties, items, news, editions] = await Promise.all([
     prisma.property.findMany({
       where: { status: "ACTIVE" },
       select: { id: true, updatedAt: true },
@@ -19,19 +19,24 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       where: { status: "PUBLISHED" },
       select: { id: true, publishedAt: true },
     }),
+    prisma.newsletter.findMany({
+      where: { status: "PUBLISHED" },
+      select: { id: true, date: true },
+    }),
   ]);
 
   const base = SITE_URL;
 
   return [
     { url: base, lastModified: new Date(), changeFrequency: "daily", priority: 1 },
+    // Main sections, in navbar order.
+    { url: `${base}/community`, lastModified: new Date(), changeFrequency: "daily", priority: 0.9 },
+    { url: `${base}/marketplace`, lastModified: new Date(), changeFrequency: "hourly", priority: 0.9 },
     { url: `${base}/listings`, lastModified: new Date(), changeFrequency: "hourly", priority: 0.9 },
-    { url: `${base}/marketplace`, lastModified: new Date(), changeFrequency: "hourly", priority: 0.8 },
+    { url: `${base}/newspaper`, lastModified: new Date(), changeFrequency: "daily", priority: 0.9 },
+    { url: `${base}/contact`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.7 },
     { url: `${base}/how-it-works`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.5 },
-    { url: `${base}/community`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.6 },
-    { url: `${base}/newspaper`, lastModified: new Date(), changeFrequency: "daily", priority: 0.7 },
-    { url: `${base}/blog`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.6 },
-    { url: `${base}/contact`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.5 },
+    { url: `${base}/blog`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.5 },
     { url: `${base}/terms`, lastModified: new Date(), changeFrequency: "yearly", priority: 0.2 },
     ...BLOG_POSTS.map((p) => ({
       url: `${base}/blog/${p.slug}`,
@@ -56,6 +61,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: n.publishedAt,
       changeFrequency: "monthly" as const,
       priority: 0.6,
+    })),
+    ...editions.map((e) => ({
+      url: `${base}/newspaper/${e.id}`,
+      lastModified: e.date,
+      changeFrequency: "yearly" as const,
+      priority: 0.5,
     })),
   ];
 }
