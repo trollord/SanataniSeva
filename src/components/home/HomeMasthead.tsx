@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { motion, useReducedMotion } from "framer-motion";
+import { InstallAppButton } from "@/components/layout/InstallAppPrompt";
 
 /* ------------------------------------------------------------------ tokens */
 /* Copied verbatim from the shared home-page token addendum. Each of the seven
@@ -163,17 +164,12 @@ export default function HomeMasthead({ hasNews }: HomeMastheadProps) {
             <motion.div {...load(0.12)}>
               <p className="mt-7 max-w-[58ch] text-[17px] leading-[1.65] text-[#6B6B6B]">
                 Sanatani Seva is a neighbourhood portal run for Hiranandani Estate, Thane. It does
-                five things, and no more. Start with whichever one brought you here.
+                five things. Start with whichever one brought you here.
               </p>
             </motion.div>
 
             <motion.div {...load(0.18)} className="mt-9 flex flex-wrap items-center gap-x-7 gap-y-4">
-              <Link href="/listings" className={T1_LIGHT}>
-                Find a home
-                <span aria-hidden className="transition-transform duration-150 group-hover:translate-x-[3px]">
-                  →
-                </span>
-              </Link>
+              <InstallAppButton className={T1_LIGHT} />
             </motion.div>
           </div>
 
@@ -226,7 +222,7 @@ export default function HomeMasthead({ hasNews }: HomeMastheadProps) {
                        composed. Equal columns plus a flex column per cell
                        (arrow pushed down with mt-auto) puts every title, every
                        line of copy and every arrow on a shared baseline. */
-                    className={`group relative flex flex-col transition-colors duration-150 hover:bg-[#EDE0CC] active:bg-[#EDE0CC] ${FOCUS} px-5 py-5 lg:px-6 lg:py-7 ${
+                    className={`group relative flex flex-col transition-colors duration-150 hover:bg-[#EDE0CC] active:bg-[#EDE0CC] ${FOCUS} px-5 py-5 lg:py-7 ${
                       /* Dividers follow the axis the cells stack on: a top
                          rule while stacked, a left rule once they sit in a
                          row. At sm the grid is 2-up, so column 1 of each pair
@@ -236,21 +232,24 @@ export default function HomeMasthead({ hasNews }: HomeMastheadProps) {
                       i === 1 ? "sm:border-t-0 lg:border-t-0" : ""
                     }`}
                   >
-                    <span className="block text-[12px] font-bold tabular-nums text-[#7A4F2A] transition-colors duration-150 group-hover:text-[#A8410F] group-active:text-[#A8410F]">
+                    <span className="block text-[14px] font-bold tabular-nums text-[#7A4F2A] transition-colors duration-150 group-hover:text-[#A8410F] group-active:text-[#A8410F]">
                       {cell.n}
                     </span>
                     <span
-                      className={`${PF} mt-2 block font-bold text-[#1C1C1C]`}
-                      style={{ fontSize: "clamp(1.05rem,1.35vw,1.25rem)", lineHeight: 1.2 }}
+                      /* Between lg and xl the longer titles wrap, so every
+                         cell reserves two lines there to keep the copy
+                         beneath on one baseline. From xl they fit on one. */
+                      className={`${PF} mt-2 block font-bold text-[#1C1C1C] lg:min-h-[2.4em] xl:min-h-0`}
+                      style={{ fontSize: "clamp(1.2rem,1.5vw,1.3125rem)", lineHeight: 1.2 }}
                     >
                       {cell.name}
                     </span>
-                    <span className="mt-2 block text-[13px] leading-[1.5] text-[#1C1C1C]">
+                    <span className="mt-2 block text-[15px] leading-[1.5] text-[#1C1C1C]">
                       {cell.errand}
                     </span>
                     <span
                       aria-hidden
-                      className="mt-auto block pt-5 text-[14px] text-[#7A4F2A] transition-transform duration-150 group-hover:translate-x-[4px] group-hover:text-[#A8410F] group-active:translate-x-[4px] group-active:text-[#A8410F]"
+                      className="mt-auto block pt-5 text-[16px] text-[#7A4F2A] transition-transform duration-150 group-hover:translate-x-[4px] group-hover:text-[#A8410F] group-active:translate-x-[4px] group-active:text-[#A8410F]"
                     >
                       →
                     </span>
