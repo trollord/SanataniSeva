@@ -46,7 +46,7 @@ export function buildWhatsAppMessage(p: ShareableProperty, propertyUrl: string):
     `✨ View photos & full details:`,
     propertyUrl,
     ``,
-    `_Listed on Sanatani Seva - direct from owner, 100% verified._`,
+    `_Listed on Sanatani Seva - 100% verified._`,
   ];
 
   return lines.join("\n");

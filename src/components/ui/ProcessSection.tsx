@@ -26,7 +26,7 @@ const STEPS = [
   {
     icon: KeyRound,
     title: "Visit & Move In",
-    desc: "Schedule a viewing directly with the owner and finalise your dream home.",
+    desc: "Schedule a viewing and finalise your dream home.",
   },
 ];
 

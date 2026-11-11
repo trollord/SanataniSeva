@@ -305,9 +305,11 @@ export default function ContactFormDialog({
                     />
                   </div>
                   <Input
-                    className={inputClass}
+                    // The sample number clears on focus so it is never
+                    // mistaken for a value already in the field.
+                    className={`${inputClass} focus:placeholder:text-transparent`}
                     {...register(`phones.${i}.number` as const)}
-                    placeholder="98765 43210"
+                    placeholder="9999999999"
                     inputMode="tel"
                     aria-label={`Phone number ${i + 1}`}
                   />

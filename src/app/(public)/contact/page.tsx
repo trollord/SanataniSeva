@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowRight, Mail, MessageCircle, Phone, Clock } from "lucide-react";
+import { ArrowRight, Mail, Phone, Clock } from "lucide-react";
 import ContactForm from "@/components/contact/ContactForm";
 import WhatsAppIcon from "@/components/ui/WhatsAppIcon";
 import { whatsAppContactUrl } from "@/lib/utils/whatsapp";
@@ -22,7 +22,7 @@ const WHATSAPP_NUMBER = CONTACT_PHONE;
 const FAQS: { q: string; a: string }[] = [
   {
     q: "I'm a buyer or tenant - how do I reach an owner?",
-    a: "Open the listing you're interested in and tap the Call or WhatsApp button on the price card. We put you in direct contact with the owner, no brokers in between.",
+    a: "Open the listing you're interested in and tap the Call or WhatsApp button on the price card. That puts you straight through to the owner or broker who listed it.",
   },
   {
     q: "I want to list my property - do I pay anything?",
@@ -138,33 +138,6 @@ export default function ContactPage() {
         </div>
       </section>
 
-      {/* ── CTA ──────────────────────────────────────────────────────────── */}
-      <section className="px-5 sm:px-8 py-14 sm:py-20">
-        <div className="max-w-5xl mx-auto">
-          <div className="bg-[#1C0A00] rounded-2xl p-6 sm:p-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
-            <div>
-              <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-white/35 mb-3">
-                New here?
-              </p>
-              <h2 className="font-[family-name:var(--font-playfair)] text-xl sm:text-3xl font-bold text-white mb-2">
-                See how Sanatani Seva works
-              </h2>
-              <p className="text-white/45 text-xs sm:text-sm leading-relaxed max-w-md">
-                Direct owner connect, verified listings, no middlemen - in
-                under three steps.
-              </p>
-            </div>
-            <Link
-              href="/how-it-works"
-              className="inline-flex items-center gap-2 bg-white text-[#0B0B0C] px-6 py-3 rounded-xl text-xs sm:text-sm font-bold uppercase tracking-widest hover:opacity-90 transition-opacity shrink-0 self-start sm:self-auto"
-            >
-              How it works
-              <ArrowRight className="w-4 h-4" />
-            </Link>
-          </div>
-        </div>
-      </section>
-
       {/* ── Chat bubble ──────────────────────────────────────────────────── */}
       <Link
         href={whatsAppContactUrl(WHATSAPP_NUMBER)}
@@ -173,7 +146,7 @@ export default function ContactPage() {
         aria-label="Chat on WhatsApp"
         className="fixed bottom-5 right-5 z-40 flex items-center gap-2 bg-[#1C0A00] text-white px-4 py-3 rounded-full shadow-lg hover:opacity-90 transition-opacity"
       >
-        <MessageCircle className="w-4 h-4" />
+        <WhatsAppIcon className="w-5 h-5 text-[#25D366]" />
         <span className="text-xs font-bold uppercase tracking-wider">
           Chat
         </span>

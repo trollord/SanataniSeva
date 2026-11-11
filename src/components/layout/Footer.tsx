@@ -4,22 +4,27 @@ import { SITE_NAME } from "@/lib/constants";
 export default function Footer() {
   return (
     <footer className="bg-[#1C0A00] text-white">
-      <div className="max-w-6xl mx-auto px-5 sm:px-8 py-8 sm:py-20">
+      <div className="max-w-6xl mx-auto px-5 sm:px-8 py-8 sm:py-10">
 
-        {/* Mobile: brand top, then 2-col links. Desktop: 4-col grid */}
-        <div className="flex flex-col md:grid md:grid-cols-4 md:gap-12">
+        {/* Mobile: brand top, then 2-col links. Desktop: 5-col grid, with the
+            longer Company list set in two columns to keep the footer short. */}
+        <div className="flex flex-col md:grid md:grid-cols-5 md:gap-10">
 
           {/* Brand */}
-          <div className="md:col-span-2 mb-6 sm:mb-10 md:mb-0">
-            <Link href="/" className="inline-flex items-center gap-1.5 group mb-3 sm:mb-5">
+          <div className="md:col-span-2 mb-6 sm:mb-8 md:mb-0">
+            <Link href="/" className="inline-flex items-center gap-1.5 group mb-3">
               <span className="font-bold text-lg sm:text-xl tracking-tight text-white">
                 Sanatani<span className="text-white/60"> Seva</span>
               </span>
               <span className="h-1.5 w-1.5 rounded-full bg-white/40 mt-1 group-hover:scale-125 transition-transform duration-300" />
             </Link>
             <p className="text-white/40 text-xs sm:text-sm leading-relaxed max-w-xs">
-              Exclusively serving Hiranandani Estate, Thane.
-              Direct owner connect, no middlemen.
+              Serving the community of Hiranandani Estate and nearby areas:
+              service numbers, emergency contacts, bus timings and everyday
+              needs, at your fingertips.
+            </p>
+            <p className="text-white/40 text-xs sm:text-sm mt-3">
+              Convener: <span className="text-white/70 font-medium">Narendra Sahu</span>
             </p>
           </div>
 
@@ -28,10 +33,10 @@ export default function Footer() {
 
             {/* Explore */}
             <div>
-              <h4 className="text-[9px] sm:text-[10px] font-bold uppercase tracking-[0.14em] text-white/35 mb-3 sm:mb-5">
+              <h4 className="text-[9px] sm:text-[10px] font-bold uppercase tracking-[0.14em] text-white/35 mb-3">
                 Explore
               </h4>
-              <ul className="space-y-2 sm:space-y-3">
+              <ul className="space-y-2">
                 {[
                   { href: "/listings?listingType=RENT", label: "For Rent" },
                   { href: "/listings?listingType=SALE", label: "For Sale" },
@@ -52,11 +57,11 @@ export default function Footer() {
             </div>
 
             {/* Company */}
-            <div>
-              <h4 className="text-[9px] sm:text-[10px] font-bold uppercase tracking-[0.14em] text-white/35 mb-3 sm:mb-5">
+            <div className="md:col-span-2">
+              <h4 className="text-[9px] sm:text-[10px] font-bold uppercase tracking-[0.14em] text-white/35 mb-3">
                 Company
               </h4>
-              <ul className="space-y-2 sm:space-y-3">
+              <ul className="space-y-2 md:space-y-0 md:grid md:grid-cols-2 md:gap-x-8 md:gap-y-2">
                 {[
                   { href: "/how-it-works",    label: "How It Works" },
                   { href: "/community",       label: "Community Directory" },
@@ -82,22 +87,13 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* Independent-platform disclaimer */}
-        <p className="text-[10px] sm:text-xs text-white/25 leading-relaxed mt-8 sm:mt-14 max-w-3xl">
-          Disclaimer: Sanatani Seva (sanataniseva.com) is an independent property
-          listing platform and is not affiliated with, endorsed by, or
-          connected to the Hiranandani Group or any of its companies. The name
-          &ldquo;Hiranandani&rdquo; refers solely to the Hiranandani Estate
-          locality in Thane where the listed properties are situated.
-        </p>
-
         {/* Bottom bar */}
-        <div className="border-t border-white/8 mt-4 sm:mt-6 pt-5 sm:pt-8 flex flex-col sm:flex-row items-center justify-between gap-1.5 sm:gap-3">
+        <div className="border-t border-white/8 mt-6 sm:mt-8 pt-4 sm:pt-5 flex flex-col sm:flex-row items-center justify-between gap-1.5 sm:gap-3">
           <p className="text-[10px] sm:text-xs text-white/25">
             © {new Date().getFullYear()} {SITE_NAME}. All rights reserved.
           </p>
           <p className="text-[10px] sm:text-xs text-white/25 flex items-center gap-1.5">
-            <span>Direct From Owners</span>
+            <span>Hiranandani Estate, Thane</span>
             <span aria-hidden className="text-white/15">·</span>
             <span>
               Made by{" "}

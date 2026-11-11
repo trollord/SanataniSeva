@@ -99,7 +99,11 @@ export default function SearchableSelect({
         triggerRef.current?.focus();
       }
     }
-    function reposition() {
+    function reposition(e: Event) {
+      // The capture listener below also hears the panel's own option list
+      // scrolling. That moves nothing the panel is anchored to, so it must
+      // not close it.
+      if (e.target instanceof Node && panelRef.current?.contains(e.target)) return;
       setOpen(false);
     }
 
@@ -243,7 +247,10 @@ export default function SearchableSelect({
               </div>
             )}
 
-            <div className="overflow-y-auto overscroll-contain py-1">
+            {/* min-h-0: a flex child will not shrink below its content without
+                it, so the list grew to full height, was clipped by the panel
+                and had nothing to scroll. */}
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain py-1">
               {filtered.length === 0 ? (
                 <p className="px-3 py-6 text-center text-xs text-gray-400">
                   Nothing matches “{query}”

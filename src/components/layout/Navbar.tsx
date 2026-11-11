@@ -21,9 +21,10 @@ import {
 } from "@/components/ui/resizable-navbar";
 
 const navItems = [
-  { name: "Real Estate", link: "/listings" },
-  { name: "Resell & Donate", link: "/marketplace" },
+  { name: "Home", link: "/" },
   { name: "Service Providers", link: "/community" },
+  { name: "Resell / Giveaway", link: "/marketplace" },
+  { name: "Real Estate", link: "/listings" },
   // { name: "How It Works", link: "/how-it-works" },
   // { name: "Blog", link: "/blog" },
   { name: "Latest News", link: "/newspaper" },
@@ -187,7 +188,7 @@ export default function SiteNavbar({ forceScrolled = false }: { forceScrolled?: 
 
       {/* ── Side drawer overlay ── */}
       <div
-        className={`fixed inset-0 z-[60] md:hidden transition-opacity duration-300 ${
+        className={`fixed inset-0 z-[60] lg:hidden transition-opacity duration-300 ${
           mobileOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
         }`}
         style={{ background: "rgba(0,0,0,0.45)", backdropFilter: "blur(2px)" }}
@@ -196,7 +197,7 @@ export default function SiteNavbar({ forceScrolled = false }: { forceScrolled?: 
 
       {/* ── Side drawer panel ── */}
       <div
-        className={`fixed top-0 right-0 h-full w-[280px] sm:w-[300px] z-[70] md:hidden flex flex-col transition-transform duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${
+        className={`fixed top-0 right-0 h-full w-[280px] sm:w-[300px] z-[70] lg:hidden flex flex-col transition-transform duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${
           mobileOpen ? "translate-x-0" : "translate-x-full"
         }`}
         style={{ background: "#FAF8F5" }}

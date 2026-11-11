@@ -258,7 +258,9 @@ export default function CommunityDirectory({
               </button>
             )}
           </div>
-          <div className="flex-1 min-h-0 overflow-y-auto p-1.5 space-y-0.5">
+          {/* A thin scrollbar in its own reserved gutter, so it never sits on
+              top of the counts at the right edge of each row. */}
+          <div className="flex-1 min-h-0 overflow-y-auto p-1.5 space-y-0.5 [scrollbar-width:thin] [scrollbar-gutter:stable] [scrollbar-color:#d9dfe0_transparent]">
             <RailRow
               active={categories.size === 0}
               onClick={clearCategories}

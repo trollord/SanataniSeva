@@ -32,7 +32,7 @@ export const metadata: Metadata = {
     template: "%s | Sanatani Seva",
   },
   description:
-    "Everything Hiranandani Estate residents need in one place: flats for rent and sale direct from owners, a directory of trusted local plumbers, electricians, doctors and shops, a resident marketplace, bus timings and the estate newspaper. Free to browse, no middlemen.",
+    "Everything Hiranandani Estate residents need in one place: flats for rent and sale, a directory of trusted local plumbers, electricians, doctors and shops, a resident marketplace, bus timings and the estate newspaper. Free to browse.",
   keywords: [
     // Housing
     "houses in Hiranandani Estate",
@@ -64,13 +64,13 @@ export const metadata: Metadata = {
     siteName: "Sanatani Seva",
     title: "Sanatani Seva - Homes, Local Services & Marketplace in Hiranandani Estate",
     description:
-      "Flats direct from owners, a directory of trusted local services, a resident marketplace, bus timings and the estate newspaper - for Hiranandani Estate, Thane.",
+      "Flats for rent and sale, a directory of trusted local services, a resident marketplace, bus timings and the estate newspaper - for Hiranandani Estate, Thane.",
   },
   twitter: {
     card: "summary_large_image",
     title: "Sanatani Seva - Hiranandani Estate, Thane",
     description:
-      "Flats direct from owners, trusted local services, a resident marketplace and bus timings for Hiranandani Estate.",
+      "Flats for rent and sale, trusted local services, a resident marketplace and bus timings for Hiranandani Estate.",
   },
   robots: {
     index: true,

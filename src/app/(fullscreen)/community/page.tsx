@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import CommunityDirectory from "@/components/community/CommunityDirectory";
 import CommunityHero from "@/components/community/CommunityHero";
 import BusTimings from "@/components/community/BusTimings";
+import EmergencyNumbers from "@/components/community/EmergencyNumbers";
 import CommunityTabs from "@/components/community/CommunityTabs";
 import { type DbCommunityContact } from "@/lib/community";
 
@@ -56,6 +57,9 @@ export default async function CommunityPage() {
     .filter((c) => c.phones.length > 0)
     .map((c) => ({ ...c, contactPerson: c.contactPerson ?? null }));
 
+  // The directory's own emergency category, also offered as a tab of its own.
+  const emergencyContacts = dbContacts.filter((c) => c.category === "emergency");
+
   // Only offer the bus tab when there is at least one published route.
   const busRouteCount = await prisma.busRoute.count({ where: { active: true } });
 
@@ -66,12 +70,14 @@ export default async function CommunityPage() {
     <div className="flex flex-1 flex-col min-h-0 px-5 sm:px-8 pt-24 pb-16 md:pt-20 md:pb-4">
       <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col min-h-0 min-w-0">
 
-        {/* ── Header + directory/buses tabs, sharing one row ──────────────── */}
+        {/* ── Header + directory/buses/emergency tabs, sharing one row ──────────────── */}
         <CommunityTabs
           heading={<CommunityHero />}
           busesAvailable={busRouteCount > 0}
           directory={<CommunityDirectory dbContacts={dbContacts} />}
           buses={<BusTimings />}
+          emergencyAvailable={emergencyContacts.length > 0}
+          emergency={<EmergencyNumbers contacts={emergencyContacts} />}
         />
 
         {/* ── Disclaimer — always shown ───────────────────────────────────── */}

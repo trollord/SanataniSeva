@@ -68,7 +68,7 @@ export default function OpengraphImage() {
             lineHeight: 1.4,
           }}
         >
-          Flats direct from owners · Trusted local services · Marketplace · Bus timings
+          Flats for rent and sale · Trusted local services · Marketplace · Bus timings
         </div>
       </div>
     ),

@@ -25,3 +25,17 @@ Those break when the scroll container moves inward.
 
 `DashboardSidebar` already solved this with `fixed h-screen overflow-y-auto`;
 the admin shell had simply never been given the same treatment.
+
+## Reproduce the reported interaction before calling a UI bug fixed
+*2026-11-11 — searchable select would not scroll*
+
+The category dropdown "closed on scroll". I fixed the close-on-scroll listener,
+could not reach the dialog in my test browser, and reported it fixed anyway.
+The real cause was the one already written above: the option list was a flex
+child without `min-h-0`, so it never became scrollable and the wheel scrolled
+the page behind it (which closed the panel).
+
+- If the exact reported state cannot be reproduced, say "not verified" and keep
+  digging rather than shipping the first plausible cause.
+- For any "won't scroll" report, check `scrollHeight > clientHeight` on the
+  element first. If they are equal, it is a layout bug, not an event bug.

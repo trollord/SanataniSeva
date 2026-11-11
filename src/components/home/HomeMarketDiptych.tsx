@@ -176,7 +176,7 @@ export default function HomeMarketDiptych({ items }: HomeMarketDiptychProps) {
         {/* 58 / 42 — unequal by design: a main entry and its companion note. */}
         <div className="grid gap-5 lg:grid-cols-[58fr_42fr]">
 
-          {/* ══ ENTRY 03 · BUY & SELL ══ */}
+          {/* ══ ENTRY 02 · BUY & SELL ══ */}
           <Reveal>
             <div className="relative h-full overflow-hidden rounded-2xl border border-[#EDE5D8] bg-[#FAF8F5] p-6 sm:p-9">
               <span
@@ -184,11 +184,11 @@ export default function HomeMarketDiptych({ items }: HomeMarketDiptychProps) {
                 className={`${PF} pointer-events-none absolute top-[-1rem] right-[0.5rem] select-none font-bold leading-none`}
                 style={{ color: "#EDE0CC", fontSize: "clamp(3.5rem,7vw,7rem)" }}
               >
-                03
+                02
               </span>
 
               <div className="relative z-10">
-                <SectionLabel tone="orange">ENTRY 03 · BUY &amp; SELL</SectionLabel>
+                <SectionLabel tone="orange">SEVA 02 · BUY &amp; SELL</SectionLabel>
 
                 {/* h2, not h3: entries 01-05 are peers in the document outline.
                     There is no section-level heading above this band, so an h3
@@ -199,7 +199,7 @@ export default function HomeMarketDiptych({ items }: HomeMarketDiptychProps) {
                   style={{ fontSize: "clamp(1.6rem,2.6vw,2.3rem)", lineHeight: 1.08 }}
                 >
                   Sell it to someone who lives{" "}
-                  <em className="not-italic text-[#C8541A]">four minutes away.</em>
+                  <em className="not-italic text-[#C8541A]">a few minutes away.</em>
                 </h2>
 
                 {/* Goods moving from one owner to the next — the figure states
@@ -225,8 +225,8 @@ export default function HomeMarketDiptych({ items }: HomeMarketDiptychProps) {
                   you meet in the lobby, you hand it over.
                 </p>
 
-                <div className="mt-7">
-                  {hasItems ? (
+                {hasItems && (
+                  <div className="mt-7">
                     <>
                       <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#A8410F]">
                         LATEST LOTS
@@ -271,29 +271,8 @@ export default function HomeMarketDiptych({ items }: HomeMarketDiptychProps) {
                         ))}
                       </ul>
                     </>
-                  ) : (
-                    <div className="rounded-xl border border-dashed border-[#9E6B3F] p-6">
-                      <p className="text-[15px] font-bold text-[#1C1C1C]">
-                        Nothing is listed this week.
-                      </p>
-                      <p className="mt-3 max-w-[58ch] text-[14px] leading-[1.7] text-[#6B6B6B]">
-                        The first lot sets the tone. Furniture, electronics, a cycle, white goods, a
-                        cot nobody needs any more — if it still works, somebody on this estate is
-                        looking for it.
-                      </p>
-                      <div className="mt-5 flex flex-wrap gap-2">
-                        {Object.values(ITEM_CATEGORY_LABEL).map((label) => (
-                          <span
-                            key={label}
-                            className="rounded-full bg-[#F0E9DF] px-3 py-1.5 text-[12px] text-[#1C1C1C]"
-                          >
-                            {label}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
+                  </div>
+                )}
 
                 {/* The empty state asks for the thing it actually needs, so the
                     tiers swap: listing leads, browsing follows. */}
@@ -346,7 +325,7 @@ export default function HomeMarketDiptych({ items }: HomeMarketDiptychProps) {
             </div>
           </Reveal>
 
-          {/* ══ ENTRY 04 · PASS IT ON ══
+          {/* ══ ENTRY 03 · PASS IT ON ══
               Deeper surface, no border — the ground separates it on its own. */}
           <Reveal delay={0.08}>
             {/* h-full so the pair reads as one spread. The earlier version let
@@ -359,11 +338,11 @@ export default function HomeMarketDiptych({ items }: HomeMarketDiptychProps) {
                 className={`${PF} pointer-events-none absolute top-[-1rem] right-[0.5rem] select-none font-bold leading-none`}
                 style={{ color: "#EDE0CC", fontSize: "clamp(3.5rem,7vw,7rem)" }}
               >
-                04
+                03
               </span>
 
               <div className="relative z-10">
-                <SectionLabel tone="ink">ENTRY 04 · PASS IT ON</SectionLabel>
+                <SectionLabel tone="ink">SEVA 03 · PASS IT ON</SectionLabel>
 
                 {/* h2 for the same outline reason as Entry 03: all five
                     entries are peers. The type step down is what marks this as
@@ -381,11 +360,6 @@ export default function HomeMarketDiptych({ items }: HomeMarketDiptychProps) {
                   Not everything needs a price. If the cot has been outgrown, the books are read and
                   the kettle works perfectly well, put it on the same marketplace and name whatever
                   figure feels right. Someone two buildings away is furnishing a first flat.
-                </p>
-
-                <div className="mt-6 h-px w-full bg-[#EDE5D8]" />
-                <p className="mt-4 text-[12px] italic leading-[1.6] text-[#1C1C1C]">
-                  Same place as Entry 03 — the marketplace listing form does both.
                 </p>
 
                 <div className="mt-7">

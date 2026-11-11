@@ -2,9 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import type { CSSProperties } from "react";
 import { motion, useReducedMotion } from "framer-motion";
-import { Settle } from "@lucasmarkes/hairline/react";
 
 /* ------------------------------------------------------------------ tokens */
 /* Copied verbatim from the shared home-page token addendum. Each of the seven
@@ -20,19 +18,6 @@ const FOCUS =
 
 // T1 — solid ink. Light grounds only. ONE per section at most.
 const T1_LIGHT = `group inline-flex items-center gap-2 rounded-lg bg-[#1C1C1C] px-6 py-3.5 text-[13px] font-bold uppercase tracking-[0.12em] text-[#FAF8F5] transition-colors duration-150 hover:bg-[#1C0A00] ${FOCUS}`;
-
-// T3 — text link. The ground-correct colour pair is appended at the call site.
-const T3 = `group inline-flex items-center gap-1.5 border-b border-[#C8541A] pb-0.5 text-[13px] font-bold uppercase tracking-[0.12em] transition-colors duration-150 ${FOCUS}`;
-
-/* Fig. 1 sits on the #FAF8F5 overlap card, so --hairline-plate is that cream. */
-const PLATE_MASTHEAD = {
-  "--hairline-plate": "#FAF8F5",
-  "--hairline-hi": "#C8541A",
-  "--hairline-edge": "#1C1C1C",
-  "--hairline-mid": "#9E6B3F",
-  "--hairline-lo": "#EDE5D8",
-  "--hairline-stroke": "1.25",
-} as CSSProperties;
 
 /* ------------------------------------------------------- shared primitives */
 
@@ -76,49 +61,32 @@ function Rule({ color }: { color: string }) {
   );
 }
 
-/** The direct parent of a hairline figure: it owns the figure's ink and its width. */
-function Plate({
-  children,
-  vars,
-  className,
-}: {
-  children: React.ReactNode;
-  vars: CSSProperties;
-  className?: string;
-}) {
-  return (
-    <div className={className} style={vars}>
-      {children}
-    </div>
-  );
-}
-
 /* ----------------------------------------------------------------- content */
 
 /**
  * The rail: the five uses of the portal, as five working links, above the fold.
- * Order is canonical and must never be reordered or renumbered.
+ * Order follows the navbar and the entry sections below; keep all three in step.
  */
 const RAIL: { n: string; name: string; errand: string; href: string }[] = [
-  { n: "01", name: "Find a home", errand: "Rent or buy, direct from the owner", href: "/listings" },
   {
-    n: "02",
+    n: "01",
     name: "Get a phone number",
-    errand: "Local services and trusted vendors",
+    errand: "Local services and vendors",
     href: "/community",
   },
   {
-    n: "03",
+    n: "02",
     name: "Buy something used",
     errand: "Second-hand, from a neighbour",
     href: "/marketplace",
   },
   {
-    n: "04",
+    n: "03",
     name: "Pass something on",
     errand: "Resell it, or hand it to someone who needs it",
     href: "/marketplace",
   },
+  { n: "04", name: "Find a home", errand: "Flats to rent or buy in the estate", href: "/listings" },
   { n: "05", name: "Read the paper", errand: "Estate news, notices and events", href: "/newspaper" },
 ];
 
@@ -185,10 +153,10 @@ export default function HomeMasthead({ hasNews }: HomeMastheadProps) {
                 {/* A JSX string expression, not literal JSX text: it keeps the
                     apostrophe as the exact character the copy deck specifies
                     while staying clear of react/no-unescaped-entities. */}
-                {"The estate's help desk, "}
+                {"The Estate's help desk, "}
                 {/* not-italic: Playfair's italic at this weight is too mannered
                     here, so the colour alone carries the emphasis. */}
-                <em className="not-italic text-[#C8541A]">set out in five entries.</em>
+                <em className="not-italic text-[#C8541A]">to fulfil your needs.</em>
               </h1>
             </motion.div>
 
@@ -207,12 +175,6 @@ export default function HomeMasthead({ hasNews }: HomeMastheadProps) {
                   →
                 </span>
               </Link>
-              <Link href="/contact" className={`${T3} text-[#1C1C1C] hover:text-[#A8410F]`}>
-                Ask a neighbour
-                <span aria-hidden className="transition-transform duration-150 group-hover:translate-x-[3px]">
-                  →
-                </span>
-              </Link>
             </motion.div>
           </div>
 
@@ -227,35 +189,15 @@ export default function HomeMasthead({ hasNews }: HomeMastheadProps) {
               scale: { duration: reduce ? 0.2 : 0.8, delay: reduce ? 0 : 0.1, ease: EASE },
             }}
           >
-            {/* The positioning context is the PHOTOGRAPH, not the column. The
-                Fig. 1 card is anchored inside the image's own box, so it can
-                break left over the copy without ever reaching the caption that
-                follows the image in the flow. */}
-            <div className="relative">
-              <Image
-                src="/images/hiranandanilol.jpeg"
-                alt="Hiranandani Estate, Thane"
-                width={1200}
-                height={1500}
-                sizes="(max-width: 1024px) 100vw, 40vw"
-                className="aspect-[4/5] w-full rounded-2xl object-cover"
-                priority
-              />
-
-              {/* The grid break: Fig. 1 breaks out of the column and over the
-                  copy. lg only — on small screens the rail is the hero. */}
-              <div className="absolute bottom-6 -left-14 z-10 hidden w-[232px] rounded-xl border border-[#EDE5D8] bg-[#FAF8F5] p-4 lg:block">
-                <Plate vars={PLATE_MASTHEAD}>
-                  <Settle
-                    intensity={0.62}
-                    play
-                    theme="light"
-                    label="Twelve scattered tiles sliding into one ordered hub"
-                    className="w-full"
-                  />
-                </Plate>
-              </div>
-            </div>
+            <Image
+              src="/images/hiranandanilol.jpeg"
+              alt="Hiranandani Estate, Thane"
+              width={1200}
+              height={1500}
+              sizes="(max-width: 1024px) 100vw, 40vw"
+              className="aspect-[4/5] w-full rounded-2xl object-cover"
+              priority
+            />
 
             <p className={`${PF} mt-3 text-[13px] italic text-[#7A4F2A]`}>
               Hiranandani Estate, Thane — the one neighbourhood this portal covers.

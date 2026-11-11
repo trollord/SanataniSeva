@@ -6,7 +6,7 @@ import { motion, useReducedMotion } from "framer-motion";
 import { Terrain } from "@lucasmarkes/hairline/react";
 
 /* ───────────────────────────────────────────────────────────────────────────
-   ENTRY 01 — HOUSING
+   ENTRY 04 — HOUSING
 
    The page's dramatic peak and its only full ink band: the tallest section,
    the largest hairline figure, and the one place the live listing counts
@@ -104,30 +104,7 @@ const PLATE_HOUSING = {
 
 /* ─────────────────────────────────────────────────────────────────────────── */
 
-export interface HomeEntryHousingProps {
-  /** stats[0] — prisma.property.count({ where: { status: "ACTIVE" } }). Currently 7. */
-  activeListings: number;
-  /** stats[2] — prisma.user.count({ where: { role: "OWNER" } }). Currently 4. */
-  owners: number;
-}
-
-/**
- * The register line is derived, never hardcoded, and the numbers only ever
- * appear inside a sentence — no counters, no metric tiles.
- */
-function registerSentence(activeListings: number, owners: number): string {
-  if (activeListings === 0) {
-    return "The register is open and waiting for its first entry. If you own a flat here, yours can be the one.";
-  }
-  if (owners === 0) {
-    return `On the register today: ${activeListings} ${activeListings === 1 ? "home" : "homes"}.`;
-  }
-  return `On the register today: ${activeListings} ${
-    activeListings === 1 ? "home" : "homes"
-  }, listed by ${owners} ${owners === 1 ? "owner" : "owners"}.`;
-}
-
-export default function HomeEntryHousing({ activeListings, owners }: HomeEntryHousingProps) {
+export default function HomeEntryHousing() {
   return (
     <section
       className="relative w-full overflow-hidden bg-[#1C1C1C] px-5 sm:px-8 lg:px-12"
@@ -171,38 +148,28 @@ export default function HomeEntryHousing({ activeListings, owners }: HomeEntryHo
               className={`${PF} pointer-events-none absolute bottom-[-1.5rem] right-[0.5rem] select-none font-bold leading-none`}
               style={{ color: "rgba(240,233,223,0.07)", fontSize: "clamp(3.5rem,7vw,7rem)" }}
             >
-              01
+              04
             </span>
 
             <Reveal delay={0.06} className="relative z-10">
-              <SectionLabel tone="cream">ENTRY 01 · HOUSING</SectionLabel>
+              <SectionLabel tone="cream">SEVA 04 · HOUSING</SectionLabel>
 
               <h2
                 className={`${PF} font-bold text-[#FAF8F5]`}
                 style={{ fontSize: "clamp(1.9rem,3.4vw,3.1rem)", lineHeight: 1.05 }}
               >
                 Find a house, and talk to the person who{" "}
-                <em className="not-italic text-[#C8541A]">owns it.</em>
+                <em className="not-italic text-[#C8541A]">listed it.</em>
               </h2>
 
               {/* Light type on dark reads heavier, so leading is raised to 1.78. */}
               <p className="mt-6 max-w-[62ch] text-[16px] font-normal leading-[1.78] text-[#EDE0CC]">
-                Every home on the register is put up by its owner, not by an agent acting for them.
-                You see the asking price, the building, the floor and the terms — then you speak to
-                the owner yourself. Rent or buy; the register carries both.
+                Every home on the register is put up by its owner, or by an agent or representative
+                acting for them. You see the asking price, the building, the floor and the terms —
+                then you speak to them yourself. Rent or buy; the register carries both.
               </p>
 
               <div className="mt-8 h-px w-full max-w-[520px] bg-[rgba(240,233,223,0.14)]" />
-              <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:items-baseline sm:gap-5">
-                <span className="shrink-0 text-[11px] font-bold uppercase tracking-[0.2em] text-[#E8762F]">
-                  REGISTER
-                </span>
-                <p className="text-[15px] leading-[1.6] text-[#FAF8F5]">
-                  {registerSentence(activeListings, owners)}
-                </p>
-              </div>
-
-              <div className="mt-7 h-px w-full max-w-[520px] bg-[rgba(240,233,223,0.14)]" />
               <p className="mt-5 text-[11px] font-bold uppercase tracking-[0.18em] text-[#EDE0CC]">
                 FREE TO BROWSE · FREE TO LIST
               </p>

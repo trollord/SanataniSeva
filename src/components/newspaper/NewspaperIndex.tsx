@@ -78,7 +78,7 @@ export default function NewspaperIndex({ past, newsItems }: Props) {
         </div>
       </div>
 
-      {/* ── Editions Archive ──────────────────────────────────────────── */}
+      {/* ── News Archive ──────────────────────────────────────────── */}
       {past.length > 0 && (
         <div className="px-5 sm:px-8 pb-16 sm:pb-24">
           <div className="max-w-5xl mx-auto">
@@ -94,7 +94,7 @@ export default function NewspaperIndex({ past, newsItems }: Props) {
               <div className="flex items-center gap-4">
                 <div className="flex-1 h-px bg-[#E5DDD4]" />
                 <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#C8541A] shrink-0">
-                  Editions Archive
+                  News Archive
                 </span>
                 <div className="flex-1 h-px bg-[#E5DDD4]" />
               </div>

@@ -194,7 +194,7 @@ function SectionHeading() {
       <div className="flex items-center gap-2">
         <span className="h-1.5 w-1.5 rounded-full bg-[#C8541A]" />
         <h2 className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#C8541A]">
-          Today&apos;s News
+          Upcoming Events
         </h2>
       </div>
       <p className="ml-[18px] text-xs text-[#9E6B3F]">Community events &amp; highlights</p>

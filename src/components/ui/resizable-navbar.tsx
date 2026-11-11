@@ -74,7 +74,7 @@ export function Navbar({
         <div
           className="w-full transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)]"
           style={{
-            maxWidth: scrolled ? "min(900px, calc(100vw - 32px))" : mobileOpen ? "calc(100vw - 24px)" : "100%",
+            maxWidth: scrolled ? "min(1040px, calc(100vw - 32px))" : mobileOpen ? "calc(100vw - 24px)" : "100%",
             borderRadius: scrolled ? "2rem" : mobileOpen ? "1.25rem" : "0",
             background: scrolled
               ? "#1A1A1A"
@@ -100,7 +100,7 @@ export function Navbar({
 
 export function NavBody({ children }: { children: React.ReactNode }) {
   return (
-    <div className="hidden md:flex items-center justify-between gap-4 px-5 lg:px-6 h-[60px]">
+    <div className="hidden lg:flex items-center justify-between gap-4 px-6 h-[60px]">
       {children}
     </div>
   );
@@ -117,7 +117,7 @@ export function NavbarLogo() {
 
   return (
     <Link href="/" className="flex items-center gap-1.5 group shrink-0">
-      <span className="font-bold text-xl tracking-tight">
+      <span className="font-bold text-2xl tracking-tight whitespace-nowrap">
         <span style={{ color: "#C8541A" }}>Sanatani</span>
         <span className="transition-colors duration-300" style={{ color: subtleColor }}> Seva</span>
       </span>
@@ -144,14 +144,14 @@ export function NavItems({ items }: { items: NavItem[] }) {
   const activeColor   = scrolled ? "#ffffff" : darkHero ? "#ffffff" : "#0B0B0C";
 
   return (
-    <nav className="flex items-center shrink-0 gap-5 lg:gap-7">
+    <nav className="flex items-center shrink-0 gap-5 xl:gap-7">
       {items.map((item) => {
         const active = pathname === item.link || pathname.startsWith(item.link + "/");
         return (
           <Link
             key={item.link}
             href={item.link}
-            className="text-[13px] font-medium whitespace-nowrap relative group transition-colors duration-200"
+            className="text-[15px] font-medium whitespace-nowrap relative group transition-colors duration-200"
             style={{ color: active ? activeColor : inactiveColor }}
           >
             {item.name}
@@ -235,7 +235,7 @@ export function NavbarButton({
 /* ─── MobileNav ───────────────────────────────────────────────────────────── */
 
 export function MobileNav({ children }: { children: React.ReactNode }) {
-  return <div className="md:hidden">{children}</div>;
+  return <div className="lg:hidden">{children}</div>;
 }
 
 /* ─── MobileNavHeader ─────────────────────────────────────────────────────── */

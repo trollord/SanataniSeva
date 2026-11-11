@@ -178,7 +178,7 @@ export default function HomeEntryNewspaper() {
             </span>
 
             <div className="relative z-10">
-              <SectionLabel tone="ink">ENTRY 05 · THE NEWSPAPER</SectionLabel>
+              <SectionLabel tone="ink">SEVA 05 · THE NEWSPAPER</SectionLabel>
 
               <h2
                 className={`${PF} font-bold text-[#1C1C1C]`}

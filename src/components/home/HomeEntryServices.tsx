@@ -159,7 +159,7 @@ export default function HomeEntryServices({ trades, totalContacts }: HomeEntrySe
 
           {/* Copy + trade index — cols 6-12 */}
           <Reveal delay={0.06} className="order-2 col-span-12 lg:col-span-7 lg:col-start-6">
-            <SectionLabel tone="ink">ENTRY 02 · PHONE NUMBERS</SectionLabel>
+            <SectionLabel tone="ink">SEVA 01 · PHONE NUMBERS</SectionLabel>
 
             <h2
               className={`${PF} font-bold text-[#1C1C1C]`}

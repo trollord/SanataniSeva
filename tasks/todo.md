@@ -62,3 +62,15 @@ Every item above is done and checked in a running build.
 - The floating navbar still passes over content on scroll. That is how the
   navbar behaves on every page, so changing it is a site-wide design decision
   rather than a news fix.
+
+## Admin-managed community categories (proposed 2026-11-11, awaiting go-ahead)
+
+Today the 24 categories are a fixed list in `src/lib/community.ts`; admin can only pick from it.
+
+- [ ] Add `CommunityCategory` table (key, label, icon, active) + hand-written migration seeding the 24 existing rows
+- [ ] `getCommunityCategories()` server helper (cached) replacing direct `COMMUNITY_CATEGORIES` reads
+- [ ] Admin API: create / rename / deactivate a category (block delete while contacts use it)
+- [ ] Admin UI: "Manage categories" dialog on /admin/community, plus "+ Add category" in the contact form dropdown
+- [ ] Swap the four API validators, CSV tools, public directory, home page trade count to the DB list
+- [ ] Icon picker limited to the icons already bundled; default icon for new categories
+- [ ] Verify: add a category in admin, assign a contact, see it on /community and in CSV export

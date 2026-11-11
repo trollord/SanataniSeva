@@ -1,11 +1,11 @@
 import Link from "next/link";
-import { CheckCircle, User, ArrowRight, IndianRupee, ShieldCheck } from "lucide-react";
+import { CheckCircle, User, ArrowRight, MapPin, ShieldCheck } from "lucide-react";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "How It Works",
   description:
-    "A simple, transparent process - completely free, with direct owner access and zero commissions.",
+    "A simple, transparent process - completely free to browse, with verified listings and direct contact.",
 };
 
 /* ─── tiny reusable pill ───────────────────────────────────────────────────── */
@@ -41,8 +41,8 @@ export default function HowItWorksPage() {
           </h1>
 
           <p className="text-gray-500 text-base sm:text-lg md:text-xl max-w-2xl font-medium leading-relaxed mb-12">
-            A simple, transparent process - direct owner access, zero commissions.
-            Completely free. Direct access. Zero commissions.
+            A simple, transparent process - verified listings and direct contact.
+            Completely free to browse.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
@@ -173,11 +173,11 @@ export default function HowItWorksPage() {
           <div className="space-y-7">
             <StepBadge label="Step 03" />
             <h2 className="text-4xl sm:text-5xl font-extrabold tracking-tighter leading-[0.95] text-[#FF5F15]">
-              Connect Directly with the Owner
+              Connect Directly with the Lister
             </h2>
             <p className="text-gray-500 text-lg leading-relaxed">
-              We provide you with the owner&apos;s direct contact details. Honest,
-              direct conversations with absolutely no commission pressure.
+              We provide you with the direct contact details of the owner or
+              broker who listed the home. Honest, direct conversations.
               Negotiate at your own pace.
             </p>
             {/* Owner card */}
@@ -193,7 +193,7 @@ export default function HowItWorksPage() {
                   Direct Access
                 </p>
                 <p className="text-base font-extrabold text-[#FF5F15]">
-                  Verified Owner Profile
+                  Verified Profile
                 </p>
               </div>
             </div>
@@ -206,7 +206,7 @@ export default function HowItWorksPage() {
               Sign the Deal &amp; Move In
             </h2>
             <p className="text-gray-500 text-lg leading-relaxed">
-              Once you and the owner reach an agreement, we can help facilitate
+              Once you reach an agreement, we can help facilitate
               the paperwork through our trusted concierge partners, or you can
               manage it independently. The choice is yours.
             </p>
@@ -221,27 +221,27 @@ export default function HowItWorksPage() {
         </div>
       </section>
 
-      {/* ── WHY DIRECT FROM OWNERS ─────────────────────────────────────────────── */}
+      {/* ── WHY SANATANI SEVA ─────────────────────────────────────────────── */}
       <section className="bg-[#1C0A00] py-24 sm:py-32 px-6 sm:px-8">
         <div className="max-w-6xl mx-auto">
           <h2 className="text-5xl sm:text-6xl font-extrabold tracking-tighter text-white mb-16 sm:mb-20">
-            Why Direct From Owners?
+            Why Sanatani Seva?
           </h2>
           <div className="grid sm:grid-cols-2 gap-6 lg:gap-8">
             {[
               {
-                icon: IndianRupee,
+                icon: MapPin,
                 iconBg: "rgba(52,211,153,0.15)",
                 iconColor: "#34D399",
-                title: "You save lakhs",
-                desc: "Property deals typically involve a 1–2% commission on the total value. On a 2 Cr apartment, that's up to ₹4 Lakhs. With us, that money stays with you - in your new home.",
+                title: "Local to the estate",
+                desc: "Every listing is in Hiranandani Estate or the societies beside it, put up by owners and brokers who know the buildings. No wading through homes from across the city.",
               },
               {
                 icon: ShieldCheck,
                 iconBg: "rgba(96,165,250,0.15)",
                 iconColor: "#60A5FA",
                 title: "We verify, you decide",
-                desc: "We use technology to verify listings and owners, so you can connect with confidence. Our platform gives you the power to find, inspect, and buy on your own terms.",
+                desc: "We verify listings and the people behind them, so you can connect with confidence. Our platform gives you the power to find, inspect, and buy on your own terms.",
               },
             ].map(({ icon: Icon, iconBg, iconColor, title, desc }) => (
               <div
