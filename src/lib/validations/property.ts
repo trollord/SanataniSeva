@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { HIRANANDANI_LOCALITIES } from "@/lib/constants";
+import { phoneSchema } from "./phone";
 
 export const propertyStep1Schema = z.object({
   title: z.string().min(10, "Title must be at least 10 characters"),
@@ -42,6 +43,12 @@ export const propertyStep3Schema = z.object({
         .nullable()
     )
     .optional(),
+});
+
+// Client-side step 3: the contact number is required on the form but sent as
+// `contactPhone` and saved to the account, not the listing (see saveContactPhone).
+export const propertyStep3FormSchema = propertyStep3Schema.extend({
+  contactPhone: phoneSchema,
 });
 
 export const propertyImageSchema = z.object({

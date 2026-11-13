@@ -35,12 +35,24 @@ const getHomeData = unstable_cache(
         where: { status: "PUBLISHED" },
         orderBy: { publishedAt: "desc" },
         take: 5,
-        select: { id: true, headline: true, category: true, imageUrls: true },
+        select: { id: true, headline: true, category: true, imageUrls: true, publishedAt: true },
       }),
     ]);
-    return { marketplaceItems, newsItems };
+    return {
+      marketplaceItems,
+      // Formatted here, in IST, so server and browser never disagree on the day.
+      newsItems: newsItems.map(({ publishedAt, ...n }) => ({
+        ...n,
+        date: publishedAt.toLocaleDateString("en-IN", {
+          day: "numeric",
+          month: "long",
+          year: "numeric",
+          timeZone: "Asia/Kolkata",
+        }),
+      })),
+    };
   },
-  ["home-data-v3"],
+  ["home-data-v5"],
   { revalidate: 60 },
 );
 

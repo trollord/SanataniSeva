@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { createPropertySchema } from "@/lib/validations/property";
 import { stringifyAmenities } from "@/lib/utils/formatters";
+import { saveContactPhone } from "@/lib/contact-phone";
 
 export async function GET(
   _req: NextRequest,
@@ -88,6 +89,12 @@ export async function PUT(
   if (!parsed.success) {
     const issues = parsed.error.issues ?? [];
     return NextResponse.json({ error: issues[0]?.message ?? "Invalid input" }, { status: 400 });
+  }
+
+  // The number belongs to the listing's owner, also when an admin is editing
+  const phoneError = await saveContactPhone(property.ownerId, body.contactPhone);
+  if (phoneError) {
+    return NextResponse.json({ error: phoneError }, { status: 400 });
   }
 
   const { price, deposit, lockInMonths, amenities, ...rest } = parsed.data;

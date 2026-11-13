@@ -74,3 +74,25 @@ Today the 24 categories are a fixed list in `src/lib/community.ts`; admin can on
 - [ ] Swap the four API validators, CSV tools, public directory, home page trade count to the DB list
 - [ ] Icon picker limited to the icons already bundled; default icon for new categories
 - [ ] Verify: add a category in admin, assign a contact, see it on /community and in CSV export
+
+## Contact number on listing forms (2026-11-12)
+
+Listings show the lister's account number (`User.phone`), which Google sign-in
+never collects, so a listing could go live with no way to call about it.
+
+- [x] Shared `ContactPhoneField` + `useAccountPhone()` (`src/components/ui/ContactPhoneField.tsx`),
+      built on the registration `PhoneInput`; placeholder `9999999999`, helper
+      line "Saved to your profile and used on all your listings."
+- [x] Field added to all four listing forms: property new (beside the "Show my
+      phone number publicly" toggle) and edit, marketplace item new and edit
+      (`ItemForm`, beside its phone toggle). Required on the client.
+- [x] Pre-fill: new forms read `GET /api/user/phone` (session has no phone);
+      edit forms read the listing owner's/seller's phone from the existing
+      dashboard GETs, so an admin editing sees and saves the owner's number.
+- [x] Server: `saveContactPhone()` (`src/lib/contact-phone.ts`) in POST/PUT of
+      `/api/properties` and `/api/items`. Validates with the registration rule
+      (`validatePhone`, E.164 with country code), saves to the listing owner;
+      400 if absent and the account has none.
+- [x] Verified: tsc clean, eslint 0 errors on touched files, `/api/user/phone`
+      401 unauthenticated, write routes 401 unauthenticated, form pages 307 to
+      /login. No signed-in submit was made (production DB).

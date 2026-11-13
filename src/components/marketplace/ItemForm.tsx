@@ -24,6 +24,8 @@ import {
   HIRANANDANI_LOCALITIES,
 } from "@/lib/constants";
 import { formatPrice } from "@/lib/utils/formatters";
+import { phoneSchema } from "@/lib/validations/phone";
+import ContactPhoneField from "@/components/ui/ContactPhoneField";
 import type { LucideIcon } from "lucide-react";
 
 /* ── Types ──────────────────────────────────────────────────────────────────── */
@@ -54,6 +56,8 @@ const detailsSchema = z
     price:           z.coerce.number().positive("Enter a selling price").max(100_000_000),
     priceNegotiable: z.boolean().default(false),
     phonePublic:     z.boolean().default(true),
+    // Sent as-is and saved to the seller's account (see saveContactPhone)
+    contactPhone:    phoneSchema,
   })
   .refine(
     (d) => d.category !== "VEHICLES" || !!d.vehicleType,
@@ -375,6 +379,21 @@ function DetailsStep({
               />
             </button>
           </div>
+        )}
+      />
+
+      <Controller
+        control={control}
+        name="contactPhone"
+        render={({ field }) => (
+          <ContactPhoneField
+            value={field.value ?? ""}
+            onChange={field.onChange}
+            error={errors.contactPhone?.message}
+            className="space-y-2"
+            labelClassName="text-sm font-semibold"
+            textClassName="text-sm"
+          />
         )}
       />
 

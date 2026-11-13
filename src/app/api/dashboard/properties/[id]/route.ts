@@ -42,6 +42,7 @@ export async function GET(
       availableFrom: true,
       lockInNegotiable: true,
       ownerId: true,
+      owner: { select: { phone: true } },
       images: {
         select: { id: true, url: true, s3Key: true, isPrimary: true },
         orderBy: { isPrimary: "desc" },

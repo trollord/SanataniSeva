@@ -3,11 +3,14 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
 import ItemForm, { type DetailsData, type UploadedImage } from "@/components/marketplace/ItemForm";
+import { useAccountPhone } from "@/components/ui/ContactPhoneField";
 
 export default function NewItemPage() {
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
+  const accountPhone = useAccountPhone();
 
   async function handleSubmit(details: DetailsData, images: UploadedImage[]) {
     setSubmitting(true);
@@ -38,6 +41,16 @@ export default function NewItemPage() {
     }
   }
 
+  // The details step is the first screen and takes its defaults once, so wait
+  // for the saved number before mounting the form
+  if (accountPhone === null) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+      </div>
+    );
+  }
+
   return (
     <div>
       <div className="mb-6">
@@ -47,6 +60,7 @@ export default function NewItemPage() {
         </p>
       </div>
       <ItemForm
+        defaults={{ details: { contactPhone: accountPhone } }}
         submitLabel="Post Listing"
         onSubmit={handleSubmit}
         submitting={submitting}

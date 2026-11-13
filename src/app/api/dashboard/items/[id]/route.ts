@@ -30,6 +30,7 @@ export async function GET(
       pickupArea: true,
       status: true,
       sellerId: true,
+      seller: { select: { phone: true } },
       images: {
         select: { id: true, url: true, s3Key: true, isPrimary: true },
         orderBy: { isPrimary: "desc" },

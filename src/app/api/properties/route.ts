@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { createPropertySchema } from "@/lib/validations/property";
 import { HIRANANDANI_LOCALITIES } from "@/lib/constants";
 import { stringifyAmenities } from "@/lib/utils/formatters";
+import { saveContactPhone } from "@/lib/contact-phone";
 import { revalidatePath } from "next/cache";
 
 const PAGE_SIZE = 12;
@@ -137,6 +138,11 @@ export async function POST(req: NextRequest) {
         { error: "Property must be within Hiranandani Estate" },
         { status: 400 }
       );
+    }
+
+    const phoneError = await saveContactPhone(session.user.id, body.contactPhone);
+    if (phoneError) {
+      return NextResponse.json({ error: phoneError }, { status: 400 });
     }
 
     const { price, deposit, lockInMonths, ...rest } = parsed.data;

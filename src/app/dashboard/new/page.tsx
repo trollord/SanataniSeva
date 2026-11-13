@@ -29,7 +29,8 @@ import {
   BHK_OPTIONS,
   LOCK_IN_OPTIONS,
 } from "@/lib/constants";
-import { propertyStep1Schema, propertyStep3Schema } from "@/lib/validations/property";
+import { propertyStep1Schema, propertyStep3FormSchema } from "@/lib/validations/property";
+import ContactPhoneField, { useAccountPhone } from "@/components/ui/ContactPhoneField";
 import { WhatsAppShareModal } from "@/components/property/WhatsAppShare";
 import NewListingTour from "@/components/tour/NewListingTour";
 import type { ShareableProperty } from "@/lib/utils/whatsapp";
@@ -50,7 +51,7 @@ import LocationInput from "@/components/map/LocationInput";
 // ─── types ───────────────────────────────────────────────────────────────────
 
 type Step1Data = z.infer<typeof propertyStep1Schema>;
-type Step3Data = z.infer<typeof propertyStep3Schema>;
+type Step3Data = z.infer<typeof propertyStep3FormSchema>;
 
 interface UploadedImage {
   file: File;
@@ -840,7 +841,7 @@ function Step3({
     formState: { errors },
   } = useForm<Step3Data>({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    resolver: zodResolver(propertyStep3Schema) as any,
+    resolver: zodResolver(propertyStep3FormSchema) as any,
     defaultValues: {
       rentNegotiable: false,
       lockInNegotiable: false,
@@ -997,6 +998,18 @@ function Step3({
           )}
         </>
       )}
+
+      <Controller
+        control={control}
+        name="contactPhone"
+        render={({ field }) => (
+          <ContactPhoneField
+            value={field.value ?? ""}
+            onChange={field.onChange}
+            error={errors.contactPhone?.message}
+          />
+        )}
+      />
 
       {/* Phone visibility toggle */}
       <div className="rounded-xl border border-gray-200 p-4 space-y-1">
@@ -1186,6 +1199,7 @@ export default function NewListingPage() {
     step3: {},
   });
   const [shareProperty, setShareProperty] = useState<ShareableProperty | null>(null);
+  const accountPhone = useAccountPhone();
 
   // Guard: only OWNER, MANAGER, ADMIN may list properties
   if (session && !["OWNER", "ADMIN"].includes(session.user?.role ?? "")) {
@@ -1315,7 +1329,7 @@ export default function NewListingPage() {
           )}
           {step === 2 && (
             <Step3
-              defaultValues={data.step3}
+              defaultValues={{ contactPhone: accountPhone ?? "", ...data.step3 }}
               listingType={data.step1.listingType ?? "SALE"}
               onNext={handleStep3Next}
               onBack={() => setStep(1)}

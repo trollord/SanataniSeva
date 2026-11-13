@@ -52,6 +52,22 @@ export function validatePhone(full: string): string | null {
   return null;
 }
 
+/**
+ * Coerce a stored User.phone into the E.164 form PhoneInput edits. Registration
+ * saves E.164, but older rows may hold a bare national number ("98765 43210",
+ * "09876543210"); those are assumed Indian. The result is still checked by
+ * validatePhone before it is saved again.
+ */
+export function toFullPhone(raw: string | null | undefined): string {
+  const v = (raw ?? "").trim();
+  if (!v) return "";
+  if (v.startsWith("+")) return `+${v.replace(/\D/g, "")}`;
+  let digits = v.replace(/\D/g, "");
+  if (digits.length === 12 && digits.startsWith("91")) digits = digits.slice(2);
+  digits = digits.replace(/^0+/, "");
+  return digits ? `+91${digits}` : "";
+}
+
 export const phoneSchema = z
   .string()
   .trim()

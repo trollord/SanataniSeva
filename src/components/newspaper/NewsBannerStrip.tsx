@@ -4,13 +4,15 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Newspaper } from "lucide-react";
 
 interface Item {
   id: string;
   headline: string;
   category: string;
   imageUrls: string[];
+  /** Publication date, already formatted for display by the page. */
+  date: string;
 }
 
 const CATEGORY_CHIP: Record<string, string> = {
@@ -29,13 +31,21 @@ const CATEGORY_LABEL: Record<string, string> = {
   GENERAL:       "News",
 };
 
-const ARROW =
-  "absolute top-1/2 z-10 hidden -translate-y-1/2 items-center justify-center rounded-full border border-[#D8D3CC] bg-[#FAF8F5] p-2 text-[#1C1C1C] transition-colors hover:border-[#C8541A] hover:text-[#C8541A] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#C8541A] sm:flex";
+const PF = "font-[family-name:var(--font-playfair)]";
+
+const FOCUS =
+  "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:outline-[#C8541A]";
+
+const ARROW = `hidden h-9 w-9 items-center justify-center rounded-full border border-[#EDE5D8] bg-[#FAF8F5] text-[#1C1C1C] transition-colors duration-150 hover:border-[#C8541A] hover:text-[#A8410F] sm:flex ${FOCUS}`;
 
 /**
- * The home-page news slider. Each slide is one published post and the whole
- * slide is a link to that post's page; the arrows and dots sit outside the
- * link so stepping through never navigates.
+ * The home-page news slider: one card, set on the same cream ground and
+ * 1200px measure as the masthead beneath it, so it reads as the top of the
+ * page rather than a band laid across it.
+ *
+ * Each slide is one published post and the whole slide is a link to that
+ * post's page. The dots and arrows sit outside the link, in the card's
+ * bottom-right corner, so stepping through never navigates.
  */
 export default function NewsBannerStrip({ items }: { items: Item[] }) {
   const [index, setIndex] = useState(0);
@@ -59,90 +69,105 @@ export default function NewsBannerStrip({ items }: { items: Item[] }) {
 
   return (
     <div
-      className="mt-[60px] w-full bg-[#EDEAE5] border-b border-[#D8D3CC] px-5 sm:px-8 lg:px-12"
+      className="mt-[60px] w-full bg-[#FAF8F5] px-5 pt-5 sm:px-8 sm:pt-8 lg:px-12"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
       onFocus={() => setPaused(true)}
       onBlur={() => setPaused(false)}
     >
-      <div className="relative mx-auto max-w-[1200px] py-6 sm:py-8">
-        {count > 1 && (
-          <>
-            <button onClick={() => step(-1)} aria-label="Previous" className={`${ARROW} left-0`}>
-              <ChevronLeft className="h-4 w-4" />
-            </button>
-            <button onClick={() => step(1)} aria-label="Next" className={`${ARROW} right-0`}>
-              <ChevronRight className="h-4 w-4" />
-            </button>
-          </>
-        )}
-
-        {/* Fixed height, so slides with and without a poster never move the
-            page beneath the banner. */}
-        <div className="relative h-[168px] sm:h-[232px] sm:mx-14">
-          <AnimatePresence mode="wait" initial={false}>
-            <motion.div
-              key={item.id}
-              initial={{ opacity: 0, x: 16 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -16 }}
-              transition={{ duration: 0.3, ease: "easeInOut" }}
-              className="absolute inset-0"
+      {/* Fixed height, so slides with and without a poster never move the
+          page beneath the card. */}
+      <div className="relative mx-auto h-[184px] max-w-[1200px] overflow-hidden rounded-2xl border border-[#EDE5D8] bg-[#F0E9DF] sm:h-[280px]">
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div
+            key={item.id}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.25, ease: "easeInOut" }}
+            className="absolute inset-0"
+          >
+            <Link
+              href={`/news/${item.id}`}
+              className={`group grid h-full grid-rows-[minmax(0,1fr)] grid-cols-[116px_minmax(0,1fr)] sm:grid-cols-[minmax(0,264px)_minmax(0,1fr)] ${FOCUS}`}
             >
-              <Link
-                href={`/news/${item.id}`}
-                className="group flex h-full items-center justify-center gap-5 sm:gap-10 rounded-xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#C8541A]"
-              >
-                {item.imageUrls[0] && (
+              {/* Poster plate. Posters are portrait and carry their own
+                  type, so they are shown whole, never cropped. */}
+              <div className="flex min-h-0 items-center justify-center border-r border-[#EDE5D8] bg-[#EDE0CC] p-3 sm:p-5">
+                {item.imageUrls[0] ? (
                   <Image
                     src={item.imageUrls[0]}
                     alt=""
                     width={600}
                     height={850}
-                    sizes="(max-width: 640px) 120px, 180px"
-                    className="h-full w-auto max-w-[38%] shrink-0 rounded-lg object-contain"
+                    sizes="(max-width: 640px) 100px, 230px"
+                    className="max-h-full w-auto max-w-full rounded-lg object-contain shadow-[0_6px_24px_rgba(28,10,0,0.18)] transition-transform duration-300 group-hover:scale-[1.02]"
                     priority={index === 0}
                   />
+                ) : (
+                  <Newspaper className="h-8 w-8 text-[#9E6B3F]" strokeWidth={1.5} />
                 )}
+              </div>
 
-                <div className="min-w-0 max-w-[560px]">
-                  <div className="flex items-center gap-2">
-                    <span className="relative flex h-2 w-2 shrink-0">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#C8541A] opacity-60" />
-                      <span className="relative inline-flex h-2 w-2 rounded-full bg-[#C8541A]" />
-                    </span>
-                    <span className={`text-[10px] font-bold uppercase tracking-[0.18em] px-2.5 py-0.5 rounded-full ${chip}`}>
-                      {label}
-                    </span>
-                  </div>
-
-                  <p className="mt-3 font-[family-name:var(--font-playfair)] text-xl sm:text-[32px] font-bold leading-tight tracking-tight text-[#1C1C1C] line-clamp-3">
-                    {item.headline}
-                  </p>
-
-                  <span className="mt-3 sm:mt-4 inline-flex items-center gap-1 text-xs sm:text-sm font-semibold text-[#C8541A] group-hover:text-[#B34A16] transition-colors">
-                    View details
-                    <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
+              <div className="flex min-h-0 min-w-0 flex-col p-4 sm:p-8">
+                <div className="flex items-center gap-2.5">
+                  <span className="relative flex h-2 w-2 shrink-0">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#C8541A] opacity-60" />
+                    <span className="relative inline-flex h-2 w-2 rounded-full bg-[#C8541A]" />
                   </span>
+                  <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.18em] ${chip}`}>
+                    {label}
+                  </span>
+                  {count > 1 && (
+                    <span className="ml-auto text-[11px] font-bold tabular-nums tracking-[0.12em] text-[#7A4F2A]">
+                      {String(index + 1).padStart(2, "0")} / {String(count).padStart(2, "0")}
+                    </span>
+                  )}
                 </div>
-              </Link>
-            </motion.div>
-          </AnimatePresence>
-        </div>
+
+                <p
+                  className={`${PF} mt-2.5 font-bold tracking-tight text-[#1C1C1C] line-clamp-3 sm:mt-4 sm:line-clamp-2`}
+                  style={{ fontSize: "clamp(1.1rem,2.7vw,2.2rem)", lineHeight: 1.12 }}
+                >
+                  {item.headline}
+                </p>
+
+                <p className="mt-2 text-[12px] text-[#6B6B6B] sm:mt-3 sm:text-[14px]">
+                  Posted {item.date}
+                </p>
+
+                <span className="mt-auto inline-flex w-fit items-center gap-1.5 border-b border-[#C8541A] pb-0.5 text-[11px] font-bold uppercase tracking-[0.12em] text-[#1C1C1C] transition-colors duration-150 group-hover:text-[#A8410F] sm:text-[13px]">
+                  View details
+                  <span aria-hidden className="transition-transform duration-150 group-hover:translate-x-[3px]">
+                    →
+                  </span>
+                </span>
+              </div>
+            </Link>
+          </motion.div>
+        </AnimatePresence>
 
         {count > 1 && (
-          <div className="mt-5 flex items-center justify-center gap-1.5">
-            {items.map((it, i) => (
-              <button
-                key={it.id}
-                onClick={() => setIndex(i)}
-                aria-label={`Show slide ${i + 1} of ${count}`}
-                aria-current={i === index}
-                className={`rounded-full transition-all duration-300 ${
-                  i === index ? "w-4 h-1.5 bg-[#C8541A]" : "w-1.5 h-1.5 bg-[#1C1C1C]/20 hover:bg-[#1C1C1C]/40"
-                }`}
-              />
-            ))}
+          <div className="absolute bottom-4 right-4 flex items-center gap-3 sm:bottom-7 sm:right-8">
+            <div className="flex items-center gap-1.5">
+              {items.map((it, i) => (
+                <button
+                  key={it.id}
+                  onClick={() => setIndex(i)}
+                  aria-label={`Show slide ${i + 1} of ${count}`}
+                  aria-current={i === index}
+                  className={`rounded-full transition-all duration-300 ${
+                    i === index ? "h-1.5 w-5 bg-[#C8541A]" : "h-1.5 w-1.5 bg-[#1C1C1C]/25 hover:bg-[#1C1C1C]/45"
+                  }`}
+                />
+              ))}
+            </div>
+            <button onClick={() => step(-1)} aria-label="Previous" className={ARROW}>
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            <button onClick={() => step(1)} aria-label="Next" className={`${ARROW} -ml-1.5`}>
+              <ChevronRight className="h-4 w-4" />
+            </button>
           </div>
         )}
       </div>

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { itemBodySchema } from "@/lib/validations/item";
+import { saveContactPhone } from "@/lib/contact-phone";
 import { revalidatePath } from "next/cache";
 
 export async function POST(req: NextRequest) {
@@ -20,6 +21,11 @@ export async function POST(req: NextRequest) {
         { error: issues[0]?.message ?? "Invalid input" },
         { status: 400 }
       );
+    }
+
+    const phoneError = await saveContactPhone(session.user.id, body.contactPhone);
+    if (phoneError) {
+      return NextResponse.json({ error: phoneError }, { status: 400 });
     }
 
     const { images, yearPurchased, vehicleType, brand, pickupArea, ...rest } =

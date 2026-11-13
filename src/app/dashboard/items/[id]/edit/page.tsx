@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import ItemForm, { type DetailsData, type UploadedImage } from "@/components/marketplace/ItemForm";
+import { toFullPhone } from "@/lib/validations/phone";
 
 export default function EditItemPage({ params }: { params: Promise<{ id: string }> }) {
   // Client component, so the params Promise is unwrapped with use(), not await.
@@ -33,6 +34,8 @@ export default function EditItemPage({ params }: { params: Promise<{ id: string 
             pickupArea:      item.pickupArea ?? "",
             price:           item.price,
             priceNegotiable: item.priceNegotiable ?? false,
+            // The seller's number, so an admin editing sees the listing's contact
+            contactPhone:    toFullPhone(item.seller?.phone),
           },
           images: (item.images ?? []).map((img: { url: string; s3Key: string; isPrimary: boolean }) => ({
             preview: img.url, url: img.url, s3Key: img.s3Key,

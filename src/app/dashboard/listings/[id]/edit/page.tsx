@@ -28,7 +28,9 @@ import {
   BHK_OPTIONS,
   LOCK_IN_OPTIONS,
 } from "@/lib/constants";
-import { propertyStep1Schema, propertyStep3Schema } from "@/lib/validations/property";
+import { propertyStep1Schema, propertyStep3FormSchema } from "@/lib/validations/property";
+import { toFullPhone } from "@/lib/validations/phone";
+import ContactPhoneField from "@/components/ui/ContactPhoneField";
 import { parseAmenities } from "@/lib/utils/formatters";
 import {
   ChevronRight,
@@ -42,7 +44,7 @@ import {
 } from "lucide-react";
 
 type Step1Data = z.infer<typeof propertyStep1Schema>;
-type Step3Data = z.infer<typeof propertyStep3Schema>;
+type Step3Data = z.infer<typeof propertyStep3FormSchema>;
 
 interface UploadedImage {
   file?: File;
@@ -523,7 +525,7 @@ function Step3({
     formState: { errors },
   } = useForm<Step3Data>({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    resolver: zodResolver(propertyStep3Schema) as any,
+    resolver: zodResolver(propertyStep3FormSchema) as any,
     defaultValues: { rentNegotiable: false, lockInNegotiable: false, ...defaultValues },
   });
 
@@ -656,6 +658,18 @@ function Step3({
           )}
         </>
       )}
+
+      <Controller
+        control={control}
+        name="contactPhone"
+        render={({ field }) => (
+          <ContactPhoneField
+            value={field.value ?? ""}
+            onChange={field.onChange}
+            error={errors.contactPhone?.message}
+          />
+        )}
+      />
 
       <div className="flex justify-between">
         <Button variant="outline" onClick={onBack} className="gap-2">
@@ -830,6 +844,8 @@ export default function EditListingPage({
           lockInMonths: property.lockInMonths ?? 0,
           lockInNegotiable: property.lockInNegotiable ?? false,
           availableFrom: property.availableFrom ?? "",
+          // The owner's number, so an admin editing sees the listing's contact
+          contactPhone: toFullPhone(property.owner?.phone),
         };
 
         const images: UploadedImage[] = (property.images ?? []).map(
