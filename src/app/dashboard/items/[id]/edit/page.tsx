@@ -37,8 +37,8 @@ export default function EditItemPage({ params }: { params: Promise<{ id: string 
             // The seller's number, so an admin editing sees the listing's contact
             contactPhone:    toFullPhone(item.seller?.phone),
           },
-          images: (item.images ?? []).map((img: { url: string; s3Key: string; isPrimary: boolean }) => ({
-            preview: img.url, url: img.url, s3Key: img.s3Key,
+          images: (item.images ?? []).map((img: { id: string; url: string; s3Key: string; isPrimary: boolean }) => ({
+            id: img.id, preview: img.url, url: img.url, s3Key: img.s3Key,
             isPrimary: img.isPrimary, uploading: false,
           })),
         });

@@ -88,6 +88,8 @@ model Property {
   areaSqft         Float
   floor            Int?
   totalFloors      Int?
+  coveredParking   Int?
+  uncoveredParking Int?
   furnished        String              @default("UNFURNISHED")
   amenities        String              @default("[]")
   price            Float

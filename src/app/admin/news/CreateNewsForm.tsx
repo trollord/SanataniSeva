@@ -6,6 +6,7 @@ import { Loader2 } from "lucide-react";
 import SearchableSelect from "@/components/ui/searchable-select";
 import ImageDropzone from "@/components/ui/ImageDropzone";
 import { toast } from "sonner";
+import { MAX_NEWS_IMAGES } from "@/lib/news";
 
 const CATEGORIES = [
   { value: "EVENTS",        label: "Events" },
@@ -17,15 +18,36 @@ const CATEGORIES = [
 
 const todayIso = () => new Date().toISOString().split("T")[0];
 
-export default function CreateNewsForm() {
+export interface NewsFormItem {
+  id: string;
+  headline: string;
+  body: string;
+  category: string;
+  imageUrls: string[];
+}
+
+/**
+ * Posts a news item, or - given `item` - edits one. Edit mode renders bare
+ * (the dialog supplies the title and frame) and has no date field: the feed is
+ * ordered by publishedAt, so an edit keeps the post where it is.
+ */
+export default function CreateNewsForm({
+  item,
+  onDone,
+}: {
+  item?: NewsFormItem;
+  /** Edit mode only: closes the dialog on save or cancel. */
+  onDone?: () => void;
+}) {
+  const isEdit = Boolean(item);
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [form, setForm] = useState({
-    headline: "",
-    body: "",
-    category: "GENERAL",
-    imageUrls: [] as string[],
+    headline: item?.headline ?? "",
+    body: item?.body ?? "",
+    category: item?.category ?? "GENERAL",
+    imageUrls: item?.imageUrls ?? [],
     publishedAt: todayIso(),
   });
 
@@ -45,8 +67,8 @@ export default function CreateNewsForm() {
     // let a toast carry the outcome. The write itself is fast; what the admin
     // felt was the request, and a frozen button reads as a broken one.
     const payload = form;
-    const request = fetch("/api/news", {
-      method: "POST",
+    const request = fetch(isEdit ? `/api/news/${item!.id}` : "/api/news", {
+      method: isEdit ? "PUT" : "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     }).then(async (res) => {
@@ -59,20 +81,26 @@ export default function CreateNewsForm() {
     });
 
     toast.promise(request, {
-      loading: "Publishing…",
-      success: `Published “${payload.headline}”`,
+      loading: isEdit ? "Saving changes…" : "Publishing…",
+      success: isEdit ? `Saved “${payload.headline}”` : `Published “${payload.headline}”`,
       error: (err: Error) => err.message,
     });
 
+    if (isEdit) {
+      onDone?.();
+      return;
+    }
     setForm({ headline: "", body: "", category: "GENERAL", imageUrls: [], publishedAt: todayIso() });
   }
 
   return (
     <form
       onSubmit={handleSubmit}
-      className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6 space-y-4"
+      className={isEdit ? "space-y-4" : "bg-white rounded-xl border border-gray-200 p-4 sm:p-6 space-y-4"}
     >
-      <h2 className="font-semibold text-gray-900 text-sm sm:text-base">Post a News Item</h2>
+      {!isEdit && (
+        <h2 className="font-semibold text-gray-900 text-sm sm:text-base">Post a News Item</h2>
+      )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
         <div className="sm:col-span-2">
@@ -118,33 +146,51 @@ export default function CreateNewsForm() {
           <label className="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-2">
             Images <span className="normal-case font-normal text-gray-400">(optional)</span>
           </label>
-          <ImageDropzone value={form.imageUrls} onChange={setImages} max={6} disabled={loading} />
-        </div>
-
-        <div>
-          <label className="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-1">
-            Date
-          </label>
-          <input
-            type="date"
-            value={form.publishedAt}
-            onChange={(e) => set("publishedAt", e.target.value)}
-            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#C8541A] transition-colors"
+          <ImageDropzone
+            value={form.imageUrls}
+            onChange={setImages}
+            max={MAX_NEWS_IMAGES}
+            disabled={loading}
           />
         </div>
+
+        {!isEdit && (
+          <div>
+            <label className="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-1">
+              Date
+            </label>
+            <input
+              type="date"
+              value={form.publishedAt}
+              onChange={(e) => set("publishedAt", e.target.value)}
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#C8541A] transition-colors"
+            />
+          </div>
+        )}
       </div>
 
       {error && <p className="text-xs text-red-600">{error}</p>}
 
-      <button
-        type="submit"
-        disabled={loading}
-        className="inline-flex items-center gap-2 bg-[#C8541A] hover:bg-[#B34A16] active:scale-[0.97]
-                   text-white text-sm font-semibold px-5 py-2.5 rounded-lg transition-all disabled:opacity-60"
-      >
-        {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-        {loading ? "Publishing…" : "Publish"}
-      </button>
+      <div className={isEdit ? "flex items-center justify-end gap-2.5" : ""}>
+        {isEdit && (
+          <button
+            type="button"
+            onClick={onDone}
+            className="text-sm font-semibold text-gray-600 border border-gray-200 hover:border-gray-400 px-5 py-2.5 rounded-lg transition-colors"
+          >
+            Cancel
+          </button>
+        )}
+        <button
+          type="submit"
+          disabled={loading}
+          className="inline-flex items-center gap-2 bg-[#C8541A] hover:bg-[#B34A16] active:scale-[0.97]
+                     text-white text-sm font-semibold px-5 py-2.5 rounded-lg transition-all disabled:opacity-60"
+        >
+          {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+          {isEdit ? "Save changes" : loading ? "Publishing…" : "Publish"}
+        </button>
+      </div>
     </form>
   );
 }

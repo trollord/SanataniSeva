@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
@@ -38,20 +38,6 @@ function UserMenu() {
   const router = useRouter();
   const { scrolled, darkHero } = useNavbar();
   const [menuOpen, setMenuOpen] = useState(false);
-  const wrapperRef = useRef<HTMLDivElement>(null);
-
-  // Close menu on outside click
-  useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
-        setMenuOpen(false);
-      }
-    }
-    if (menuOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
-    }
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [menuOpen]);
 
   if (!session) return null;
 
@@ -80,11 +66,12 @@ function UserMenu() {
   ];
 
   return (
-    <div ref={wrapperRef}>
+    <div>
       <FloatingActionMenu
         options={options}
         isOpen={menuOpen}
         onToggle={() => setMenuOpen((v) => !v)}
+        onClose={() => setMenuOpen(false)}
         direction="down"
         trigger={
           <button className="flex items-center gap-2 rounded-full focus:outline-none focus:ring-2 focus:ring-[#FF5F15]/50">

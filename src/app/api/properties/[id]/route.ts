@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { createPropertySchema } from "@/lib/validations/property";
+import { z } from "zod";
+import { createPropertySchema, propertyImageSchema } from "@/lib/validations/property";
+import { PROPERTY_IMAGE_ORDER } from "@/lib/media-order";
 import { stringifyAmenities } from "@/lib/utils/formatters";
 import { saveContactPhone } from "@/lib/contact-phone";
 
@@ -28,6 +30,8 @@ export async function GET(
       areaSqft: true,
       floor: true,
       totalFloors: true,
+      coveredParking: true,
+      uncoveredParking: true,
       furnished: true,
       availableFrom: true,
       amenities: true,
@@ -40,7 +44,7 @@ export async function GET(
       // flatNumber intentionally excluded from public detail
       images: {
         select: { id: true, url: true, isPrimary: true },
-        orderBy: { isPrimary: "desc" },
+        orderBy: PROPERTY_IMAGE_ORDER,
       },
       priceHistory: {
         select: { price: true, recordedAt: true, source: true },
@@ -91,6 +95,16 @@ export async function PUT(
     return NextResponse.json({ error: issues[0]?.message ?? "Invalid input" }, { status: 400 });
   }
 
+  // Optional so a caller that only edits details leaves the photos alone
+  let images: z.infer<typeof propertyImageSchema>[] | undefined;
+  if (body.images !== undefined) {
+    const parsedImages = z.array(propertyImageSchema).max(30).safeParse(body.images);
+    if (!parsedImages.success) {
+      return NextResponse.json({ error: "Invalid photos" }, { status: 400 });
+    }
+    images = parsedImages.data;
+  }
+
   // The number belongs to the listing's owner, also when an admin is editing
   const phoneError = await saveContactPhone(property.ownerId, body.contactPhone);
   if (phoneError) {
@@ -99,18 +113,44 @@ export async function PUT(
 
   const { price, deposit, lockInMonths, amenities, ...rest } = parsed.data;
 
-  const updated = await prisma.property.update({
+  const updateProperty = prisma.property.update({
     where: { id },
     data: {
       ...rest,
       price,
       deposit: deposit ?? null,
       lockInMonths: lockInMonths && lockInMonths > 0 ? lockInMonths : null,
+      coveredParking: rest.coveredParking ?? null,
+      uncoveredParking: rest.uncoveredParking ?? null,
       amenities: stringifyAmenities(amenities ?? []),
       status: "PENDING",
     },
     select: { id: true, status: true },
   });
+
+  let updated;
+  if (images) {
+    // There is no position column, so the photos are rewritten in the order
+    // sent, 1 ms apart: readers sort by createdAt (PROPERTY_IMAGE_ORDER). At
+    // most one primary survives, whatever the client flagged.
+    const base = Date.now();
+    const primary = images.findIndex((img) => img.isPrimary);
+    [updated] = await prisma.$transaction([
+      updateProperty,
+      prisma.propertyImage.deleteMany({ where: { propertyId: id } }),
+      prisma.propertyImage.createMany({
+        data: images.map((img, i) => ({
+          propertyId: id,
+          url: img.url,
+          s3Key: img.s3Key,
+          isPrimary: i === primary,
+          createdAt: new Date(base + i),
+        })),
+      }),
+    ]);
+  } else {
+    updated = await updateProperty;
+  }
 
   if (price !== property.price) {
     await prisma.priceHistory.create({

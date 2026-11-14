@@ -151,10 +151,7 @@ export default function HomeMasthead({ hasNews }: HomeMastheadProps) {
                   letterSpacing: "-0.02em",
                 }}
               >
-                {/* A JSX string expression, not literal JSX text: it keeps the
-                    apostrophe as the exact character the copy deck specifies
-                    while staying clear of react/no-unescaped-entities. */}
-                {"The Estate's help desk, "}
+                Your neighbourhood portal,{" "}
                 {/* not-italic: Playfair's italic at this weight is too mannered
                     here, so the colour alone carries the emphasis. */}
                 <em className="not-italic text-[#C8541A]">to fulfil your needs.</em>

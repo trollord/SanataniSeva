@@ -18,6 +18,15 @@ export const propertyStep1Schema = z.object({
   areaSqft: z.coerce.number().min(100, "Area must be at least 100 sq.ft"),
   floor: z.coerce.number().min(0).max(100).optional(),
   totalFloors: z.coerce.number().min(1).max(100).optional(),
+  // A blank box means "not stated", not zero spaces
+  coveredParking: z.preprocess(
+    (v) => (v === "" || v == null ? undefined : v),
+    z.coerce.number().int().min(0, "Can't be negative").max(20).optional()
+  ),
+  uncoveredParking: z.preprocess(
+    (v) => (v === "" || v == null ? undefined : v),
+    z.coerce.number().int().min(0, "Can't be negative").max(20).optional()
+  ),
   furnished: z.enum(["FURNISHED", "SEMI_FURNISHED", "UNFURNISHED"]),
   amenities: z.array(z.string()).default([]),
   latitude: z.coerce.number({ message: "Pin the property location on the map" }),

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { PROPERTY_IMAGE_ORDER } from "@/lib/media-order";
 
 export async function GET(
   _req: NextRequest,
@@ -33,6 +34,8 @@ export async function GET(
       areaSqft: true,
       floor: true,
       totalFloors: true,
+      coveredParking: true,
+      uncoveredParking: true,
       furnished: true,
       amenities: true,
       price: true,
@@ -45,7 +48,7 @@ export async function GET(
       owner: { select: { phone: true } },
       images: {
         select: { id: true, url: true, s3Key: true, isPrimary: true },
-        orderBy: { isPrimary: "desc" },
+        orderBy: PROPERTY_IMAGE_ORDER,
       },
     },
   });

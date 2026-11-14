@@ -8,10 +8,12 @@ import { useDropzone } from "react-dropzone";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  ChevronRight, ChevronLeft, Upload, X, Loader2,
+  ChevronRight, ChevronLeft, Upload, Loader2,
   Briefcase, Home, Zap, Monitor, Car, Package, Camera,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import PhotoTileControls from "@/components/ui/PhotoTileControls";
+import { markPrimary, moveToPosition } from "@/lib/media-order";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import {
@@ -31,6 +33,8 @@ import type { LucideIcon } from "lucide-react";
 /* ── Types ──────────────────────────────────────────────────────────────────── */
 
 export interface UploadedImage {
+  /** Stable across reorders, so an upload finishing late finds its own tile. */
+  id: string;
   file?: File;
   preview: string;
   url: string;
@@ -91,6 +95,12 @@ const CATEGORY_SHORT: Record<string, string> = {
   VEHICLES:         "Vehicles",
   OTHERS:           "Others",
 };
+
+let imageSeq = 0;
+const nextImageId = () => `img-${Date.now()}-${++imageSeq}`;
+
+// Items take photos only, so photo 1 is always the cover
+const isVideo = () => false;
 
 /* ── Step bar ────────────────────────────────────────────────────────────────── */
 
@@ -460,15 +470,15 @@ function PhotosStep({
       if (!valid.length) return;
 
       const newImgs: UploadedImage[] = valid.map((file) => ({
+        id: nextImageId(),
         file,
         preview: URL.createObjectURL(file),
         url: "", s3Key: "", isPrimary: false, uploading: true,
       }));
-      if (!images.some((i) => i.isPrimary)) newImgs[0].isPrimary = true;
-      onImagesChange([...images, ...newImgs]);
+      onImagesChange((prev) => [...prev, ...newImgs]);
 
       const results = await Promise.all(
-        newImgs.map(async (img, idx) => {
+        newImgs.map(async (img) => {
           try {
             const res = await fetch(
               `/api/upload?filename=${encodeURIComponent(img.file!.name)}&contentType=${encodeURIComponent(img.file!.type)}&fileSize=${img.file!.size}`
@@ -477,24 +487,24 @@ function PhotosStep({
             const { presignedUrl, s3Key, publicUrl } = await res.json();
             const put = await fetch(presignedUrl, { method: "PUT", body: img.file, headers: { "Content-Type": img.file!.type } });
             if (!put.ok) { const b = await put.text().catch(() => ""); throw new Error(b.match(/<Message>(.*?)<\/Message>/)?.[1] ?? `S3 error ${put.status}`); }
-            return { idx, url: publicUrl, s3Key, error: undefined };
+            return { id: img.id, url: publicUrl, s3Key, error: undefined };
           } catch (e) {
-            return { idx, url: "", s3Key: "", error: e instanceof Error ? e.message : "Upload failed" };
+            return { id: img.id, url: "", s3Key: "", error: e instanceof Error ? e.message : "Upload failed" };
           }
         })
       );
 
-      onImagesChange((prev) => {
-        const updated = [...prev];
-        const start = prev.length - newImgs.length;
-        results.forEach(({ idx, url, s3Key, error }) => {
-          const i = start + idx;
-          if (i < updated.length) updated[i] = { ...updated[i], uploading: false, url, s3Key, error };
-        });
-        return updated;
-      });
+      // Match by id, not index: the seller may have reordered or discarded
+      // tiles while these were in flight. A discarded tile simply isn't found.
+      const byId = new Map(results.map((r) => [r.id, r]));
+      onImagesChange((prev) =>
+        prev.map((m) => {
+          const r = byId.get(m.id);
+          return r ? { ...m, uploading: false, url: r.url, s3Key: r.s3Key, error: r.error } : m;
+        })
+      );
     },
-    [images, onImagesChange]
+    [onImagesChange]
   );
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -503,14 +513,11 @@ function PhotosStep({
     maxFiles: 6,
   });
 
-  const remove = (idx: number) => {
-    const updated = images.filter((_, i) => i !== idx);
-    if (images[idx].isPrimary && updated.length > 0) updated[0] = { ...updated[0], isPrimary: true };
-    onImagesChange(updated);
-  };
+  const removeImage = (id: string) =>
+    onImagesChange((prev) => prev.filter((m) => m.id !== id));
 
-  const setPrimary = (idx: number) =>
-    onImagesChange(images.map((img, i) => ({ ...img, isPrimary: i === idx })));
+  const moveImage = (from: number, to: number) =>
+    onImagesChange((prev) => moveToPosition(prev, from, to));
 
   const hasUploading = images.some((i) => i.uploading);
   const hasError     = images.some((i) => i.error);
@@ -548,18 +555,16 @@ function PhotosStep({
       {/* Photo grid */}
       {images.length > 0 && (
         <div>
-          <p className="text-sm text-gray-400 mb-3">Tap a photo to set it as the cover</p>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             {images.map((img, idx) => (
               <div
-                key={idx}
-                onClick={() => !img.uploading && !img.error && setPrimary(idx)}
-                className={`relative rounded-xl overflow-hidden border-2 transition-all cursor-pointer ${
-                  img.isPrimary ? "border-[#C8541A]" : "border-gray-200 hover:border-gray-300"
+                key={img.id}
+                className={`relative rounded-xl overflow-hidden border-2 transition-all ${
+                  img.isPrimary ? "border-[#C8541A]" : "border-gray-200"
                 }`}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={img.preview} alt="" className="w-full aspect-square object-cover" />
+                <img src={img.preview} alt={`Photo ${idx + 1}`} className="w-full aspect-square object-cover" />
 
                 {img.uploading && (
                   <div className="absolute inset-0 bg-white/70 flex items-center justify-center">
@@ -572,22 +577,29 @@ function PhotosStep({
                   </div>
                 )}
 
-                {img.isPrimary && (
+                {/* Above the overlays, so in-flight and failed tiles can be handled too */}
+                <PhotoTileControls
+                  index={idx}
+                  count={images.length}
+                  src={img.preview}
+                  isVideo={false}
+                  onMove={(to) => moveImage(idx, to)}
+                  onRemove={() => removeImage(img.id)}
+                />
+
+                {img.isPrimary && !img.error && (
                   <span className="absolute bottom-1.5 left-1.5 text-[10px] bg-[#C8541A] text-white px-2 py-0.5 rounded font-bold uppercase tracking-wide">
                     Cover
                   </span>
                 )}
-
-                <button
-                  type="button"
-                  onClick={(e) => { e.stopPropagation(); remove(idx); }}
-                  className="absolute top-1.5 right-1.5 p-1.5 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors"
-                >
-                  <X className="h-3.5 w-3.5" />
-                </button>
               </div>
             ))}
           </div>
+          {images.length > 1 && (
+            <p className="text-sm text-gray-400 mt-3">
+              The first photo is the cover, shown as the thumbnail on listing cards. Change a number to reorder.
+            </p>
+          )}
         </div>
       )}
 
@@ -739,7 +751,11 @@ export default function ItemForm({
 }: ItemFormProps) {
   const [step,    setStep]    = useState(0);
   const [details, setDetails] = useState<Partial<DetailsData>>(defaults?.details ?? {});
-  const [images,  setImages]  = useState<UploadedImage[]>(defaults?.images ?? []);
+  const [images,  setImages]  = useState<UploadedImage[]>(() => markPrimary(defaults?.images ?? [], isVideo));
+
+  // The cover always follows position, whatever changed the list
+  const handleImagesChange = (imgs: UploadedImage[] | ((prev: UploadedImage[]) => UploadedImage[])) =>
+    setImages((prev) => markPrimary(typeof imgs === "function" ? imgs(prev) : imgs, isVideo));
 
   return (
     <div className="bg-white rounded-2xl border border-gray-200 p-5 sm:p-8">
@@ -761,7 +777,7 @@ export default function ItemForm({
           {step === 1 && (
             <PhotosStep
               images={images}
-              onImagesChange={setImages}
+              onImagesChange={handleImagesChange}
               onNext={() => setStep(2)}
               onBack={() => setStep(0)}
             />

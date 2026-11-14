@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { ITEM_IMAGE_ORDER } from "@/lib/media-order";
 
 export async function GET(
   _req: NextRequest,
@@ -33,7 +34,7 @@ export async function GET(
       seller: { select: { phone: true } },
       images: {
         select: { id: true, url: true, s3Key: true, isPrimary: true },
-        orderBy: { isPrimary: "desc" },
+        orderBy: ITEM_IMAGE_ORDER,
       },
     },
   });

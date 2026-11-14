@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { itemBodySchema } from "@/lib/validations/item";
 import { saveContactPhone } from "@/lib/contact-phone";
+import { orderedImageRows } from "@/lib/media-order";
 import { revalidatePath } from "next/cache";
 
 export async function POST(req: NextRequest) {
@@ -42,13 +43,7 @@ export async function POST(req: NextRequest) {
         sellerId: session.user.id,
         status: "ACTIVE",
         activatedAt: new Date(),
-        images: {
-          create: images.map((img) => ({
-            url: img.url,
-            s3Key: img.s3Key,
-            isPrimary: img.isPrimary,
-          })),
-        },
+        images: { create: orderedImageRows(images) },
       },
       select: { id: true, status: true },
     });

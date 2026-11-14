@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { itemBodySchema } from "@/lib/validations/item";
 import { saveContactPhone } from "@/lib/contact-phone";
+import { orderedImageRows } from "@/lib/media-order";
 import { revalidatePath } from "next/cache";
 
 export async function PUT(
@@ -57,14 +58,8 @@ export async function PUT(
         yearPurchased: yearPurchased ?? null,
         status: "ACTIVE",
         activatedAt: new Date(),
-        images: {
-          deleteMany: {},
-          create: images.map((img) => ({
-            url: img.url,
-            s3Key: img.s3Key,
-            isPrimary: img.isPrimary,
-          })),
-        },
+        // Nested writes share the update's transaction and the delete runs first
+        images: { deleteMany: {}, create: orderedImageRows(images) },
       },
       select: { id: true, status: true },
     });

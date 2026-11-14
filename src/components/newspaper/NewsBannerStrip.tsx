@@ -23,14 +23,6 @@ const CATEGORY_CHIP: Record<string, string> = {
   GENERAL:       "bg-gray-100 text-gray-600 border border-gray-200",
 };
 
-const CATEGORY_LABEL: Record<string, string> = {
-  EVENTS:        "Events",
-  COMMUNITY:     "Community",
-  ANNOUNCEMENTS: "Notice",
-  SPORTS:        "Sports",
-  GENERAL:       "News",
-};
-
 const PF = "font-[family-name:var(--font-playfair)]";
 
 const FOCUS =
@@ -52,26 +44,28 @@ export default function NewsBannerStrip({ items }: { items: Item[] }) {
   const [paused, setPaused] = useState(false);
   const count = items.length;
 
-  // Auto-advance, held while the pointer or keyboard focus is on the slider so
-  // a slide never changes under someone about to click it.
+  // Auto-advance, held while a mouse or keyboard focus is on the slider so a
+  // slide never changes under someone about to click it. Keyed on `index` so
+  // the wait starts over after a manual step.
   useEffect(() => {
     if (count <= 1 || paused) return;
-    const id = setInterval(() => setIndex((i) => (i + 1) % count), 5000);
-    return () => clearInterval(id);
-  }, [count, paused]);
+    const id = setTimeout(() => setIndex((i) => (i + 1) % count), 4000);
+    return () => clearTimeout(id);
+  }, [count, paused, index]);
 
   if (count === 0) return null;
 
   const item = items[index % count];
   const chip = CATEGORY_CHIP[item.category] ?? CATEGORY_CHIP.GENERAL;
-  const label = CATEGORY_LABEL[item.category] ?? "News";
   const step = (by: number) => setIndex((i) => (i + by + count) % count);
 
   return (
     <div
       className="mt-[60px] w-full bg-[#FAF8F5] px-5 pt-5 sm:px-8 sm:pt-8 lg:px-12"
-      onMouseEnter={() => setPaused(true)}
-      onMouseLeave={() => setPaused(false)}
+      // Mouse only: a tap also fires "enter" but never "leave", which would
+      // stop the slider for good on a phone.
+      onPointerEnter={(e) => e.pointerType === "mouse" && setPaused(true)}
+      onPointerLeave={() => setPaused(false)}
       onFocus={() => setPaused(true)}
       onBlur={() => setPaused(false)}
     >
@@ -116,7 +110,7 @@ export default function NewsBannerStrip({ items }: { items: Item[] }) {
                     <span className="relative inline-flex h-2 w-2 rounded-full bg-[#C8541A]" />
                   </span>
                   <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.18em] ${chip}`}>
-                    {label}
+                    Upcoming Events
                   </span>
                   {count > 1 && (
                     <span className="ml-auto text-[11px] font-bold tabular-nums tracking-[0.12em] text-[#7A4F2A]">

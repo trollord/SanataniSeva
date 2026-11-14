@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRight, Info, PlusCircle } from "lucide-react";
 import { prisma } from "@/lib/prisma";
+import { ITEM_IMAGE_ORDER } from "@/lib/media-order";
 import MarketplaceGrid from "@/components/marketplace/MarketplaceGrid";
 import type { MarketplaceItemCard } from "@/components/marketplace/ItemCard";
 
@@ -31,7 +32,7 @@ export default async function MarketplacePage() {
       createdAt: true,
       images: {
         select: { url: true, isPrimary: true },
-        orderBy: { isPrimary: "desc" },
+        orderBy: ITEM_IMAGE_ORDER,
       },
     },
   });

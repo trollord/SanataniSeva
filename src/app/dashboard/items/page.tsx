@@ -1,5 +1,6 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { ITEM_IMAGE_ORDER } from "@/lib/media-order";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
@@ -40,7 +41,7 @@ export default async function MyItemsPage() {
       createdAt: true,
       images: {
         select: { url: true, isPrimary: true },
-        orderBy: { isPrimary: "desc" },
+        orderBy: ITEM_IMAGE_ORDER,
         take: 1,
       },
     },

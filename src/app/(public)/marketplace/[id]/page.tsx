@@ -4,6 +4,7 @@ import { cache } from "react";
 import type { Metadata } from "next";
 import { MapPin, CalendarClock, Tag, ShieldCheck } from "lucide-react";
 import { prisma } from "@/lib/prisma";
+import { ITEM_IMAGE_ORDER } from "@/lib/media-order";
 import { auth } from "@/lib/auth";
 import PropertyGallery from "@/components/property/PropertyGallery";
 import { formatPrice, formatDate } from "@/lib/utils/formatters";
@@ -42,7 +43,7 @@ const getItem = cache(async (id: string) => {
       createdAt: true,
       images: {
         select: { id: true, url: true, isPrimary: true },
-        orderBy: { isPrimary: "desc" },
+        orderBy: ITEM_IMAGE_ORDER,
       },
       seller: { select: { id: true, name: true, phone: true, image: true, createdAt: true } },
     },
@@ -109,7 +110,7 @@ export default async function ItemDetailPage({
       createdAt: true,
       images: {
         select: { url: true, isPrimary: true },
-        orderBy: { isPrimary: "desc" },
+        orderBy: ITEM_IMAGE_ORDER,
       },
     },
   });

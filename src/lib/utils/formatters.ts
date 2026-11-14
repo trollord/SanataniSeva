@@ -16,6 +16,18 @@ export function formatArea(sqft: number): string {
   return `${sqft.toLocaleString("en-IN")} sq.ft`;
 }
 
+/** "1 covered · 2 uncovered", or "-" when the lister gave neither count. */
+export function formatParking(
+  covered: number | null | undefined,
+  uncovered: number | null | undefined
+): string {
+  const parts = [
+    covered != null && `${covered} covered`,
+    uncovered != null && `${uncovered} uncovered`,
+  ].filter(Boolean);
+  return parts.length ? parts.join(" · ") : "-";
+}
+
 export function formatDate(date: Date | string): string {
   return new Intl.DateTimeFormat("en-IN", {
     day: "numeric",

@@ -86,7 +86,16 @@ export default async function AdminNewsPage({
                     </span>
                   </td>
                   <td className="px-4 py-3 text-right">
-                    <NewsAdminActions id={item.id} status={item.status} />
+                    <NewsAdminActions
+                      item={{
+                        id: item.id,
+                        headline: item.headline,
+                        body: item.body,
+                        category: item.category,
+                        imageUrls: item.imageUrls,
+                      }}
+                      status={item.status}
+                    />
                   </td>
                 </tr>
               ))}

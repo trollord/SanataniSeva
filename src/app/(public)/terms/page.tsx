@@ -4,10 +4,10 @@ import Link from "next/link";
 export const metadata: Metadata = {
   title: "Terms & Conditions",
   description:
-    "Terms and conditions for using Sanatani Seva - an independent property listing platform for Hiranandani Estate, Thane.",
+    "Terms and conditions for using Sanatani Seva, the neighbourhood portal for Hiranandani Estate, Thane.",
 };
 
-const LAST_UPDATED = "19 July 2026";
+const LAST_UPDATED = "14 November 2026";
 
 const BYTELIGHTS_URL = "https://www.bytelights.co/";
 
@@ -53,7 +53,14 @@ export default function TermsPage() {
 
         <Section title="1. Acceptance of These Terms">
           <p>
-            By accessing or using Sanatani Seva, accessible at sanataniseva.com (the &ldquo;Platform&rdquo;), you agree
+            By accessing or using Sanatani Seva, accessible at{" "}
+            <a
+              href="https://www.sanataniseva.com/"
+              className="text-[#FF5F15] underline underline-offset-2 hover:opacity-80 transition-opacity"
+            >
+              www.sanataniseva.com
+            </a>{" "}
+            and as an app installed from that site (the &ldquo;Platform&rdquo;), you agree
             to be bound by these Terms &amp; Conditions. If you do not agree with any part of
             these terms, please do not use the Platform.
           </p>
@@ -61,11 +68,17 @@ export default function TermsPage() {
 
         <Section title="2. About the Platform">
           <p>
-            Sanatani Seva is an independent online property listing platform that
-            helps property seekers discover residential and commercial properties located in
-            the Hiranandani Estate locality of Thane, Maharashtra, and connect directly with
-            the owners of those properties. The Platform is a product of <ByteLights bold />.
+            Sanatani Seva is an independent neighbourhood portal for the Hiranandani Estate
+            locality of Thane, Maharashtra, and nearby areas. Through the Platform you can:
           </p>
+          <ul className="list-disc pl-5 space-y-1.5">
+            <li>find phone numbers for local service providers, emergency services and bus timings;</li>
+            <li>buy, sell or give away second-hand items;</li>
+            <li>find residential and commercial properties to rent or buy;</li>
+            <li>read local news and upcoming events; and</li>
+            <li>get in touch with the Platform&rsquo;s team.</li>
+          </ul>
+          <p>The Platform is a product of <ByteLights bold />.</p>
         </Section>
 
         <Section title="3. No Affiliation with the Hiranandani Group">
@@ -78,9 +91,10 @@ export default function TermsPage() {
           </p>
           <p>
             <b>The Hiranandani Group is not the seller, lessor, or listing party</b> of any
-            property appearing on this Platform. All properties are listed by their respective
-            independent owners, and we operate purely as an independent listing and advisory
-            platform facilitating direct contact between seekers and owners.
+            property appearing on this Platform. Properties are listed by their respective
+            owners or by agents or representatives acting for them, and we operate purely as an
+            independent listing and advisory platform that puts seekers in touch with the
+            people who listed them.
           </p>
         </Section>
 
@@ -93,12 +107,20 @@ export default function TermsPage() {
           </p>
         </Section>
 
-        <Section title="5. Listings & Verification">
+        <Section title="5. Listings, Directory & Verification">
           <p>
-            Property listings are submitted by owners and reviewed by our team before going
-            live. While we make reasonable efforts to verify listings and owners, we do not
-            guarantee the accuracy, completeness, legality, or current availability of any
-            listing. Property details, prices, and availability may change without notice.
+            Property listings are submitted by owners or their agents or representatives and
+            reviewed by our team before going live. Marketplace items are posted by the people
+            selling or giving them away. While we make reasonable efforts to verify listings and
+            the people who post them, we do not guarantee the accuracy, completeness, legality,
+            or current availability of any listing or item. Details, prices, and availability
+            may change without notice.
+          </p>
+          <p>
+            Service-provider and emergency numbers, bus timings, news and event details are
+            provided for convenience. We do not employ, endorse or vouch for any service provider
+            listed, and timings and details may change without notice. In an emergency, always
+            call the official emergency services first.
           </p>
           <p>
             You are solely responsible for carrying out your own due diligence - including
@@ -118,8 +140,10 @@ export default function TermsPage() {
 
         <Section title="7. The Platform Is Not a Party to Transactions">
           <p>
-            Any negotiation, agreement, or transaction concluded between a seeker and a
-            property owner is strictly between those parties. We are not a party to, and accept
+            Any negotiation, agreement, or transaction concluded through the Platform, whether
+            between a seeker and a property owner or their agent, between a buyer and a seller of
+            an item, or between a resident and a service provider, is strictly between those
+            parties. We are not a party to, and accept
             no responsibility or liability for, any such transaction, including its
             performance, payment terms, possession, or documentation.
           </p>
@@ -149,8 +173,8 @@ export default function TermsPage() {
           <p>
             The Platform&rsquo;s design, software, and original content are owned by{" "}
             <ByteLights />.
-            Listing photographs and descriptions remain the property of the respective owners
-            who submitted them and are displayed with their permission. You may not copy,
+            Photographs and descriptions in listings and posts remain the property of the
+            people who submitted them and are displayed with their permission. You may not copy,
             scrape, or reuse Platform content without prior written consent.
           </p>
         </Section>
@@ -161,7 +185,8 @@ export default function TermsPage() {
             basis without warranties of any kind, express or implied. To the maximum extent
             permitted by law, <ByteLights /> and the Platform shall not be liable for any indirect,
             incidental, consequential, or special damages, or for any loss arising out of any
-            property transaction, use of the Platform, or reliance on any listing.
+            transaction, use of the Platform, or reliance on any listing, contact or timing
+            shown on it.
           </p>
         </Section>
 

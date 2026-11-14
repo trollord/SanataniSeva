@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { PROPERTY_IMAGE_ORDER } from "@/lib/media-order";
 import { parseAmenities } from "@/lib/utils/formatters";
 
 export async function GET(
@@ -41,7 +42,7 @@ export async function GET(
         createdAt: true,
         images: {
           select: { id: true, url: true, isPrimary: true },
-          orderBy: { isPrimary: "desc" },
+          orderBy: PROPERTY_IMAGE_ORDER,
         },
         owner: {
           select: {

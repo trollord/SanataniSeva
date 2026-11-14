@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { PROPERTY_IMAGE_ORDER } from "@/lib/media-order";
 import { createPropertySchema } from "@/lib/validations/property";
 import { HIRANANDANI_LOCALITIES } from "@/lib/constants";
 import { stringifyAmenities } from "@/lib/utils/formatters";
@@ -38,7 +39,7 @@ const PUBLIC_PROPERTY_SELECT = {
   // flatNumber intentionally excluded
   images: {
     select: { id: true, url: true, isPrimary: true },
-    orderBy: { isPrimary: "desc" as const },
+    orderBy: PROPERTY_IMAGE_ORDER,
     take: 1,
   },
   owner: {
@@ -153,6 +154,8 @@ export async function POST(req: NextRequest) {
         price,
         deposit: deposit ?? null,
         lockInMonths: lockInMonths && lockInMonths > 0 ? lockInMonths : null,
+        coveredParking: rest.coveredParking ?? null,
+        uncoveredParking: rest.uncoveredParking ?? null,
         ownerId: session.user.id,
         // Admin listings skip the review queue - the admin is the reviewer
         status: session.user.role === "ADMIN" ? "ACTIVE" : "PENDING",

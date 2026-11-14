@@ -25,6 +25,14 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (body.operator !== undefined) data.operator = str(body.operator, 80) || null;
   if (body.note !== undefined) data.note = str(body.note, 400) || null;
   if (typeof body.active === "boolean") data.active = body.active;
+
+  // An edit may leave these out, but must not blank them
+  if (data.routeNumber === "" || data.origin === "" || data.destination === "") {
+    return NextResponse.json(
+      { error: "Route number, origin and destination are required." },
+      { status: 400 },
+    );
+  }
   if (Number.isInteger(body.sortOrder)) data.sortOrder = body.sortOrder;
 
   try {

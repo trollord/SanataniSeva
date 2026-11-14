@@ -20,6 +20,10 @@ export const HIRANANDANI_LOCALITIES = [
   "Rodas Enclave",
   "One Hiranandani Park",
   "Skylark Enclave",
+  "Bhumi Acres",
+  "Palacia",
+  "Rosa",
+  "Platinum Heritage",
   "Others",
 ] as const;
 
@@ -31,7 +35,6 @@ export const AMENITIES_LIST = [
   "Clubhouse",
   "24x7 Security",
   "Power Backup",
-  "Covered Parking",
   "Lift",
   "Garden / Landscaped Area",
   "Children's Play Area",

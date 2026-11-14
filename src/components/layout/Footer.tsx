@@ -7,7 +7,7 @@ export default function Footer() {
       <div className="max-w-6xl mx-auto px-5 sm:px-8 py-8 sm:py-10">
 
         {/* Mobile: brand top, then 2-col links. Desktop: 5-col grid, with the
-            longer Company list set in two columns to keep the footer short. */}
+            five sections set in two columns to keep the footer short. */}
         <div className="flex flex-col md:grid md:grid-cols-5 md:gap-10">
 
           {/* Brand */}
@@ -31,18 +31,18 @@ export default function Footer() {
           {/* Links - 2 columns side by side on mobile */}
           <div className="grid grid-cols-2 gap-6 sm:gap-8 md:contents">
 
-            {/* Explore */}
-            <div>
+            {/* Explore: the five sections, in navbar order */}
+            <div className="md:col-span-2">
               <h4 className="text-[9px] sm:text-[10px] font-bold uppercase tracking-[0.14em] text-white/35 mb-3">
                 Explore
               </h4>
-              <ul className="space-y-2">
+              <ul className="space-y-2 md:space-y-0 md:grid md:grid-cols-2 md:gap-x-8 md:gap-y-2">
                 {[
-                  { href: "/listings?listingType=RENT", label: "For Rent" },
-                  { href: "/listings?listingType=SALE", label: "For Sale" },
-                  { href: "/listings?type=FLAT",        label: "Flats" },
-                  { href: "/listings?type=VILLA",       label: "Villas" },
-                  { href: "/listings?type=OFFICE",      label: "Office Spaces" },
+                  { href: "/community",   label: "Service Providers" },
+                  { href: "/marketplace", label: "Resell / Giveaway" },
+                  { href: "/listings",    label: "Real Estate" },
+                  { href: "/newspaper",   label: "Latest News" },
+                  { href: "/contact",     label: "Connect" },
                 ].map(({ href, label }) => (
                   <li key={href}>
                     <Link
@@ -57,18 +57,13 @@ export default function Footer() {
             </div>
 
             {/* Company */}
-            <div className="md:col-span-2">
+            <div>
               <h4 className="text-[9px] sm:text-[10px] font-bold uppercase tracking-[0.14em] text-white/35 mb-3">
                 Company
               </h4>
-              <ul className="space-y-2 md:space-y-0 md:grid md:grid-cols-2 md:gap-x-8 md:gap-y-2">
+              <ul className="space-y-2">
                 {[
-                  { href: "/how-it-works",    label: "How It Works" },
-                  { href: "/community",       label: "Community Directory" },
-                  { href: "/marketplace",     label: "Marketplace" },
-                  { href: "/blog",            label: "Blog" },
                   { href: "/dashboard/new",   label: "List Property" },
-                  { href: "/listings",        label: "All Listings" },
                   { href: "/contact",         label: "Contact Us" },
                   { href: "/terms",           label: "Terms & Conditions" },
                 ].map(({ href, label }) => (

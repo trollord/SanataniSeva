@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic";
 
 import { unstable_cache } from "next/cache";
 import { prisma } from "@/lib/prisma";
+import { ITEM_IMAGE_ORDER } from "@/lib/media-order";
 import { COMMUNITY_CATEGORIES } from "@/lib/community";
 import NewsBannerStrip from "@/components/newspaper/NewsBannerStrip";
 import EstateGallery from "@/components/home-v2/EstateGallery";
@@ -26,7 +27,7 @@ const getHomeData = unstable_cache(
           category: true,
           images: {
             select: { url: true, isPrimary: true },
-            orderBy: { isPrimary: "desc" },
+            orderBy: ITEM_IMAGE_ORDER,
             take: 1,
           },
         },

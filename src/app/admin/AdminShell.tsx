@@ -8,7 +8,6 @@ import {
   LayoutDashboard,
   ListChecks,
   Users,
-  Upload,
   Building2,
   MessageSquare,
   Menu,
@@ -31,7 +30,6 @@ const NAV_LINKS = [
   { href: "/admin/news",       label: "Today's News", icon: Newspaper },
   { href: "/admin/inquiries", label: "Inquiries", icon: MessageSquare },
   { href: "/admin/users", label: "Users", icon: Users },
-  { href: "/admin/import", label: "Import Prices", icon: Upload },
 ];
 
 interface Props {

@@ -1,5 +1,6 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { PROPERTY_IMAGE_ORDER } from "@/lib/media-order";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -37,7 +38,7 @@ export default async function DashboardPage() {
       closedAt: true,
       images: {
         select: { url: true, isPrimary: true },
-        orderBy: { isPrimary: "desc" },
+        orderBy: PROPERTY_IMAGE_ORDER,
         take: 1,
       },
       _count: { select: { inquiries: true } },

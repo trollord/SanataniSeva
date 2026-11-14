@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
@@ -12,19 +12,6 @@ export default function DashboardNavbar() {
   const { data: session } = useSession();
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
-  const wrapperRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
-        setMenuOpen(false);
-      }
-    }
-    if (menuOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
-    }
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [menuOpen]);
 
   const isAdmin = ["ADMIN"].includes(session?.user?.role ?? "");
 
@@ -78,11 +65,12 @@ export default function DashboardNavbar() {
 
       {/* User menu */}
       {session && (
-        <div ref={wrapperRef}>
+        <div>
           <FloatingActionMenu
             options={options}
             isOpen={menuOpen}
             onToggle={() => setMenuOpen((v) => !v)}
+            onClose={() => setMenuOpen(false)}
             direction="down"
             trigger={
               <button className="flex items-center gap-2 rounded-full focus:outline-none focus:ring-2 focus:ring-[#FF5F15]/50">

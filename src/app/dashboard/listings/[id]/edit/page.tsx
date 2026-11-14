@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -31,13 +31,13 @@ import {
 import { propertyStep1Schema, propertyStep3FormSchema } from "@/lib/validations/property";
 import { toFullPhone } from "@/lib/validations/phone";
 import ContactPhoneField from "@/components/ui/ContactPhoneField";
-import { parseAmenities } from "@/lib/utils/formatters";
+import { formatParking, parseAmenities } from "@/lib/utils/formatters";
+import PhotoTileControls from "@/components/ui/PhotoTileControls";
+import { markPrimary, moveToPosition } from "@/lib/media-order";
 import {
   ChevronRight,
   ChevronLeft,
   Upload,
-  X,
-  Star,
   CheckCircle2,
   Loader2,
   AlertTriangle,
@@ -47,6 +47,8 @@ type Step1Data = z.infer<typeof propertyStep1Schema>;
 type Step3Data = z.infer<typeof propertyStep3FormSchema>;
 
 interface UploadedImage {
+  /** Stable across reorders, so an upload finishing late finds its own tile. */
+  id: string;
   file?: File;
   preview: string;
   url: string;
@@ -60,6 +62,9 @@ interface UploadedImage {
 function isVideoMedia(m: { file?: File | null; preview: string }): boolean {
   return m.file?.type?.startsWith("video/") ?? isVideoUrl(m.preview);
 }
+
+let imageSeq = 0;
+const nextImageId = () => `img-${Date.now()}-${++imageSeq}`;
 
 interface WizardData {
   step1: Partial<Step1Data>;
@@ -277,6 +282,16 @@ function Step1({
           <Label>Total Floors</Label>
           <Input {...register("totalFloors")} type="number" min={1} placeholder="e.g. 20" />
         </div>
+        <div className="space-y-1.5">
+          <Label>Covered Parking</Label>
+          <Input {...register("coveredParking")} type="number" min={0} placeholder="e.g. 1" />
+          {errors.coveredParking && <p className="text-xs text-red-500">{errors.coveredParking.message}</p>}
+        </div>
+        <div className="space-y-1.5">
+          <Label>Uncovered Parking</Label>
+          <Input {...register("uncoveredParking")} type="number" min={0} placeholder="e.g. 0" />
+          {errors.uncoveredParking && <p className="text-xs text-red-500">{errors.uncoveredParking.message}</p>}
+        </div>
       </div>
 
       <div className="space-y-2">
@@ -347,6 +362,7 @@ function Step2({
       if (validFiles.length === 0) return;
 
       const newImages: UploadedImage[] = validFiles.map((file) => ({
+        id: nextImageId(),
         file,
         preview: URL.createObjectURL(file),
         url: "",
@@ -355,14 +371,9 @@ function Step2({
         uploading: true,
       }));
 
-      if (!images.some((i) => i.isPrimary)) {
-        const firstPhoto = newImages.find((mm) => !mm.file?.type.startsWith("video/"));
-        if (firstPhoto) firstPhoto.isPrimary = true;
-      }
+      onImagesChange((prev) => [...prev, ...newImages]);
 
-      onImagesChange([...images, ...newImages]);
-
-      const uploadPromises = newImages.map(async (img, idx) => {
+      const uploadPromises = newImages.map(async (img) => {
         try {
           const res = await fetch(
             `/api/upload?filename=${encodeURIComponent(img.file!.name)}&contentType=${encodeURIComponent(img.file!.type)}&fileSize=${img.file!.size}`
@@ -377,28 +388,25 @@ function Step2({
             body: img.file,
             headers: { "Content-Type": img.file!.type },
           });
-          return { idx, url: publicUrl, s3Key, error: undefined };
+          return { id: img.id, url: publicUrl, s3Key, error: undefined };
         } catch (err) {
-          return { idx, url: "", s3Key: "", error: err instanceof Error ? err.message : "Upload failed" };
+          return { id: img.id, url: "", s3Key: "", error: err instanceof Error ? err.message : "Upload failed" };
         }
       });
 
       const results = await Promise.all(uploadPromises);
 
-      onImagesChange((prev: UploadedImage[]) => {
-        const updated = [...prev];
-        const startIdx = prev.length - newImages.length;
-        results.forEach(({ idx, url, s3Key, error }) => {
-          const i = startIdx + idx;
-          if (i < updated.length) {
-            updated[i] = { ...updated[i], uploading: false, url, s3Key, error };
-          }
-        });
-        return updated;
-      });
+      // Match by id, not index: the lister may have reordered or discarded
+      // tiles while these were in flight. A discarded tile simply isn't found.
+      const byId = new Map(results.map((r) => [r.id, r]));
+      onImagesChange((prev: UploadedImage[]) =>
+        prev.map((m) => {
+          const r = byId.get(m.id);
+          return r ? { ...m, uploading: false, url: r.url, s3Key: r.s3Key, error: r.error } : m;
+        })
+      );
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [images, onImagesChange]
+    [onImagesChange]
   );
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -407,16 +415,12 @@ function Step2({
     maxFiles: 10,
   });
 
-  const removeImage = (idx: number) => {
-    const updated = images.filter((_, i) => i !== idx);
-    if (images[idx].isPrimary && updated.length > 0) {
-      updated[0] = { ...updated[0], isPrimary: true };
-    }
-    onImagesChange(updated);
+  const removeImage = (id: string) => {
+    onImagesChange((prev) => prev.filter((m) => m.id !== id));
   };
 
-  const setPrimary = (idx: number) => {
-    onImagesChange(images.map((img, i) => ({ ...img, isPrimary: i === idx })));
+  const moveImage = (from: number, to: number) => {
+    onImagesChange((prev) => moveToPosition(prev, from, to));
   };
 
   const hasUploading = images.some((i) => i.uploading);
@@ -450,7 +454,7 @@ function Step2({
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {images.map((img, idx) => (
             <div
-              key={idx}
+              key={img.id}
               className={`relative rounded-xl overflow-hidden border-2 transition-colors ${
                 img.isPrimary ? "border-blue-500" : "border-gray-200"
               }`}
@@ -472,26 +476,27 @@ function Step2({
                   <p className="text-xs text-red-600 text-center">{img.error}</p>
                 </div>
               )}
-              {!img.uploading && !img.error && (
-                <div className="absolute top-1.5 right-1.5 flex gap-1">
-                  {!isVideoMedia(img) && (
-                  <button type="button" onClick={() => setPrimary(idx)} title="Set as primary"
-                    className={`p-1 rounded-full transition-colors ${img.isPrimary ? "bg-blue-500 text-white" : "bg-white/80 text-gray-600 hover:bg-yellow-400 hover:text-white"}`}>
-                    <Star className="h-3 w-3" />
-                  </button>
-                )}
-                  <button type="button" onClick={() => removeImage(idx)}
-                    className="p-1 rounded-full bg-white/80 text-gray-600 hover:bg-red-500 hover:text-white transition-colors">
-                    <X className="h-3 w-3" />
-                  </button>
-                </div>
-              )}
-              {img.isPrimary && !img.uploading && !img.error && (
+              {/* Above the overlays, so in-flight and failed tiles can be handled too */}
+              <PhotoTileControls
+                index={idx}
+                count={images.length}
+                src={img.preview}
+                isVideo={isVideoMedia(img)}
+                onMove={(to) => moveImage(idx, to)}
+                onRemove={() => removeImage(img.id)}
+              />
+              {img.isPrimary && !img.error && (
                 <div className="absolute bottom-1.5 left-1.5 text-[10px] font-semibold bg-blue-500 text-white px-1.5 py-0.5 rounded-full">Primary</div>
               )}
             </div>
           ))}
         </div>
+      )}
+
+      {images.length > 1 && (
+        <p className="text-xs text-gray-500 -mt-3">
+          The first photo is the primary one, shown as the thumbnail on listing cards. Change a number to reorder.
+        </p>
       )}
 
       <div className="flex justify-between">
@@ -707,6 +712,7 @@ function Step4({
     ["Area", step1.areaSqft ? `${step1.areaSqft} sq.ft` : "-"],
     ["Floor", step1.floor !== undefined ? step1.floor : "-"],
     ["Total Floors", step1.totalFloors ?? "-"],
+    ["Parking", formatParking(step1.coveredParking, step1.uncoveredParking)],
     ["Furnished", FURNISHED_LABELS[step1.furnished ?? ""] ?? step1.furnished],
     ["Price", step3.price
       ? `₹${Number(step3.price).toLocaleString("en-IN")}${step3.rentNegotiable ? " (Negotiable)" : ""}`
@@ -793,9 +799,10 @@ function Step4({
 export default function EditListingPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
-  const { id: propertyId } = params;
+  // Client component, so the params Promise is unwrapped with use(), not await.
+  const { id: propertyId } = use(params);
   const router = useRouter();
   const [step, setStep] = useState(0);
   const [submitting, setSubmitting] = useState(false);
@@ -833,8 +840,14 @@ export default function EditListingPage({
           areaSqft: property.areaSqft,
           floor: property.floor ?? undefined,
           totalFloors: property.totalFloors ?? undefined,
+          coveredParking: property.coveredParking ?? undefined,
+          uncoveredParking: property.uncoveredParking ?? undefined,
           furnished: property.furnished,
           amenities: parseAmenities(property.amenities),
+          // This form has no map, but the schema requires the pin and has no
+          // field to show that error on, so without these Next did nothing.
+          latitude: property.latitude ?? undefined,
+          longitude: property.longitude ?? undefined,
         };
 
         const step3: Partial<Step3Data> = {
@@ -850,6 +863,7 @@ export default function EditListingPage({
 
         const images: UploadedImage[] = (property.images ?? []).map(
           (img: { url: string; s3Key: string; isPrimary: boolean }) => ({
+            id: nextImageId(),
             preview: img.url,
             url: img.url,
             s3Key: img.s3Key,
@@ -858,7 +872,7 @@ export default function EditListingPage({
           })
         );
 
-        setData({ step1, images, step3 });
+        setData({ step1, images: markPrimary(images, isVideoMedia), step3 });
       } catch {
         toast.error("Failed to load property");
         router.push("/dashboard");
@@ -876,9 +890,10 @@ export default function EditListingPage({
   };
 
   const handleImagesChange = (imgs: UploadedImage[] | ((prev: UploadedImage[]) => UploadedImage[])) => {
+    // Primary always follows position, whatever changed the list
     setData((d) => ({
       ...d,
-      images: typeof imgs === "function" ? imgs(d.images) : imgs,
+      images: markPrimary(typeof imgs === "function" ? imgs(d.images) : imgs, isVideoMedia),
     }));
   };
 
@@ -896,7 +911,8 @@ export default function EditListingPage({
         ...restStep3,
         lockInMonths: lockInMonths && lockInMonths > 0 ? lockInMonths : null,
         amenities: data.step1.amenities ?? [],
-        images: data.images.map((img) => ({
+        // A failed upload has no URL; sending it would fail the whole save
+        images: data.images.filter((img) => img.url).map((img) => ({
           url: img.url,
           s3Key: img.s3Key,
           isPrimary: img.isPrimary,

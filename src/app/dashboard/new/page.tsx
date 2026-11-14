@@ -7,7 +7,7 @@ import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useDropzone } from "react-dropzone";
-import { isVideoUrl } from "@/lib/utils/formatters";
+import { formatParking, isVideoUrl } from "@/lib/utils/formatters";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,14 +32,14 @@ import {
 import { propertyStep1Schema, propertyStep3FormSchema } from "@/lib/validations/property";
 import ContactPhoneField, { useAccountPhone } from "@/components/ui/ContactPhoneField";
 import { WhatsAppShareModal } from "@/components/property/WhatsAppShare";
+import PhotoTileControls from "@/components/ui/PhotoTileControls";
+import { markPrimary, moveToPosition } from "@/lib/media-order";
 import NewListingTour from "@/components/tour/NewListingTour";
 import type { ShareableProperty } from "@/lib/utils/whatsapp";
 import {
   ChevronRight,
   ChevronLeft,
   Upload,
-  X,
-  Star,
   CheckCircle2,
   Loader2,
   ImageOff,
@@ -54,6 +54,8 @@ type Step1Data = z.infer<typeof propertyStep1Schema>;
 type Step3Data = z.infer<typeof propertyStep3FormSchema>;
 
 interface UploadedImage {
+  /** Stable across reorders, so an upload finishing late finds its own tile. */
+  id: string;
   file: File;
   preview: string;
   url: string;
@@ -67,6 +69,9 @@ interface UploadedImage {
 function isVideoMedia(m: { file?: File | null; preview: string }): boolean {
   return m.file?.type?.startsWith("video/") ?? isVideoUrl(m.preview);
 }
+
+let imageSeq = 0;
+const nextImageId = () => `img-${Date.now()}-${++imageSeq}`;
 
 interface WizardData {
   step1: Partial<Step1Data>;
@@ -447,6 +452,32 @@ function Step1({
                 </div>
               </div>
 
+              {/* Parking spaces */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-[12px] font-semibold text-gray-800">Covered Parking</label>
+                  <input
+                    {...register("coveredParking")}
+                    type="number"
+                    min={0}
+                    className={inputCls}
+                    placeholder="e.g. 1"
+                  />
+                  {errors.coveredParking && <p className="text-xs text-red-500">{errors.coveredParking.message}</p>}
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[12px] font-semibold text-gray-800">Uncovered Parking</label>
+                  <input
+                    {...register("uncoveredParking")}
+                    type="number"
+                    min={0}
+                    className={inputCls}
+                    placeholder="e.g. 0"
+                  />
+                  {errors.uncoveredParking && <p className="text-xs text-red-500">{errors.uncoveredParking.message}</p>}
+                </div>
+              </div>
+
               {/* Furnished Status */}
               <div className="space-y-2">
                 <label className="text-[12px] font-semibold text-gray-800">Furnished Status</label>
@@ -556,6 +587,7 @@ function Step2({
       if (validFiles.length === 0) return;
 
       const newImages: UploadedImage[] = validFiles.map((file) => ({
+        id: nextImageId(),
         file,
         preview: URL.createObjectURL(file),
         url: "",
@@ -564,17 +596,10 @@ function Step2({
         uploading: true,
       }));
 
-      // Mark the first *photo* as primary if nothing is primary yet
-      // (videos can't be primary - listing cards need a still thumbnail)
-      if (!images.some((i) => i.isPrimary)) {
-        const firstPhoto = newImages.find((m) => !m.file?.type.startsWith("video/"));
-        if (firstPhoto) firstPhoto.isPrimary = true;
-      }
-
-      onImagesChange([...images, ...newImages]);
+      onImagesChange((prev) => [...prev, ...newImages]);
 
       // Upload each file
-      const uploadPromises = newImages.map(async (img, idx) => {
+      const uploadPromises = newImages.map(async (img) => {
         try {
           const res = await fetch(
             `/api/upload?filename=${encodeURIComponent(img.file.name)}&contentType=${encodeURIComponent(img.file.type)}&fileSize=${img.file.size}`
@@ -591,10 +616,10 @@ function Step2({
             headers: { "Content-Type": img.file.type },
           });
 
-          return { idx, url: publicUrl, s3Key, error: undefined };
+          return { id: img.id, url: publicUrl, s3Key, error: undefined };
         } catch (err) {
           return {
-            idx,
+            id: img.id,
             url: "",
             s3Key: "",
             error: err instanceof Error ? err.message : "Upload failed",
@@ -604,20 +629,17 @@ function Step2({
 
       const results = await Promise.all(uploadPromises);
 
-      onImagesChange((prev: UploadedImage[]) => {
-        const updated = [...prev];
-        const startIdx = prev.length - newImages.length;
-        results.forEach(({ idx, url, s3Key, error }) => {
-          const i = startIdx + idx;
-          if (i < updated.length) {
-            updated[i] = { ...updated[i], uploading: false, url, s3Key, error };
-          }
-        });
-        return updated;
-      });
+      // Match by id, not index: the lister may have reordered or discarded
+      // tiles while these were in flight. A discarded tile simply isn't found.
+      const byId = new Map(results.map((r) => [r.id, r]));
+      onImagesChange((prev: UploadedImage[]) =>
+        prev.map((m) => {
+          const r = byId.get(m.id);
+          return r ? { ...m, uploading: false, url: r.url, s3Key: r.s3Key, error: r.error } : m;
+        })
+      );
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [images, onImagesChange]
+    [onImagesChange]
   );
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -634,19 +656,12 @@ function Step2({
     maxFiles: 10,
   });
 
-  const removeImage = (idx: number) => {
-    const updated = images.filter((_, i) => i !== idx);
-    // Re-assign primary if needed
-    if (images[idx].isPrimary && updated.length > 0) {
-      updated[0] = { ...updated[0], isPrimary: true };
-    }
-    onImagesChange(updated);
+  const removeImage = (id: string) => {
+    onImagesChange((prev) => prev.filter((m) => m.id !== id));
   };
 
-  const setPrimary = (idx: number) => {
-    onImagesChange(
-      images.map((img, i) => ({ ...img, isPrimary: i === idx }))
-    );
+  const moveImage = (from: number, to: number) => {
+    onImagesChange((prev) => moveToPosition(prev, from, to));
   };
 
   const hasUploading = images.some((i) => i.uploading);
@@ -702,7 +717,7 @@ function Step2({
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {images.map((img, idx) => (
             <div
-              key={idx}
+              key={img.id}
               className={`relative rounded-xl overflow-hidden border-2 transition-colors ${img.isPrimary ? "border-gray-900" : "border-gray-200"
                 }`}
             >
@@ -738,34 +753,18 @@ function Step2({
                 </div>
               )}
 
-              {/* Actions */}
-              {!img.uploading && !img.error && (
-                <div className="absolute top-1.5 right-1.5 flex gap-1">
-                  {!isVideoMedia(img) && (
-                    <button
-                      type="button"
-                      onClick={() => setPrimary(idx)}
-                      title="Set as primary"
-                      className={`p-1 rounded-full transition-colors ${img.isPrimary
-                        ? "bg-[#FF5F15] text-white"
-                        : "bg-white/80 text-gray-600 hover:bg-yellow-400 hover:text-white"
-                        }`}
-                    >
-                      <Star className="h-3 w-3" />
-                    </button>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => removeImage(idx)}
-                    className="p-1 rounded-full bg-white/80 text-gray-600 hover:bg-red-500 hover:text-white transition-colors"
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
-                </div>
-              )}
+              {/* Actions - above the overlays, so in-flight and failed tiles can be handled too */}
+              <PhotoTileControls
+                index={idx}
+                count={images.length}
+                src={img.preview}
+                isVideo={isVideoMedia(img)}
+                onMove={(to) => moveImage(idx, to)}
+                onRemove={() => removeImage(img.id)}
+              />
 
               {/* Primary label */}
-              {img.isPrimary && !img.uploading && !img.error && (
+              {img.isPrimary && !img.error && (
                 <div className="absolute bottom-1.5 left-1.5 text-[10px] font-semibold bg-[#FF5F15] text-white px-1.5 py-0.5 rounded-full">
                   Primary
                 </div>
@@ -773,6 +772,12 @@ function Step2({
             </div>
           ))}
         </div>
+      )}
+
+      {images.length > 1 && (
+        <p className="text-xs text-gray-500 -mt-3">
+          The first photo is the primary one, shown as the thumbnail on listing cards. Change a number to reorder.
+        </p>
       )}
 
       <div className="flex justify-between">
@@ -1079,6 +1084,7 @@ function Step4({
     ["Area", step1.areaSqft ? `${step1.areaSqft} sq.ft` : "-"],
     ["Floor", step1.floor !== undefined ? step1.floor : "-"],
     ["Total Floors", step1.totalFloors ?? "-"],
+    ["Parking", formatParking(step1.coveredParking, step1.uncoveredParking)],
     ["Furnished", FURNISHED_LABELS[step1.furnished ?? ""] ?? step1.furnished],
     ["Price", step3.price
       ? `₹${Number(step3.price).toLocaleString("en-IN")}${step3.rentNegotiable ? " (Negotiable)" : ""}`
@@ -1213,9 +1219,10 @@ export default function NewListingPage() {
   };
 
   const handleImagesChange = (imgs: UploadedImage[] | ((prev: UploadedImage[]) => UploadedImage[])) => {
+    // Primary always follows position, whatever changed the list
     setData((d) => ({
       ...d,
-      images: typeof imgs === "function" ? imgs(d.images) : imgs,
+      images: markPrimary(typeof imgs === "function" ? imgs(d.images) : imgs, isVideoMedia),
     }));
   };
 
@@ -1250,20 +1257,22 @@ export default function NewListingPage() {
 
       const { property } = await res.json();
 
-      if (data.images.length > 0) {
-        await Promise.allSettled(
-          data.images.map((img) =>
-            fetch(`/api/properties/${property.id}/images`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                url: img.url,
-                s3Key: img.s3Key,
-                isPrimary: img.isPrimary,
-              }),
-            })
-          )
-        );
+      // One at a time, in the lister's order: each row's createdAt is what
+      // keeps that order when the listing is read back.
+      for (const img of data.images) {
+        try {
+          await fetch(`/api/properties/${property.id}/images`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              url: img.url,
+              s3Key: img.s3Key,
+              isPrimary: img.isPrimary,
+            }),
+          });
+        } catch {
+          // Same as before: one failed photo doesn't sink the listing
+        }
       }
 
       toast.success("Listing submitted for review!");

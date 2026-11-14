@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Plus, Trash2, CalendarClock, Repeat, ChevronDown } from "lucide-react";
+import { Plus, Trash2, Pencil, CalendarClock, Repeat, ChevronDown } from "lucide-react";
 import { DAY_SHORT, formatTime, type ResolvedDay } from "@/lib/bus";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 
@@ -75,15 +75,20 @@ export default function BusAdminClient({
   const [busy, setBusy] = useState(false);
   const [openRoute, setOpenRoute] = useState<string | null>(routes[0]?.id ?? null);
   const [showNewRoute, setShowNewRoute] = useState(routes.length === 0);
+  const [editingRoute, setEditingRoute] = useState<string | null>(null);
+  const [editingSeries, setEditingSeries] = useState<string | null>(null);
 
+  /** Resolves false when the request failed, so an edit form can stay open. */
   async function run(fn: () => Promise<unknown>, okMsg: string) {
     setBusy(true);
     try {
       await fn();
       toast.success(okMsg);
       router.refresh();
+      return true;
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Failed");
+      return false;
     } finally {
       setBusy(false);
     }
@@ -113,14 +118,7 @@ export default function BusAdminClient({
           }}
         >
           <h2 className="font-semibold text-gray-900 mb-3">Add a route</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <Field name="routeNumber" label="Route number" placeholder="TMT 45" required />
-            <Field name="origin" label="From" placeholder="Hiranandani Estate" required />
-            <Field name="destination" label="To" placeholder="Thane Station" required />
-            <Field name="via" label="Via (optional)" placeholder="Rodas Enclave" />
-            <Field name="operator" label="Operator (optional)" placeholder="TMT" />
-            <Field name="note" label="Note (optional)" placeholder="AC service" />
-          </div>
+          <RouteFields />
           <div className="flex gap-2 mt-4">
             <button disabled={busy} className="bg-[#C8541A] text-white text-sm font-semibold px-4 py-2 rounded-lg disabled:opacity-50">
               Add route
@@ -208,7 +206,17 @@ export default function BusAdminClient({
                     {r.schedules.length === 0 && (
                       <p className="text-xs text-gray-500">No series yet — add one below.</p>
                     )}
-                    {r.schedules.map((s) => (
+                    {r.schedules.map((s) =>
+                      editingSeries === s.id ? (
+                        <SeriesForm
+                          key={s.id}
+                          routeId={r.id}
+                          series={s}
+                          busy={busy}
+                          run={run}
+                          onDone={() => setEditingSeries(null)}
+                        />
+                      ) : (
                       <div key={s.id} className="flex items-start justify-between gap-3 border border-gray-200 rounded-lg p-3">
                         <div className="min-w-0">
                           <p className="text-sm font-medium text-gray-900">
@@ -226,16 +234,27 @@ export default function BusAdminClient({
                             </p>
                           )}
                         </div>
-                        <button
-                          disabled={busy}
-                          onClick={() => run(() => send(`/api/admin/bus/schedules/${s.id}`, "DELETE"), "Series removed")}
-                          className="text-gray-400 hover:text-red-600 shrink-0"
-                          aria-label="Delete series"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
+                        <div className="flex items-center gap-3 shrink-0">
+                          <button
+                            disabled={busy}
+                            onClick={() => setEditingSeries(s.id)}
+                            className="text-gray-400 hover:text-gray-900"
+                            aria-label="Edit series"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </button>
+                          <button
+                            disabled={busy}
+                            onClick={() => run(() => send(`/api/admin/bus/schedules/${s.id}`, "DELETE"), "Series removed")}
+                            className="text-gray-400 hover:text-red-600"
+                            aria-label="Delete series"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
                       </div>
-                    ))}
+                      ),
+                    )}
                   </div>
                   <SeriesForm routeId={r.id} busy={busy} run={run} />
                 </section>
@@ -278,7 +297,50 @@ export default function BusAdminClient({
                   <ExceptionForm routeId={r.id} today={today} busy={busy} run={run} />
                 </section>
 
+                {editingRoute === r.id && (
+                  <form
+                    className="border border-dashed border-gray-300 rounded-lg p-3"
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      const f = new FormData(e.currentTarget as HTMLFormElement);
+                      run(
+                        () =>
+                          send(`/api/admin/bus/routes/${r.id}`, "PATCH", {
+                            routeNumber: f.get("routeNumber"),
+                            origin: f.get("origin"),
+                            destination: f.get("destination"),
+                            // Kept in step with the endpoints, as on creation
+                            name: `${f.get("origin")} → ${f.get("destination")}`,
+                            via: f.get("via"),
+                            operator: f.get("operator"),
+                            note: f.get("note"),
+                          }),
+                        "Route updated",
+                      ).then((ok) => ok && setEditingRoute(null));
+                    }}
+                  >
+                    <RouteFields route={r} />
+                    <div className="flex gap-2 mt-3">
+                      <button disabled={busy} className="bg-[#1C1C1C] text-white text-xs font-semibold px-3 py-2 rounded-lg disabled:opacity-50">
+                        Save changes
+                      </button>
+                      <button type="button" onClick={() => setEditingRoute(null)} className="text-xs text-gray-500 px-2">
+                        Cancel
+                      </button>
+                    </div>
+                  </form>
+                )}
+
                 <div className="pt-1 flex gap-3">
+                  {editingRoute !== r.id && (
+                    <button
+                      disabled={busy}
+                      onClick={() => setEditingRoute(r.id)}
+                      className="text-xs font-semibold text-gray-600 hover:text-gray-900"
+                    >
+                      Edit route details
+                    </button>
+                  )}
                   <button
                     disabled={busy}
                     onClick={() => run(() => send(`/api/admin/bus/routes/${r.id}`, "PATCH", { active: !r.active }), r.active ? "Route hidden" : "Route visible")}
@@ -330,10 +392,27 @@ function Field({ name, label, placeholder, required, type = "text", defaultValue
   );
 }
 
-function SeriesForm({ routeId, busy, run }: {
-  routeId: string; busy: boolean; run: (fn: () => Promise<unknown>, msg: string) => Promise<void>;
+/** The six route inputs, shared by "Add a route" and "Edit route details". */
+function RouteFields({ route }: { route?: RouteView }) {
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      <Field name="routeNumber" label="Route number" placeholder="TMT 45" required defaultValue={route?.routeNumber} />
+      <Field name="origin" label="From" placeholder="Hiranandani Estate" required defaultValue={route?.origin} />
+      <Field name="destination" label="To" placeholder="Thane Station" required defaultValue={route?.destination} />
+      <Field name="via" label="Via (optional)" placeholder="Rodas Enclave" defaultValue={route?.via ?? undefined} />
+      <Field name="operator" label="Operator (optional)" placeholder="TMT" defaultValue={route?.operator ?? undefined} />
+      <Field name="note" label="Note (optional)" placeholder="AC service" defaultValue={route?.note ?? undefined} />
+    </div>
+  );
+}
+
+/** Adds a series, or edits `series` in place when one is passed. */
+function SeriesForm({ routeId, series, busy, run, onDone }: {
+  routeId: string; series?: Schedule; busy: boolean;
+  run: (fn: () => Promise<unknown>, msg: string) => Promise<boolean>;
+  onDone?: () => void;
 }) {
-  const [days, setDays] = useState<number[]>(WEEKDAYS);
+  const [days, setDays] = useState<number[]>(series?.days ?? WEEKDAYS);
   return (
     <form
       className="border border-dashed border-gray-300 rounded-lg p-3"
@@ -341,18 +420,20 @@ function SeriesForm({ routeId, busy, run }: {
         e.preventDefault();
         const form = e.currentTarget as HTMLFormElement;
         const f = new FormData(form);
-        run(
-          () =>
-            send("/api/admin/bus/schedules", "POST", {
-              routeId,
-              label: f.get("label"),
-              daysOfWeek: days,
-              times: f.get("times"),
-              validFrom: f.get("validFrom") || null,
-              validUntil: f.get("validUntil") || null,
-            }),
-          "Series added",
-        ).then(() => form.reset());
+        const body = {
+          label: f.get("label"),
+          daysOfWeek: days,
+          times: f.get("times"),
+          validFrom: f.get("validFrom") || null,
+          validUntil: f.get("validUntil") || null,
+        };
+        if (series) {
+          run(() => send(`/api/admin/bus/schedules/${series.id}`, "PATCH", body), "Series updated")
+            .then((ok) => ok && onDone?.());
+          return;
+        }
+        run(() => send("/api/admin/bus/schedules", "POST", { routeId, ...body }), "Series added")
+          .then(() => form.reset());
       }}
     >
       <div className="flex flex-wrap gap-1.5 mb-3">
@@ -382,6 +463,7 @@ function SeriesForm({ routeId, busy, run }: {
           required
           rows={2}
           placeholder="06:15, 06:45, 07:20, 08:00"
+          defaultValue={series?.times.join(", ")}
           className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[#C8541A]/30"
         />
         <span className="block text-[11px] text-gray-500 mt-1">
@@ -389,19 +471,24 @@ function SeriesForm({ routeId, busy, run }: {
         </span>
       </label>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
-        <Field name="label" label="Label (optional)" placeholder="Weekday service" />
-        <Field name="validFrom" label="Valid from (optional)" type="date" />
-        <Field name="validUntil" label="Valid until (optional)" type="date" />
+        <Field name="label" label="Label (optional)" placeholder="Weekday service" defaultValue={series?.label} />
+        <Field name="validFrom" label="Valid from (optional)" type="date" defaultValue={series?.validFrom ?? undefined} />
+        <Field name="validUntil" label="Valid until (optional)" type="date" defaultValue={series?.validUntil ?? undefined} />
       </div>
       <button disabled={busy} className="bg-[#1C1C1C] text-white text-xs font-semibold px-3 py-2 rounded-lg disabled:opacity-50">
-        Add series
+        {series ? "Save changes" : "Add series"}
       </button>
+      {series && (
+        <button type="button" onClick={onDone} className="text-xs text-gray-500 px-3">
+          Cancel
+        </button>
+      )}
     </form>
   );
 }
 
 function ExceptionForm({ routeId, today, busy, run }: {
-  routeId: string; today: string; busy: boolean; run: (fn: () => Promise<unknown>, msg: string) => Promise<void>;
+  routeId: string; today: string; busy: boolean; run: (fn: () => Promise<unknown>, msg: string) => Promise<boolean>;
 }) {
   const [type, setType] = useState("CANCELLED");
   return (

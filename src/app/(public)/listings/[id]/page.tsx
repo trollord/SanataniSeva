@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { cache } from "react";
 import { prisma } from "@/lib/prisma";
+import { PROPERTY_IMAGE_ORDER } from "@/lib/media-order";
 import { auth } from "@/lib/auth";
 import PropertyMapSection from "@/components/map/PropertyMapSection";
 import InquiryButton from "@/components/payment/InquiryButton";
@@ -26,6 +27,7 @@ import {
 import {
   formatPrice,
   formatArea,
+  formatParking,
   formatDate,
   parseAmenities,
 } from "@/lib/utils/formatters";
@@ -58,6 +60,8 @@ const getProperty = cache(async (id: string) => {
       areaSqft: true,
       floor: true,
       totalFloors: true,
+      coveredParking: true,
+      uncoveredParking: true,
       furnished: true,
       amenities: true,
       price: true,
@@ -71,7 +75,7 @@ const getProperty = cache(async (id: string) => {
       createdAt: true,
       images: {
         select: { id: true, url: true, isPrimary: true },
-        orderBy: { isPrimary: "desc" },
+        orderBy: PROPERTY_IMAGE_ORDER,
       },
       priceHistory: {
         select: { price: true, recordedAt: true, source: true },
@@ -488,7 +492,7 @@ export default async function PropertyDetailPage({
 
         {/* ── Key Stats - dark band ── */}
         <div className="mt-8 sm:mt-10">
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
             {[
               {
                 icon: BedDouble,
@@ -512,6 +516,11 @@ export default async function PropertyDetailPage({
                   property.floor != null
                     ? `${property.floor}${property.totalFloors ? ` of ${property.totalFloors}` : ""}`
                     : "-",
+              },
+              {
+                icon: Car,
+                label: "Parking",
+                value: formatParking(property.coveredParking, property.uncoveredParking),
               },
               {
                 icon: CalendarClock,
