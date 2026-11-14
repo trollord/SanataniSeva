@@ -343,11 +343,13 @@ export default function CommunityDirectory({
                   <table className="w-full text-sm md:min-w-[640px]">
                     <thead className="sticky top-0 z-10">
                       <tr className="bg-[#F5F5F5] text-[10px] uppercase tracking-[0.12em] text-zinc-500">
-                        <th scope="col" className="text-left font-semibold px-4 sm:px-5 py-2.5 border-b border-[#EBEBEB]">
-                          Contact
-                        </th>
-                        <th scope="col" className="text-left font-semibold px-4 py-2.5 border-b border-[#EBEBEB] hidden md:table-cell">
+                        {/* Category leads from md up; below that its column is
+                            hidden and the label folds in under the name. */}
+                        <th scope="col" className="text-left font-semibold pl-5 pr-4 py-2.5 border-b border-[#EBEBEB] hidden md:table-cell">
                           Category
+                        </th>
+                        <th scope="col" className="text-left font-semibold px-4 sm:px-5 md:px-4 py-2.5 border-b border-[#EBEBEB]">
+                          Contact
                         </th>
                         <th scope="col" className="text-left font-semibold px-4 py-2.5 border-b border-[#EBEBEB] hidden xl:table-cell">
                           Locality
@@ -514,10 +516,21 @@ function ContactRow({ contact: c }: { contact: CommunityContact }) {
 
   return (
     <tr className="hover:bg-[#f9fafa] transition-colors align-top">
-      {/* Contact */}
-      <td className="px-4 sm:px-5 py-2.5">
+      {/* Category */}
+      <td className="pl-5 pr-4 py-2.5 hidden md:table-cell">
         <div className="flex items-start gap-2.5">
-          <div className="bg-[#F5F5F5] rounded-lg p-1.5 shrink-0 hidden sm:block">
+          <div className="bg-[#F5F5F5] rounded-lg p-1.5 shrink-0">
+            <Icon className="w-3.5 h-3.5 text-[#FF5F15]" />
+          </div>
+          <span className="text-xs text-zinc-600 pt-1">{meta?.label ?? c.category}</span>
+        </div>
+      </td>
+
+      {/* Contact */}
+      <td className="px-4 sm:px-5 md:px-4 py-2.5">
+        <div className="flex items-start gap-2.5">
+          {/* The icon moves to the Category column once that is shown */}
+          <div className="bg-[#F5F5F5] rounded-lg p-1.5 shrink-0 hidden sm:block md:hidden">
             <Icon className="w-3.5 h-3.5 text-[#FF5F15]" />
           </div>
           <div className="min-w-0">
@@ -543,11 +556,6 @@ function ContactRow({ contact: c }: { contact: CommunityContact }) {
             </p>
           </div>
         </div>
-      </td>
-
-      {/* Category */}
-      <td className="px-4 py-2.5 hidden md:table-cell">
-        <span className="text-xs text-zinc-600">{meta?.label ?? c.category}</span>
       </td>
 
       {/* Locality */}
