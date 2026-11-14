@@ -8,6 +8,7 @@ import SessionProvider from "@/components/layout/SessionProvider";
 import WarmDB from "@/components/WarmDB";
 import { ConfirmProvider } from "@/components/ui/ConfirmDialog";
 import { SITE_URL } from "@/lib/constants";
+import { Analytics } from "@vercel/analytics/next";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 const playfair = Playfair_Display({
@@ -174,6 +175,7 @@ export default async function RootLayout({
             <Toaster richColors position="top-right" />
           </ConfirmProvider>
         </SessionProvider>
+        <Analytics />
       </body>
     </html>
   );
