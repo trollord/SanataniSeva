@@ -100,9 +100,6 @@ function withinWindow(ymd: string, from: string | null, until: string | null): b
   return true;
 }
 
-export const EXCEPTION_TYPES = ["CANCELLED", "REPLACED", "EXTRA"] as const;
-export type ExceptionType = (typeof EXCEPTION_TYPES)[number];
-
 export interface ScheduleInput {
   daysOfWeek: string;   // JSON array of 0-6
   times: string;        // JSON array of "HH:MM"
@@ -111,67 +108,50 @@ export interface ScheduleInput {
   active: boolean;
 }
 
-export interface ExceptionInput {
-  type: string;
-  startDate: string;
-  endDate: string;
-  times: string;        // JSON array of "HH:MM"
-  reason: string | null;
-}
-
 export interface ResolvedDay {
-  /** false when an exception cancels the service for this date. */
+  /** false when no series covers this date. */
   running: boolean;
-  /** Why it is cancelled, or why the times differ. */
-  reason: string | null;
   /** Sorted, de-duplicated "HH:MM" departures for the date. */
   times: string[];
-  /** True when an exception altered the usual timetable. */
-  overridden: boolean;
 }
 
 /**
- * Resolves one route's timetable for a single date: the matching recurring
- * series, then any exception overlapping that date applied on top.
+ * Resolves one route's timetable for a single date from its recurring series.
  *
- * CANCELLED wins outright. REPLACED swaps the series times for its own.
- * EXTRA adds to whatever is already running.
+ * The admin form no longer sets dates, but rows saved before it may still
+ * carry a validity window, so the window is honoured until they are re-saved.
+ * BusException rows are deliberately ignored: overrides were retired.
  */
-export function resolveDay(
-  schedules: ScheduleInput[],
-  exceptions: ExceptionInput[],
-  ymd: string,
-): ResolvedDay {
+export function resolveDay(schedules: ScheduleInput[], ymd: string): ResolvedDay {
   const dow = dayOfWeekFor(ymd);
 
-  const base = schedules
+  const combined = schedules
     .filter((s) => s.active)
     .filter((s) => parseDays(s.daysOfWeek).includes(dow))
     .filter((s) => withinWindow(ymd, s.validFrom, s.validUntil))
     .flatMap((s) => parseList(s.times));
 
-  const active = exceptions.filter(
-    (e) => ymd >= e.startDate && ymd <= e.endDate,
-  );
-
-  const cancelled = active.find((e) => e.type === "CANCELLED");
-  if (cancelled) {
-    return { running: false, reason: cancelled.reason ?? null, times: [], overridden: true };
-  }
-
-  const replaced = active.find((e) => e.type === "REPLACED");
-  const extras = active.filter((e) => e.type === "EXTRA").flatMap((e) => parseList(e.times));
-
-  const combined = replaced ? [...parseList(replaced.times), ...extras] : [...base, ...extras];
-
   const times = Array.from(new Set(combined))
     .filter((t) => toMinutes(t) >= 0)
     .sort((a, b) => toMinutes(a) - toMinutes(b));
 
-  const overridden = Boolean(replaced) || extras.length > 0;
-  const reason = replaced?.reason ?? active.find((e) => e.reason)?.reason ?? null;
+  return { running: times.length > 0, times };
+}
 
-  return { running: times.length > 0, reason, times, overridden };
+/**
+ * A short name for a set of weekdays: "Mon–Fri", "Sat–Sun", "Every day",
+ * otherwise the days themselves ("Mon, Wed, Fri"). Used both as the stored
+ * series label and wherever a timetable is summarised.
+ */
+export function daysLabel(days: number[]): string {
+  const sorted = Array.from(new Set(days)).sort((a, b) => a - b);
+  switch (sorted.join("")) {
+    case "0123456": return "Every day";
+    case "12345": return "Mon–Fri";
+    case "123456": return "Mon–Sat";
+    case "06": return "Sat–Sun";
+  }
+  return sorted.map((d) => DAY_SHORT[d]).filter(Boolean).join(", ");
 }
 
 /** The first departure at or after `nowTime`, or null once the day is done. */

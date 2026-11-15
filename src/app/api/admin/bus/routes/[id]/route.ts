@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
-import { str } from "@/lib/bus-validate";
+import { checkTimings, scheduleRows, str } from "@/lib/bus-validate";
 
 async function guard() {
   const session = await auth();
@@ -35,6 +35,15 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   }
   if (Number.isInteger(body.sortOrder)) data.sortOrder = body.sortOrder;
 
+  // Timings are optional so the Hide/Show toggle can send `active` alone. When
+  // present they replace the whole timetable: the form always sends every row.
+  if (body.timings !== undefined) {
+    const { timings, error } = checkTimings(body.timings);
+    if (error) return NextResponse.json({ error }, { status: 400 });
+    // Nested, so the delete and re-create commit together with the route edit.
+    data.schedules = { deleteMany: {}, create: scheduleRows(timings) };
+  }
+
   try {
     await prisma.busRoute.update({ where: { id }, data });
   } catch {
@@ -51,7 +60,7 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
   if (denied) return denied;
 
   try {
-    // Schedules and exceptions cascade from the schema.
+    // Schedules (and any legacy exception rows) cascade from the schema.
     await prisma.busRoute.delete({ where: { id } });
   } catch {
     return NextResponse.json({ error: "Route not found" }, { status: 404 });

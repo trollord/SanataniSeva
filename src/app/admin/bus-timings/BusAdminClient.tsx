@@ -3,51 +3,30 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Plus, Trash2, Pencil, CalendarClock, Repeat, ChevronDown } from "lucide-react";
-import { DAY_SHORT, formatTime, type ResolvedDay } from "@/lib/bus";
+import { Plus, Trash2, Pencil, Eye, EyeOff, Loader2 } from "lucide-react";
+import { DAY_SHORT, daysLabel, formatTime } from "@/lib/bus";
+import { checkTimings } from "@/lib/bus-validate";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
+import Modal from "@/components/ui/Modal";
 
-interface Schedule {
-  id: string;
-  label: string;
-  days: number[];
-  times: string[];
-  validFrom: string | null;
-  validUntil: string | null;
-  active: boolean;
-}
-interface Exception {
-  id: string;
-  type: string;
-  startDate: string;
-  endDate: string;
-  times: string[];
-  reason: string | null;
-}
 export interface RouteView {
   id: string;
   routeNumber: string;
-  name: string;
   origin: string;
   destination: string;
   via: string | null;
   operator: string | null;
   note: string | null;
   active: boolean;
-  sortOrder: number;
-  schedules: Schedule[];
-  exceptions: Exception[];
-  todayResolved: ResolvedDay;
+  timings: { days: number[]; times: string[] }[];
 }
 
-const WEEKDAYS = [1, 2, 3, 4, 5];
 const ALL_DAYS = [0, 1, 2, 3, 4, 5, 6];
-
-const TYPE_STYLES: Record<string, string> = {
-  CANCELLED: "bg-red-100 text-red-700",
-  REPLACED: "bg-amber-100 text-amber-800",
-  EXTRA: "bg-green-100 text-green-800",
-};
+const PRESETS = [
+  { label: "Mon–Fri", days: [1, 2, 3, 4, 5] },
+  { label: "Sat–Sun", days: [0, 6] },
+  { label: "Every day", days: ALL_DAYS },
+];
 
 async function send(url: string, method: string, body?: unknown) {
   const res = await fetch(url, {
@@ -60,495 +39,354 @@ async function send(url: string, method: string, body?: unknown) {
   return json;
 }
 
-export default function BusAdminClient({
-  routes,
-  today,
-  todayLabel,
-}: {
-  routes: RouteView[];
-  today: string;
-  todayLabel: string;
-  formatted?: Record<string, string>;
-}) {
+export default function BusAdminClient({ routes }: { routes: RouteView[] }) {
   const router = useRouter();
   const confirm = useConfirm();
-  const [busy, setBusy] = useState(false);
-  const [openRoute, setOpenRoute] = useState<string | null>(routes[0]?.id ?? null);
-  const [showNewRoute, setShowNewRoute] = useState(routes.length === 0);
-  const [editingRoute, setEditingRoute] = useState<string | null>(null);
-  const [editingSeries, setEditingSeries] = useState<string | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  // `n` remounts the dialog on every open, so it always starts from the
+  // route's saved state rather than whatever was typed and cancelled last time.
+  const [dialog, setDialog] = useState<{ route: RouteView | null; n: number }>({ route: null, n: 0 });
+  const [dialogOpen, setDialogOpen] = useState(false);
 
-  /** Resolves false when the request failed, so an edit form can stay open. */
-  async function run(fn: () => Promise<unknown>, okMsg: string) {
-    setBusy(true);
+  function openDialog(route: RouteView | null) {
+    setDialog((d) => ({ route, n: d.n + 1 }));
+    setDialogOpen(true);
+  }
+
+  async function run(id: string, fn: () => Promise<unknown>, okMsg: string) {
+    setBusyId(id);
     try {
       await fn();
       toast.success(okMsg);
       router.refresh();
-      return true;
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Failed");
-      return false;
     } finally {
-      setBusy(false);
+      setBusyId(null);
     }
   }
 
   return (
-    <div className="space-y-4">
-      {/* ── New route ─────────────────────────────────────────────────── */}
-      {showNewRoute ? (
-        <form
-          className="bg-white border border-gray-200 rounded-xl p-4 sm:p-5"
-          onSubmit={(e) => {
-            e.preventDefault();
-            const f = new FormData(e.currentTarget as HTMLFormElement);
-            run(
-              () =>
-                send("/api/admin/bus/routes", "POST", {
-                  routeNumber: f.get("routeNumber"),
-                  origin: f.get("origin"),
-                  destination: f.get("destination"),
-                  via: f.get("via"),
-                  operator: f.get("operator"),
-                  note: f.get("note"),
-                }),
-              "Route added",
-            ).then(() => setShowNewRoute(false));
-          }}
-        >
-          <h2 className="font-semibold text-gray-900 mb-3">Add a route</h2>
-          <RouteFields />
-          <div className="flex gap-2 mt-4">
-            <button disabled={busy} className="bg-[#C8541A] text-white text-sm font-semibold px-4 py-2 rounded-lg disabled:opacity-50">
-              Add route
-            </button>
-            {routes.length > 0 && (
-              <button type="button" onClick={() => setShowNewRoute(false)} className="text-sm text-gray-500 px-3">
-                Cancel
-              </button>
-            )}
-          </div>
-        </form>
-      ) : (
+    <>
+      <div className="flex items-center justify-between gap-3 mb-1">
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Bus Timings</h1>
         <button
-          onClick={() => setShowNewRoute(true)}
-          className="flex items-center gap-2 text-sm font-semibold text-[#C8541A] hover:underline"
+          onClick={() => openDialog(null)}
+          className="inline-flex items-center gap-1.5 bg-[#C8541A] hover:bg-[#C8541A]/90 text-white text-sm font-semibold px-4 py-2.5 rounded-lg"
         >
-          <Plus className="h-4 w-4" /> Add a route
+          <Plus className="h-4 w-4" /> Add route
         </button>
-      )}
+      </div>
+      <p className="text-sm text-gray-500 mb-6 max-w-2xl">
+        Each route has one list of departure times per set of days. Residents see
+        today&apos;s list, in IST.
+      </p>
 
-      {routes.length === 0 && !showNewRoute && (
-        <p className="text-sm text-gray-500">No routes yet.</p>
-      )}
+      {routes.length === 0 && <p className="text-sm text-gray-500">No routes yet.</p>}
 
-      {/* ── Routes ────────────────────────────────────────────────────── */}
-      {routes.map((r) => {
-        const open = openRoute === r.id;
-        return (
-          <div key={r.id} className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-            <button
-              onClick={() => setOpenRoute(open ? null : r.id)}
-              className="w-full flex items-center justify-between gap-3 p-4 text-left hover:bg-gray-50"
-            >
-              <div className="min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-sm font-bold text-[#C8541A]">{r.routeNumber}</span>
-                  <span className="text-sm font-semibold text-gray-900 truncate">
-                    {r.origin} → {r.destination}
+      <div className="space-y-3">
+        {routes.map((r) => {
+          const busy = busyId === r.id;
+          const meta = [r.via && `via ${r.via}`, r.operator].filter(Boolean).join(" · ");
+          return (
+            <div key={r.id} className="bg-white border border-gray-200 rounded-xl p-4">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-sm font-bold text-[#C8541A]">{r.routeNumber}</span>
+                <span className="text-sm font-semibold text-gray-900">
+                  {r.origin} → {r.destination}
+                </span>
+                {!r.active && (
+                  <span className="text-[10px] font-bold uppercase bg-gray-200 text-gray-600 rounded px-1.5 py-0.5">
+                    Hidden
                   </span>
-                  {!r.active && (
-                    <span className="text-[10px] font-bold uppercase bg-gray-200 text-gray-600 rounded px-1.5 py-0.5">
-                      Hidden
-                    </span>
-                  )}
-                </div>
-                <p className="text-xs text-gray-500 mt-0.5">
-                  {r.todayResolved.running
-                    ? `Today (${todayLabel}): ${r.todayResolved.times.length} departures`
-                    : `Today (${todayLabel}): no service`}
-                  {r.todayResolved.overridden && " · overridden"}
-                  {` · ${r.schedules.length} series · ${r.exceptions.length} overrides`}
-                </p>
-              </div>
-              <ChevronDown className={`h-4 w-4 shrink-0 text-gray-400 transition-transform ${open ? "rotate-180" : ""}`} />
-            </button>
-
-            {open && (
-              <div className="border-t border-gray-100 p-4 space-y-5">
-                {/* Today preview — exactly what residents see */}
-                <div className="bg-gray-50 rounded-lg p-3">
-                  <p className="text-[11px] font-bold uppercase tracking-wide text-gray-500 mb-2">
-                    What residents see today ({today})
-                  </p>
-                  {r.todayResolved.running ? (
-                    <div className="flex flex-wrap gap-1.5">
-                      {r.todayResolved.times.map((t) => (
-                        <span key={t} className="text-xs tabular-nums bg-white border border-gray-200 rounded px-2 py-1">
-                          {formatTime(t)}
-                        </span>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-sm text-gray-600">
-                      No service today{r.todayResolved.reason ? ` — ${r.todayResolved.reason}` : ""}
-                    </p>
-                  )}
-                </div>
-
-                {/* ── Recurring series ──────────────────────────────── */}
-                <section>
-                  <h3 className="flex items-center gap-1.5 text-sm font-semibold text-gray-900 mb-2">
-                    <Repeat className="h-3.5 w-3.5" /> Recurring series
-                  </h3>
-                  <div className="space-y-2 mb-3">
-                    {r.schedules.length === 0 && (
-                      <p className="text-xs text-gray-500">No series yet — add one below.</p>
-                    )}
-                    {r.schedules.map((s) =>
-                      editingSeries === s.id ? (
-                        <SeriesForm
-                          key={s.id}
-                          routeId={r.id}
-                          series={s}
-                          busy={busy}
-                          run={run}
-                          onDone={() => setEditingSeries(null)}
-                        />
-                      ) : (
-                      <div key={s.id} className="flex items-start justify-between gap-3 border border-gray-200 rounded-lg p-3">
-                        <div className="min-w-0">
-                          <p className="text-sm font-medium text-gray-900">
-                            {s.label || "Service"}{" "}
-                            <span className="font-normal text-gray-500">
-                              · {s.days.map((d) => DAY_SHORT[d]).join(" ")}
-                            </span>
-                          </p>
-                          <p className="text-xs text-gray-600 mt-1 tabular-nums break-words">
-                            {s.times.join("  ")}
-                          </p>
-                          {(s.validFrom || s.validUntil) && (
-                            <p className="text-[11px] text-gray-500 mt-1">
-                              {s.validFrom ?? "always"} → {s.validUntil ?? "forever"}
-                            </p>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-3 shrink-0">
-                          <button
-                            disabled={busy}
-                            onClick={() => setEditingSeries(s.id)}
-                            className="text-gray-400 hover:text-gray-900"
-                            aria-label="Edit series"
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </button>
-                          <button
-                            disabled={busy}
-                            onClick={() => run(() => send(`/api/admin/bus/schedules/${s.id}`, "DELETE"), "Series removed")}
-                            className="text-gray-400 hover:text-red-600"
-                            aria-label="Delete series"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </div>
-                      </div>
-                      ),
-                    )}
-                  </div>
-                  <SeriesForm routeId={r.id} busy={busy} run={run} />
-                </section>
-
-                {/* ── Overrides ─────────────────────────────────────── */}
-                <section>
-                  <h3 className="flex items-center gap-1.5 text-sm font-semibold text-gray-900 mb-2">
-                    <CalendarClock className="h-3.5 w-3.5" /> Overrides
-                  </h3>
-                  <div className="space-y-2 mb-3">
-                    {r.exceptions.length === 0 && (
-                      <p className="text-xs text-gray-500">No overrides.</p>
-                    )}
-                    {r.exceptions.map((e) => (
-                      <div key={e.id} className="flex items-start justify-between gap-3 border border-gray-200 rounded-lg p-3">
-                        <div className="min-w-0">
-                          <p className="text-sm text-gray-900">
-                            <span className={`text-[10px] font-bold uppercase rounded px-1.5 py-0.5 mr-2 ${TYPE_STYLES[e.type] ?? "bg-gray-100 text-gray-700"}`}>
-                              {e.type}
-                            </span>
-                            {e.startDate}
-                            {e.endDate !== e.startDate && ` → ${e.endDate}`}
-                          </p>
-                          {e.times.length > 0 && (
-                            <p className="text-xs text-gray-600 mt-1 tabular-nums">{e.times.join("  ")}</p>
-                          )}
-                          {e.reason && <p className="text-xs text-gray-500 mt-1">{e.reason}</p>}
-                        </div>
-                        <button
-                          disabled={busy}
-                          onClick={() => run(() => send(`/api/admin/bus/exceptions/${e.id}`, "DELETE"), "Override removed")}
-                          className="text-gray-400 hover:text-red-600 shrink-0"
-                          aria-label="Delete override"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                  <ExceptionForm routeId={r.id} today={today} busy={busy} run={run} />
-                </section>
-
-                {editingRoute === r.id && (
-                  <form
-                    className="border border-dashed border-gray-300 rounded-lg p-3"
-                    onSubmit={(e) => {
-                      e.preventDefault();
-                      const f = new FormData(e.currentTarget as HTMLFormElement);
-                      run(
-                        () =>
-                          send(`/api/admin/bus/routes/${r.id}`, "PATCH", {
-                            routeNumber: f.get("routeNumber"),
-                            origin: f.get("origin"),
-                            destination: f.get("destination"),
-                            // Kept in step with the endpoints, as on creation
-                            name: `${f.get("origin")} → ${f.get("destination")}`,
-                            via: f.get("via"),
-                            operator: f.get("operator"),
-                            note: f.get("note"),
-                          }),
-                        "Route updated",
-                      ).then((ok) => ok && setEditingRoute(null));
-                    }}
-                  >
-                    <RouteFields route={r} />
-                    <div className="flex gap-2 mt-3">
-                      <button disabled={busy} className="bg-[#1C1C1C] text-white text-xs font-semibold px-3 py-2 rounded-lg disabled:opacity-50">
-                        Save changes
-                      </button>
-                      <button type="button" onClick={() => setEditingRoute(null)} className="text-xs text-gray-500 px-2">
-                        Cancel
-                      </button>
-                    </div>
-                  </form>
                 )}
-
-                <div className="pt-1 flex gap-3">
-                  {editingRoute !== r.id && (
-                    <button
-                      disabled={busy}
-                      onClick={() => setEditingRoute(r.id)}
-                      className="text-xs font-semibold text-gray-600 hover:text-gray-900"
-                    >
-                      Edit route details
-                    </button>
-                  )}
-                  <button
-                    disabled={busy}
-                    onClick={() => run(() => send(`/api/admin/bus/routes/${r.id}`, "PATCH", { active: !r.active }), r.active ? "Route hidden" : "Route visible")}
-                    className="text-xs font-semibold text-gray-600 hover:text-gray-900"
-                  >
-                    {r.active ? "Hide from residents" : "Show to residents"}
-                  </button>
-                  <button
-                    disabled={busy}
-                    onClick={async () => {
-                      const ok = await confirm({
-                        title: `Delete route ${r.routeNumber}?`,
-                        description: "Its timings and exceptions go too. This cannot be undone.",
-                        confirmLabel: "Delete route",
-                        danger: true,
-                      });
-                      if (!ok) return;
-                      run(() => send(`/api/admin/bus/routes/${r.id}`, "DELETE"), "Route deleted");
-                    }}
-                    className="text-xs font-semibold text-red-600 hover:text-red-700"
-                  >
-                    Delete route
-                  </button>
-                </div>
               </div>
-            )}
-          </div>
-        );
-      })}
-    </div>
+              {meta && <p className="text-xs text-gray-500 mt-0.5">{meta}</p>}
+
+              <div className="mt-2.5 space-y-1">
+                {r.timings.length === 0 && (
+                  <p className="text-xs text-gray-500">No timings yet. Residents will not see this route.</p>
+                )}
+                {r.timings.map((t, i) => {
+                  const times = t.times.map(formatTime).join(", ");
+                  return (
+                    <p key={i} className="text-xs text-gray-700 tabular-nums truncate" title={times}>
+                      <span className="font-semibold text-gray-900">{daysLabel(t.days)}</span> · {times}
+                    </p>
+                  );
+                })}
+              </div>
+
+              <div className="flex flex-wrap gap-1 mt-3 -ml-2">
+                <button
+                  disabled={busy}
+                  onClick={() => openDialog(r)}
+                  className="inline-flex items-center gap-1.5 rounded-md px-2 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-100 hover:text-gray-900 disabled:opacity-50"
+                >
+                  <Pencil className="h-3.5 w-3.5" /> Edit
+                </button>
+                <button
+                  disabled={busy}
+                  onClick={() =>
+                    run(
+                      r.id,
+                      () => send(`/api/admin/bus/routes/${r.id}`, "PATCH", { active: !r.active }),
+                      r.active ? "Route hidden" : "Route visible",
+                    )
+                  }
+                  className="inline-flex items-center gap-1.5 rounded-md px-2 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-100 hover:text-gray-900 disabled:opacity-50"
+                >
+                  {r.active ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                  {r.active ? "Hide" : "Show"}
+                </button>
+                <button
+                  disabled={busy}
+                  onClick={async () => {
+                    const ok = await confirm({
+                      title: `Delete route ${r.routeNumber}?`,
+                      description: "Its timings go too. This cannot be undone.",
+                      confirmLabel: "Delete route",
+                      danger: true,
+                    });
+                    if (!ok) return;
+                    run(r.id, () => send(`/api/admin/bus/routes/${r.id}`, "DELETE"), "Route deleted");
+                  }}
+                  className="inline-flex items-center gap-1.5 rounded-md px-2 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 hover:text-red-700 disabled:opacity-50"
+                >
+                  <Trash2 className="h-3.5 w-3.5" /> Delete
+                </button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <RouteDialog
+        key={dialog.n}
+        route={dialog.route}
+        open={dialogOpen}
+        onClose={() => setDialogOpen(false)}
+      />
+    </>
   );
 }
 
-function Field({ name, label, placeholder, required, type = "text", defaultValue }: {
-  name: string; label: string; placeholder?: string; required?: boolean; type?: string; defaultValue?: string;
+interface Row {
+  key: number;
+  days: number[];
+  times: string;
+}
+
+let rowKey = 0;
+const newRow = (days: number[], times = ""): Row => ({ key: ++rowKey, days, times });
+
+/** Add and Edit share this form; `route` is null when adding. */
+function RouteDialog({ route, open, onClose }: {
+  route: RouteView | null; open: boolean; onClose: () => void;
+}) {
+  const router = useRouter();
+  const [rows, setRows] = useState<Row[]>(() =>
+    route?.timings.length
+      ? route.timings.map((t) => newRow(t.days, t.times.join(", ")))
+      : [newRow(ALL_DAYS)],
+  );
+  const [saving, setSaving] = useState(false);
+  // Row errors stay quiet until the first save attempt, then track every edit.
+  const [tried, setTried] = useState(false);
+  const [serverError, setServerError] = useState<string | null>(null);
+
+  const check = checkTimings(rows);
+  const formId = route ? `edit-route-${route.id}` : "add-route";
+
+  function patchRow(key: number, patch: Partial<Row>) {
+    setRows((rs) => rs.map((r) => (r.key === key ? { ...r, ...patch } : r)));
+  }
+
+  async function save(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setTried(true);
+    setServerError(null);
+    if (check.error) return;
+
+    const f = new FormData(e.currentTarget);
+    const body = {
+      routeNumber: f.get("routeNumber"),
+      origin: f.get("origin"),
+      destination: f.get("destination"),
+      // Kept in step with the endpoints, as on creation
+      name: `${f.get("origin")} → ${f.get("destination")}`,
+      via: f.get("via"),
+      operator: f.get("operator"),
+      note: f.get("note"),
+      timings: rows.map((r) => ({ days: r.days, times: r.times })),
+    };
+
+    setSaving(true);
+    try {
+      await send(route ? `/api/admin/bus/routes/${route.id}` : "/api/admin/bus/routes", route ? "PATCH" : "POST", body);
+      toast.success(route ? "Route saved" : "Route added");
+      router.refresh();
+      onClose();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Could not save. Please try again.";
+      setServerError(msg);
+      toast.error(msg);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <Modal
+      open={open}
+      onClose={onClose}
+      size="lg"
+      title={route ? "Edit route" : "Add route"}
+      description="Changes show on the Bus Timings tab as soon as you save."
+      footer={
+        <div className="flex items-center justify-end gap-2.5">
+          <button type="button" onClick={onClose} className="text-sm font-semibold text-gray-500 hover:text-gray-900 px-4 py-2.5">
+            Cancel
+          </button>
+          {/* Lives outside the <form>, so it submits by id */}
+          <button
+            type="submit"
+            form={formId}
+            disabled={saving}
+            className="inline-flex items-center gap-1.5 bg-[#C8541A] hover:bg-[#C8541A]/90 text-white text-sm font-semibold px-5 py-2.5 rounded-lg disabled:opacity-50"
+          >
+            {saving && <Loader2 className="h-4 w-4 animate-spin" />}
+            Save
+          </button>
+        </div>
+      }
+    >
+      <form id={formId} onSubmit={save} className="space-y-6">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <Field name="routeNumber" label="Route number" placeholder="TMT 45" required defaultValue={route?.routeNumber} />
+          <Field name="origin" label="From" placeholder="Hiranandani Estate" required defaultValue={route?.origin} />
+          <Field name="destination" label="To" placeholder="Thane Station" required defaultValue={route?.destination} />
+          <Field name="via" label="Via (optional)" placeholder="Rodas Enclave" defaultValue={route?.via ?? undefined} />
+          <Field name="operator" label="Operator (optional)" placeholder="TMT" defaultValue={route?.operator ?? undefined} />
+          <Field name="note" label="Note (optional)" placeholder="AC service" defaultValue={route?.note ?? undefined} />
+        </div>
+
+        <section>
+          <h3 className="text-sm font-semibold text-gray-900">Timings</h3>
+          <p className="text-xs text-gray-500 mt-0.5 mb-3">
+            Pick the days, then list the departures. A day can be in only one row.
+          </p>
+
+          <div className="space-y-3">
+            {rows.map((row, i) => {
+              const err = tried ? check.rowErrors[i] : null;
+              return (
+                <div
+                  key={row.key}
+                  className={`border rounded-xl p-3 sm:p-4 ${err ? "border-red-300" : "border-gray-200"}`}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex flex-wrap gap-1.5">
+                      {ALL_DAYS.map((d) => {
+                        const on = row.days.includes(d);
+                        return (
+                          <button
+                            key={d}
+                            type="button"
+                            aria-pressed={on}
+                            onClick={() =>
+                              patchRow(row.key, {
+                                days: on ? row.days.filter((x) => x !== d) : [...row.days, d].sort((a, b) => a - b),
+                              })
+                            }
+                            className={`min-w-11 h-9 text-xs font-semibold rounded-md px-2 border transition-colors ${
+                              on ? "bg-[#1C1C1C] text-white border-[#1C1C1C]" : "bg-white text-gray-600 border-gray-300"
+                            }`}
+                          >
+                            {DAY_SHORT[d]}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {rows.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => setRows((rs) => rs.filter((r) => r.key !== row.key))}
+                        aria-label="Remove these timings"
+                        className="shrink-0 rounded-md p-2 text-gray-400 hover:bg-red-50 hover:text-red-600"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="flex flex-wrap gap-x-1 mt-1 -ml-2">
+                    {PRESETS.map((p) => (
+                      <button
+                        key={p.label}
+                        type="button"
+                        onClick={() => patchRow(row.key, { days: p.days })}
+                        className="text-xs font-semibold text-[#C8541A] hover:underline px-2 py-2"
+                      >
+                        {p.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  <textarea
+                    value={row.times}
+                    onChange={(e) => patchRow(row.key, { times: e.target.value })}
+                    rows={2}
+                    aria-label={`Departure times for ${daysLabel(row.days) || "these days"}`}
+                    placeholder="06:15, 06:45, 07:20"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[#C8541A]/30"
+                  />
+                  {err ? (
+                    <p className="text-xs text-red-600 mt-1">{err}</p>
+                  ) : (
+                    <p className="text-[11px] text-gray-500 mt-1">
+                      Separate with commas, spaces or new lines. 24-hour clock.
+                    </p>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {rows.length < 7 && (
+            <button
+              type="button"
+              onClick={() => setRows((rs) => [...rs, newRow([])])}
+              className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#C8541A] hover:underline py-2 mt-1"
+            >
+              <Plus className="h-4 w-4" /> Add timings for other days
+            </button>
+          )}
+        </section>
+
+        {serverError && (
+          <p className="rounded-lg border border-red-100 bg-red-50 px-3.5 py-2.5 text-sm text-red-600">
+            {serverError}
+          </p>
+        )}
+      </form>
+    </Modal>
+  );
+}
+
+function Field({ name, label, placeholder, required, defaultValue }: {
+  name: string; label: string; placeholder?: string; required?: boolean; defaultValue?: string;
 }) {
   return (
     <label className="block">
       <span className="block text-[11px] font-semibold uppercase tracking-wide text-gray-500 mb-1">{label}</span>
       <input
         name={name}
-        type={type}
         required={required}
         placeholder={placeholder}
         defaultValue={defaultValue}
-        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#C8541A]/30"
+        className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#C8541A]/30"
       />
     </label>
-  );
-}
-
-/** The six route inputs, shared by "Add a route" and "Edit route details". */
-function RouteFields({ route }: { route?: RouteView }) {
-  return (
-    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-      <Field name="routeNumber" label="Route number" placeholder="TMT 45" required defaultValue={route?.routeNumber} />
-      <Field name="origin" label="From" placeholder="Hiranandani Estate" required defaultValue={route?.origin} />
-      <Field name="destination" label="To" placeholder="Thane Station" required defaultValue={route?.destination} />
-      <Field name="via" label="Via (optional)" placeholder="Rodas Enclave" defaultValue={route?.via ?? undefined} />
-      <Field name="operator" label="Operator (optional)" placeholder="TMT" defaultValue={route?.operator ?? undefined} />
-      <Field name="note" label="Note (optional)" placeholder="AC service" defaultValue={route?.note ?? undefined} />
-    </div>
-  );
-}
-
-/** Adds a series, or edits `series` in place when one is passed. */
-function SeriesForm({ routeId, series, busy, run, onDone }: {
-  routeId: string; series?: Schedule; busy: boolean;
-  run: (fn: () => Promise<unknown>, msg: string) => Promise<boolean>;
-  onDone?: () => void;
-}) {
-  const [days, setDays] = useState<number[]>(series?.days ?? WEEKDAYS);
-  return (
-    <form
-      className="border border-dashed border-gray-300 rounded-lg p-3"
-      onSubmit={(e) => {
-        e.preventDefault();
-        const form = e.currentTarget as HTMLFormElement;
-        const f = new FormData(form);
-        const body = {
-          label: f.get("label"),
-          daysOfWeek: days,
-          times: f.get("times"),
-          validFrom: f.get("validFrom") || null,
-          validUntil: f.get("validUntil") || null,
-        };
-        if (series) {
-          run(() => send(`/api/admin/bus/schedules/${series.id}`, "PATCH", body), "Series updated")
-            .then((ok) => ok && onDone?.());
-          return;
-        }
-        run(() => send("/api/admin/bus/schedules", "POST", { routeId, ...body }), "Series added")
-          .then(() => form.reset());
-      }}
-    >
-      <div className="flex flex-wrap gap-1.5 mb-3">
-        {ALL_DAYS.map((d) => (
-          <button
-            key={d}
-            type="button"
-            onClick={() => setDays((p) => (p.includes(d) ? p.filter((x) => x !== d) : [...p, d].sort()))}
-            className={`text-xs font-semibold rounded-md px-2.5 py-1.5 border transition-colors ${
-              days.includes(d)
-                ? "bg-[#1C1C1C] text-white border-[#1C1C1C]"
-                : "bg-white text-gray-600 border-gray-300"
-            }`}
-          >
-            {DAY_SHORT[d]}
-          </button>
-        ))}
-        <button type="button" onClick={() => setDays(WEEKDAYS)} className="text-xs text-[#C8541A] px-2">Mon–Fri</button>
-        <button type="button" onClick={() => setDays(ALL_DAYS)} className="text-xs text-[#C8541A] px-2">All</button>
-      </div>
-      <label className="block mb-3">
-        <span className="block text-[11px] font-semibold uppercase tracking-wide text-gray-500 mb-1">
-          Departure times
-        </span>
-        <textarea
-          name="times"
-          required
-          rows={2}
-          placeholder="06:15, 06:45, 07:20, 08:00"
-          defaultValue={series?.times.join(", ")}
-          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[#C8541A]/30"
-        />
-        <span className="block text-[11px] text-gray-500 mt-1">
-          Separate with commas, spaces or new lines. 24-hour clock.
-        </span>
-      </label>
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
-        <Field name="label" label="Label (optional)" placeholder="Weekday service" defaultValue={series?.label} />
-        <Field name="validFrom" label="Valid from (optional)" type="date" defaultValue={series?.validFrom ?? undefined} />
-        <Field name="validUntil" label="Valid until (optional)" type="date" defaultValue={series?.validUntil ?? undefined} />
-      </div>
-      <button disabled={busy} className="bg-[#1C1C1C] text-white text-xs font-semibold px-3 py-2 rounded-lg disabled:opacity-50">
-        {series ? "Save changes" : "Add series"}
-      </button>
-      {series && (
-        <button type="button" onClick={onDone} className="text-xs text-gray-500 px-3">
-          Cancel
-        </button>
-      )}
-    </form>
-  );
-}
-
-function ExceptionForm({ routeId, today, busy, run }: {
-  routeId: string; today: string; busy: boolean; run: (fn: () => Promise<unknown>, msg: string) => Promise<boolean>;
-}) {
-  const [type, setType] = useState("CANCELLED");
-  return (
-    <form
-      className="border border-dashed border-gray-300 rounded-lg p-3"
-      onSubmit={(e) => {
-        e.preventDefault();
-        const form = e.currentTarget as HTMLFormElement;
-        const f = new FormData(form);
-        run(
-          () =>
-            send("/api/admin/bus/exceptions", "POST", {
-              routeId,
-              type,
-              startDate: f.get("startDate"),
-              endDate: f.get("endDate") || f.get("startDate"),
-              times: f.get("times"),
-              reason: f.get("reason"),
-            }),
-          "Override added",
-        ).then(() => form.reset());
-      }}
-    >
-      <div className="flex flex-wrap gap-1.5 mb-3">
-        {["CANCELLED", "REPLACED", "EXTRA"].map((t) => (
-          <button
-            key={t}
-            type="button"
-            onClick={() => setType(t)}
-            className={`text-xs font-semibold rounded-md px-2.5 py-1.5 border transition-colors ${
-              type === t ? "bg-[#1C1C1C] text-white border-[#1C1C1C]" : "bg-white text-gray-600 border-gray-300"
-            }`}
-          >
-            {t === "CANCELLED" ? "No service" : t === "REPLACED" ? "Different times" : "Extra buses"}
-          </button>
-        ))}
-      </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
-        <Field name="startDate" label="From date" type="date" required defaultValue={today} />
-        <Field name="endDate" label="To date (blank = same day)" type="date" />
-      </div>
-      {type !== "CANCELLED" && (
-        <label className="block mb-3">
-          <span className="block text-[11px] font-semibold uppercase tracking-wide text-gray-500 mb-1">
-            {type === "REPLACED" ? "Times to run instead" : "Extra times to add"}
-          </span>
-          <textarea
-            name="times"
-            rows={2}
-            placeholder="09:00, 10:30"
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[#C8541A]/30"
-          />
-        </label>
-      )}
-      <div className="mb-3">
-        <Field name="reason" label="Reason shown to residents" placeholder="Diwali holiday timetable" />
-      </div>
-      <button disabled={busy} className="bg-[#1C1C1C] text-white text-xs font-semibold px-3 py-2 rounded-lg disabled:opacity-50">
-        Add override
-      </button>
-    </form>
   );
 }

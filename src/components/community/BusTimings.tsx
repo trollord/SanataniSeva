@@ -1,4 +1,4 @@
-import { Bus, CircleAlert } from "lucide-react";
+import { Bus } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import {
   DAY_NAMES,
@@ -26,22 +26,18 @@ export default async function BusTimings() {
   const routes = await prisma.busRoute.findMany({
     where: { active: true },
     orderBy: [{ sortOrder: "asc" }, { routeNumber: "asc" }],
-    include: {
-      schedules: { where: { active: true } },
-      // Only the exceptions that could touch today.
-      exceptions: { where: { startDate: { lte: today }, endDate: { gte: today } } },
-    },
+    include: { schedules: { where: { active: true } } },
   });
 
   if (routes.length === 0) return null;
 
   const resolved = routes
     .map((route) => {
-      const day = resolveDay(route.schedules, route.exceptions, today);
+      const day = resolveDay(route.schedules, today);
       return { route, day, next: nextDeparture(day.times, nowTime) };
     })
-    // A route with no service today and no reason to show is just noise.
-    .filter(({ day }) => day.times.length > 0 || day.reason);
+    // A route with no service today is just noise.
+    .filter(({ day }) => day.running);
 
   const dayName = DAY_NAMES[dayOfWeekFor(today)];
 
@@ -93,53 +89,36 @@ export default async function BusTimings() {
 
             {/* Today's times */}
             <div>
-              {!day.running ? (
-                <div className="flex items-start gap-2 text-[#9E6B3F]">
-                  <CircleAlert className="h-4 w-4 shrink-0 mt-0.5" strokeWidth={1.6} />
-                  <p className="text-sm">
-                    <span className="font-semibold text-[#1C1C1C]">No service today.</span>
-                    {day.reason ? ` ${day.reason}` : ""}
-                  </p>
-                </div>
-              ) : (
-                <>
-                  {day.reason && (
-                    <p className="text-xs text-[#9E6B3F] mb-2.5">
-                      <span className="font-semibold">Revised timings.</span> {day.reason}
-                    </p>
-                  )}
-                  <ul className="flex flex-wrap gap-1.5">
-                    {day.times.map((t) => {
-                      const isNext = t === next;
-                      const gone = !isNext && t < nowTime;
-                      return (
-                        <li
-                          key={t}
-                          className={`text-[13px] tabular-nums rounded-md px-2.5 py-1.5 border transition-colors ${
-                            isNext
-                              ? "bg-[#1C1C1C] text-white border-[#1C1C1C] font-semibold"
-                              : gone
-                                ? "bg-transparent text-[#6B6B6B]/55 border-[#EDE5D8]"
-                                : "bg-white text-[#1C1C1C] border-[#EDE5D8]"
-                          }`}
-                          title={isNext ? "Next departure" : gone ? "Already departed" : undefined}
-                        >
-                          {formatTime(t)}
-                        </li>
-                      );
-                    })}
-                  </ul>
-                  <p className="text-xs text-[#6B6B6B] mt-2.5">
-                    {next ? (
-                      <>
-                        Next bus <span className="font-semibold text-[#1C1C1C]">{formatTime(next)}</span>
-                      </>
-                    ) : (
-                      <>Last bus for today has departed.</>
-                    )}
-                  </p>
-                </>
-              )}
+              <ul className="flex flex-wrap gap-1.5">
+                {day.times.map((t) => {
+                  const isNext = t === next;
+                  const gone = !isNext && t < nowTime;
+                  return (
+                    <li
+                      key={t}
+                      className={`text-[13px] tabular-nums rounded-md px-2.5 py-1.5 border transition-colors ${
+                        isNext
+                          ? "bg-[#1C1C1C] text-white border-[#1C1C1C] font-semibold"
+                          : gone
+                            ? "bg-transparent text-[#6B6B6B]/55 border-[#EDE5D8]"
+                            : "bg-white text-[#1C1C1C] border-[#EDE5D8]"
+                      }`}
+                      title={isNext ? "Next departure" : gone ? "Already departed" : undefined}
+                    >
+                      {formatTime(t)}
+                    </li>
+                  );
+                })}
+              </ul>
+              <p className="text-xs text-[#6B6B6B] mt-2.5">
+                {next ? (
+                  <>
+                    Next bus <span className="font-semibold text-[#1C1C1C]">{formatTime(next)}</span>
+                  </>
+                ) : (
+                  <>Last bus for today has departed.</>
+                )}
+              </p>
               {route.note && (
                 <p className="text-xs text-[#6B6B6B] mt-2 max-w-prose">{route.note}</p>
               )}

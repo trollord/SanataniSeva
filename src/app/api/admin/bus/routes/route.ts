@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
-import { str } from "@/lib/bus-validate";
+import { checkTimings, scheduleRows, str } from "@/lib/bus-validate";
 
 async function guard() {
   const session = await auth();
@@ -25,6 +25,11 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  const { timings, error } = checkTimings(body.timings);
+  if (error) return NextResponse.json({ error }, { status: 400 });
+
+  // A nested write runs as one transaction: the route never exists without
+  // its timings.
   const route = await prisma.busRoute.create({
     data: {
       routeNumber,
@@ -35,6 +40,7 @@ export async function POST(req: NextRequest) {
       operator: str(body.operator, 80) || null,
       note: str(body.note, 400) || null,
       sortOrder: Number.isInteger(body.sortOrder) ? body.sortOrder : 0,
+      schedules: { create: scheduleRows(timings) },
     },
   });
 
