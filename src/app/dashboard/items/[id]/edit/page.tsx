@@ -2,14 +2,25 @@
 
 import { use, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import ItemForm, { type DetailsData, type UploadedImage } from "@/components/marketplace/ItemForm";
 import { toFullPhone } from "@/lib/validations/phone";
 
-export default function EditItemPage({ params }: { params: Promise<{ id: string }> }) {
+export default function EditItemPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ from?: string }>;
+}) {
   // Client component, so the params Promise is unwrapped with use(), not await.
   const { id } = use(params);
+  // Opened from the admin panel: send the admin back there, not to their own items
+  const backTo = use(searchParams).from === "admin" ? "/admin/items" : "/dashboard/items";
+  // An admin's save keeps the item's status (see PUT /api/items/[id])
+  const isAdmin = useSession().data?.user.role === "ADMIN";
   const router = useRouter();
   const [loading,    setLoading]    = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -19,7 +30,7 @@ export default function EditItemPage({ params }: { params: Promise<{ id: string 
     async function load() {
       try {
         const res = await fetch(`/api/dashboard/items/${id}`);
-        if (!res.ok) { toast.error("Failed to load item"); router.push("/dashboard/items"); return; }
+        if (!res.ok) { toast.error("Failed to load item"); router.push(backTo); return; }
         const { item } = await res.json();
         setDefaults({
           details: {
@@ -44,13 +55,13 @@ export default function EditItemPage({ params }: { params: Promise<{ id: string 
         });
       } catch {
         toast.error("Failed to load item");
-        router.push("/dashboard/items");
+        router.push(backTo);
       } finally {
         setLoading(false);
       }
     }
     load();
-  }, [id, router]);
+  }, [id, router, backTo]);
 
   async function handleSubmit(details: DetailsData, images: UploadedImage[]) {
     setSubmitting(true);
@@ -72,8 +83,8 @@ export default function EditItemPage({ params }: { params: Promise<{ id: string 
         const err = await res.json().catch(() => ({}));
         throw new Error(err.error ?? "Submission failed");
       }
-      toast.success("Listing updated and live!");
-      router.push("/dashboard/items");
+      toast.success(isAdmin ? "Listing updated" : "Listing updated and live!");
+      router.push(backTo);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Something went wrong");
     } finally {
@@ -93,13 +104,16 @@ export default function EditItemPage({ params }: { params: Promise<{ id: string 
     <div>
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Edit Listing</h1>
-        <p className="text-sm text-gray-500 mt-1">Changes go live immediately.</p>
+        <p className="text-sm text-gray-500 mt-1">
+          {isAdmin ? "Saving keeps the listing's current status." : "Changes go live immediately."}
+        </p>
       </div>
       <ItemForm
         defaults={defaults ?? undefined}
         submitLabel="Save Changes"
         onSubmit={handleSubmit}
         submitting={submitting}
+        phoneNote={isAdmin ? "Saved to the seller's profile and used on all their listings." : undefined}
       />
     </div>
   );

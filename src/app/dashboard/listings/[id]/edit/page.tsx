@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -505,11 +506,13 @@ function Step3({
   listingType,
   onNext,
   onBack,
+  phoneNote,
 }: {
   defaultValues: Partial<Step3Data>;
   listingType: string;
   onNext: (data: Step3Data) => void;
   onBack: () => void;
+  phoneNote?: string;
 }) {
   const {
     register,
@@ -661,6 +664,7 @@ function Step3({
             value={field.value ?? ""}
             onChange={field.onChange}
             error={errors.contactPhone?.message}
+            note={phoneNote}
           />
         )}
       />
@@ -678,7 +682,7 @@ function Step3({
 }
 
 function Step4({
-  step1, images, step3, onBack, onSubmit, submitting,
+  step1, images, step3, onBack, onSubmit, submitting, isAdmin,
 }: {
   step1: Partial<Step1Data>;
   images: UploadedImage[];
@@ -686,6 +690,7 @@ function Step4({
   onBack: () => void;
   onSubmit: () => void;
   submitting: boolean;
+  isAdmin: boolean;
 }) {
   const lockInLabel = LOCK_IN_OPTIONS.find((o) => o.value === step3.lockInMonths)?.label;
 
@@ -722,13 +727,15 @@ function Step4({
 
   return (
     <div className="space-y-6">
-      {/* Review notice */}
-      <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl p-4">
-        <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
-        <p className="text-sm text-amber-800">
-          Saving changes will re-submit your listing for admin review. It will be temporarily unavailable until approved.
-        </p>
-      </div>
+      {/* Review notice. An admin's save keeps the status, so it does not apply. */}
+      {!isAdmin && (
+        <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl p-4">
+          <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+          <p className="text-sm text-amber-800">
+            Saving changes will re-submit your listing for admin review. It will be temporarily unavailable until approved.
+          </p>
+        </div>
+      )}
 
       <div className="bg-gray-50 rounded-xl p-5 space-y-3">
         <h3 className="font-semibold text-gray-900">{step1.title}</h3>
@@ -787,11 +794,17 @@ function Step4({
 
 export default function EditListingPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ from?: string }>;
 }) {
   // Client component, so the params Promise is unwrapped with use(), not await.
   const { id: propertyId } = use(params);
+  // Opened from the admin panel: send the admin back there, not to their dashboard
+  const backTo = use(searchParams).from === "admin" ? "/admin/listings" : "/dashboard";
+  // An admin's save keeps the listing's status (see PUT /api/properties/[id])
+  const isAdmin = useSession().data?.user.role === "ADMIN";
   const router = useRouter();
   const [step, setStep] = useState(0);
   const [submitting, setSubmitting] = useState(false);
@@ -810,7 +823,7 @@ export default function EditListingPage({
         const res = await fetch(`/api/dashboard/properties/${propertyId}`);
         if (!res.ok) {
           toast.error("Failed to load property");
-          router.push("/dashboard");
+          router.push(backTo);
           return;
         }
         const { property } = await res.json();
@@ -864,14 +877,14 @@ export default function EditListingPage({
         setData({ step1, images: markPrimary(images, isVideoMedia), step3 });
       } catch {
         toast.error("Failed to load property");
-        router.push("/dashboard");
+        router.push(backTo);
       } finally {
         setLoading(false);
       }
     }
 
     loadProperty();
-  }, [propertyId, router]);
+  }, [propertyId, router, backTo]);
 
   const handleStep1Next = (step1Data: Step1Data) => {
     setData((d) => ({ ...d, step1: step1Data }));
@@ -919,8 +932,8 @@ export default function EditListingPage({
         throw new Error(err.error ?? "Submission failed");
       }
 
-      toast.success("Changes saved! Your listing is pending review.");
-      router.push("/dashboard");
+      toast.success(isAdmin ? "Changes saved" : "Changes saved! Your listing is pending review.");
+      router.push(backTo);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Something went wrong");
     } finally {
@@ -963,6 +976,7 @@ export default function EditListingPage({
             listingType={data.step1.listingType ?? "SALE"}
             onNext={handleStep3Next}
             onBack={() => setStep(1)}
+            phoneNote={isAdmin ? "Saved to the owner's profile and used on all their listings." : undefined}
           />
         )}
         {step === 3 && (
@@ -973,6 +987,7 @@ export default function EditListingPage({
             onBack={() => setStep(2)}
             onSubmit={handleSubmit}
             submitting={submitting}
+            isAdmin={isAdmin}
           />
         )}
       </div>

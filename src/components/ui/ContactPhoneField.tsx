@@ -28,7 +28,8 @@ export function useAccountPhone(): string | null {
 /**
  * Required contact number on every listing form. It is saved to User.phone on
  * submit, which is what the listing actually displays. Class props let each
- * form keep its own label and message sizes.
+ * form keep its own label and message sizes; `note` lets an admin's edit say
+ * whose profile the number lands on.
  */
 export default function ContactPhoneField({
   value,
@@ -38,6 +39,7 @@ export default function ContactPhoneField({
   className = "space-y-1.5",
   labelClassName,
   textClassName = "text-xs",
+  note = "Saved to your profile and used on all your listings.",
 }: {
   value: string;
   onChange: (full: string) => void;
@@ -46,15 +48,14 @@ export default function ContactPhoneField({
   className?: string;
   labelClassName?: string;
   textClassName?: string;
+  note?: string;
 }) {
   return (
     <div className={className}>
       <Label htmlFor={id} className={labelClassName}>Contact number *</Label>
       <PhoneInput id={id} value={value} onChange={onChange} error={!!error} placeholder="9999999999" />
       {error && <p className={`${textClassName} text-red-500`}>{error}</p>}
-      <p className={`${textClassName} text-gray-400`}>
-        Saved to your profile and used on all your listings.
-      </p>
+      <p className={`${textClassName} text-gray-400`}>{note}</p>
     </div>
   );
 }

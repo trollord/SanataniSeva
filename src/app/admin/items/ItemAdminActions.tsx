@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Loader2, Trash2, CheckCircle2 } from "lucide-react";
+import { Loader2, Pencil, Trash2, CheckCircle2 } from "lucide-react";
 import SearchableSelect from "@/components/ui/searchable-select";
 
 const OTHER_STATUSES = [
@@ -97,6 +98,17 @@ export default function ItemAdminActions({
           />
         </div>
       )}
+
+      <Link
+        href={`/dashboard/items/${itemId}/edit?from=admin`}
+        aria-label="Edit item"
+        className="text-xs font-semibold text-gray-700 border border-gray-200
+                   hover:border-blue-200 hover:text-blue-600 rounded-lg px-2.5 py-1.5
+                   inline-flex items-center gap-1.5"
+      >
+        <Pencil className="h-3.5 w-3.5" />
+        <span className="hidden sm:inline">Edit</span>
+      </Link>
 
       {/* Delete */}
       {confirmDelete ? (

@@ -6,6 +6,7 @@ import { createPropertySchema, propertyImageSchema } from "@/lib/validations/pro
 import { PROPERTY_IMAGE_ORDER } from "@/lib/media-order";
 import { stringifyAmenities } from "@/lib/utils/formatters";
 import { saveContactPhone } from "@/lib/contact-phone";
+import { revalidatePath } from "next/cache";
 
 export async function GET(
   _req: NextRequest,
@@ -81,9 +82,8 @@ export async function PUT(
 
   if (!property) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const canEdit =
-    property.ownerId === session.user.id ||
-    ["ADMIN"].includes(session.user.role);
+  const isAdmin = session.user.role === "ADMIN";
+  const canEdit = property.ownerId === session.user.id || isAdmin;
 
   if (!canEdit) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
@@ -123,7 +123,9 @@ export async function PUT(
       coveredParking: rest.coveredParking ?? null,
       uncoveredParking: rest.uncoveredParking ?? null,
       amenities: stringifyAmenities(amenities ?? []),
-      status: "PENDING",
+      // An owner's edit goes back through review. An admin's edit (fixing a
+      // typo on a live listing, say) leaves the status as it is.
+      ...(isAdmin ? {} : { status: "PENDING" as const }),
     },
     select: { id: true, status: true },
   });
@@ -157,6 +159,10 @@ export async function PUT(
       data: { propertyId: id, price, source: "LISTING" },
     });
   }
+
+  // The detail page is cached for an hour, and an admin's edit stays live
+  revalidatePath("/listings");
+  revalidatePath(`/listings/${id}`);
 
   return NextResponse.json({ property: updated });
 }

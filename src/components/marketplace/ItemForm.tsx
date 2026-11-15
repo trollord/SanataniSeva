@@ -136,9 +136,11 @@ function StepBar({ current }: { current: number }) {
 function DetailsStep({
   defaultValues,
   onNext,
+  phoneNote,
 }: {
   defaultValues: Partial<DetailsData>;
   onNext: (data: DetailsData) => void;
+  phoneNote?: string;
 }) {
   const {
     register, control, handleSubmit, watch,
@@ -404,6 +406,7 @@ function DetailsStep({
             className="space-y-2"
             labelClassName="text-sm font-semibold"
             textClassName="text-sm"
+            note={phoneNote}
           />
         )}
       />
@@ -734,6 +737,8 @@ interface ItemFormProps {
   onSubmit: (details: DetailsData, images: UploadedImage[]) => Promise<void>;
   submitLabel?: string;
   submitting: boolean;
+  /** Overrides the contact number's "saved to your profile" hint */
+  phoneNote?: string;
 }
 
 export default function ItemForm({
@@ -741,6 +746,7 @@ export default function ItemForm({
   onSubmit,
   submitLabel = "Post Listing",
   submitting,
+  phoneNote,
 }: ItemFormProps) {
   const [step,    setStep]    = useState(0);
   const [details, setDetails] = useState<Partial<DetailsData>>(defaults?.details ?? {});
@@ -765,6 +771,7 @@ export default function ItemForm({
             <DetailsStep
               defaultValues={details}
               onNext={(d) => { setDetails(d); setStep(1); }}
+              phoneNote={phoneNote}
             />
           )}
           {step === 1 && (

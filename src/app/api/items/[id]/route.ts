@@ -25,7 +25,8 @@ export async function PUT(
     if (!existing) {
       return NextResponse.json({ error: "Item not found" }, { status: 404 });
     }
-    if (existing.sellerId !== session.user.id && session.user.role !== "ADMIN") {
+    const isAdmin = session.user.role === "ADMIN";
+    if (existing.sellerId !== session.user.id && !isAdmin) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -56,8 +57,9 @@ export async function PUT(
         vehicleType:
           rest.category === "VEHICLES" && vehicleType ? vehicleType : null,
         yearPurchased: yearPurchased ?? null,
-        status: "ACTIVE",
-        activatedAt: new Date(),
+        // The seller's edit goes live. An admin's edit leaves the status and its
+        // activation date alone, so fixing a pending item does not publish it.
+        ...(isAdmin ? {} : { status: "ACTIVE", activatedAt: new Date() }),
         // Nested writes share the update's transaction and the delete runs first
         images: { deleteMany: {}, create: orderedImageRows(images) },
       },

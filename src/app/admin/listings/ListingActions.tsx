@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Loader2, Trash2 } from "lucide-react";
+import { Loader2, Pencil, Trash2 } from "lucide-react";
 import SearchableSelect from "@/components/ui/searchable-select";
 
 const STATUS_OPTIONS = [
@@ -112,6 +113,16 @@ export default function ListingActions({
               aria-label="Change status"
             />
           </div>
+          <Link
+            href={`/dashboard/listings/${propertyId}/edit?from=admin`}
+            // Stops here so the wrapper's preventDefault cannot swallow a
+            // cmd/ctrl-click meant for a new tab
+            onClick={(e) => e.stopPropagation()}
+            className="inline-flex items-center gap-1 text-xs px-2 py-1.5 rounded font-medium text-gray-600 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+          >
+            <Pencil className="h-3.5 w-3.5" />
+            Edit
+          </Link>
           <button
             onClick={() => setConfirmDelete(true)}
             title="Delete listing"
