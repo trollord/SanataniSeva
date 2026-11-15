@@ -3,11 +3,9 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { COMMUNITY_CATEGORIES } from "@/lib/community";
+import { checkCategoryChoice } from "@/lib/directory-categories";
 import { HIRANANDANI_LOCALITIES } from "@/lib/constants";
 import { parsePhone } from "@/lib/phone";
-
-const CATEGORY_KEYS = COMMUNITY_CATEGORIES.map((c) => c.key) as [string, ...string[]];
 
 /**
  * Creates one contact from the admin panel. Distinct from
@@ -18,7 +16,9 @@ const CATEGORY_KEYS = COMMUNITY_CATEGORIES.map((c) => c.key) as [string, ...stri
 const createSchema = z.object({
   name: z.string().trim().min(2).max(120),
   contactPerson: z.string().trim().max(80).optional().default(""),
-  category: z.enum(CATEGORY_KEYS),
+  // Checked against the DirectoryCategory table after parsing
+  category: z.string().trim().min(1, "Pick a category"),
+  subcategoryId: z.string().min(1).nullable().optional(),
   service: z.string().trim().min(2).max(200),
   // Stored in the canonical display form, so every surface shows the same
   // thing and tel: links stay dialable.
@@ -65,6 +65,11 @@ export async function POST(req: NextRequest) {
       { error: parsed.error.issues[0]?.message ?? "Invalid input" },
       { status: 400 }
     );
+  }
+
+  const categoryError = await checkCategoryChoice(parsed.data.category, parsed.data.subcategoryId);
+  if (categoryError) {
+    return NextResponse.json({ error: categoryError }, { status: 400 });
   }
 
   const { contactPerson, notes, ...rest } = parsed.data;

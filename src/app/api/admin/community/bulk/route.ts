@@ -3,15 +3,15 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { COMMUNITY_CATEGORIES } from "@/lib/community";
 import { HIRANANDANI_LOCALITIES } from "@/lib/constants";
-
-const CATEGORY_KEYS = COMMUNITY_CATEGORIES.map((c) => c.key) as [string, ...string[]];
 
 const rowSchema = z.object({
   name: z.string().min(2).max(120),
   phones: z.array(z.string().trim().min(3).max(20).regex(/^[+\d\s\-()]+$/)).min(1).max(5),
-  category: z.enum(CATEGORY_KEYS),
+  // Checked against the DirectoryCategory table below
+  category: z.string().trim().min(1),
+  // Resolved from the sheet's subcategory label by the importer
+  subcategoryId: z.string().min(1).nullable().optional(),
   service: z.string().min(5).max(200),
   locality: z.string().refine(
     (v) => (HIRANANDANI_LOCALITIES as readonly string[]).includes(v),
@@ -34,19 +34,40 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "No rows provided" }, { status: 400 });
   }
 
+  // One read each for the whole sheet, rather than a lookup per row.
+  const [categories, subcategories] = await Promise.all([
+    prisma.directoryCategory.findMany({ select: { key: true } }),
+    prisma.directorySubcategory.findMany({ select: { id: true, categoryKey: true } }),
+  ]);
+  const categoryKeys = new Set(categories.map((c) => c.key));
+  const subCategoryOf = new Map(subcategories.map((s) => [s.id, s.categoryKey]));
+
   const valid: z.infer<typeof rowSchema>[] = [];
   const errors: { row: number; message: string }[] = [];
+  /** Rows saved without the subcategory they named, which did not fit their category */
+  const unassigned: number[] = [];
 
   for (let i = 0; i < rows.length; i++) {
     const result = rowSchema.safeParse(rows[i]);
-    if (result.success) {
-      valid.push(result.data);
-    } else {
+    if (!result.success) {
       errors.push({
         row: i + 1,
         message: result.error.issues[0]?.message ?? "Invalid row",
       });
+      continue;
     }
+    const row = result.data;
+    if (!categoryKeys.has(row.category)) {
+      errors.push({ row: i + 1, message: `Unknown category "${row.category}"` });
+      continue;
+    }
+    // The importer only sends ids it matched, so this is a stale page or a
+    // hand-made request. Never worth losing the contact over.
+    if (row.subcategoryId && subCategoryOf.get(row.subcategoryId) !== row.category) {
+      row.subcategoryId = null;
+      unassigned.push(i + 1);
+    }
+    valid.push(row);
   }
 
   let created = 0;
@@ -64,5 +85,5 @@ export async function POST(req: NextRequest) {
     revalidatePath("/community");
   }
 
-  return NextResponse.json({ created, errors });
+  return NextResponse.json({ created, errors, unassigned });
 }

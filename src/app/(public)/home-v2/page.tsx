@@ -3,7 +3,7 @@ export const dynamic = "force-dynamic";
 import { unstable_cache } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { ITEM_IMAGE_ORDER } from "@/lib/media-order";
-import { COMMUNITY_CATEGORIES } from "@/lib/community";
+import { getDirectoryCategories } from "@/lib/directory-categories";
 import NewsBannerStrip from "@/components/newspaper/NewsBannerStrip";
 import EstateGallery from "@/components/home-v2/EstateGallery";
 import HomeMasthead from "@/components/home/HomeMasthead";
@@ -62,16 +62,24 @@ export default async function HomeV2Page() {
 
   // Trade index for ENTRY 01, counted off the published directory. Grouping in
   // the DB rather than loading every contact just to length-check it.
-  const grouped = await prisma.communityContact.groupBy({
-    by: ["category"],
-    where: { status: "ACTIVE" },
-    _count: { _all: true },
-  });
+  const [grouped, categories] = await Promise.all([
+    prisma.communityContact.groupBy({
+      by: ["category"],
+      where: { status: "ACTIVE" },
+      _count: { _all: true },
+    }),
+    getDirectoryCategories(),
+  ]);
   const countByCategory = new Map(grouped.map((g) => [g.category, g._count._all]));
-  const trades = COMMUNITY_CATEGORIES.map((c) => ({
-    label: c.label,
-    count: countByCategory.get(c.key) ?? 0,
-  })).filter((t) => t.count > 0);
+  const known = new Set(categories.map((c) => c.key));
+  const trades = [
+    ...categories.map((c) => ({ label: c.label, count: countByCategory.get(c.key) ?? 0 })),
+    // A key with no category row still counts toward the total, so it is
+    // listed under its raw key rather than leaving the numbers disagreeing.
+    ...grouped
+      .filter((g) => !known.has(g.category))
+      .map((g) => ({ label: g.category, count: g._count._all })),
+  ].filter((t) => t.count > 0);
   const totalContacts = grouped.reduce((n, g) => n + g._count._all, 0);
 
   return (

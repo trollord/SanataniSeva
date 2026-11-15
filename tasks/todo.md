@@ -1,3 +1,34 @@
+# Directory categories + subcategories, admin-managed (2026-11-15)
+
+Supersedes the 2026-11-11 proposal further down. Migration written, NOT applied
+(local .env is production).
+
+- [x] Schema: `DirectoryCategory`, `DirectorySubcategory`, `CommunityContact.subcategoryId` (+ category FK if every row's key is known)
+- [x] Hand-written migration: tables, FKs, indexes, RLS, INSERT the 24 categories; `prisma generate`
+- [x] `src/lib`: cached category loader + tag, icon registry with fallback, pure helpers (slugify, filter, counts)
+- [x] Swap every `COMMUNITY_CATEGORIES` read to the DB (public directory, admin list/form, CSV, APIs, home-v2, import script)
+- [x] Admin API `/api/admin/directory-categories/**` + `/admin/categories` page + sidebar entry
+- [x] Contact form: subcategory select, server checks it belongs to the category; list shows it
+- [x] CSV: subcategory column by label on export, template and import (no match = unassigned + reported)
+- [x] Public directory: subcategory ticks under a ticked category (rail + mobile pills), filtering, counts, "Category · Sub" column
+- [x] Verify: tsc, lint, scratch `next build`, tsx checks of the pure helpers
+
+### Review
+- Read-only check: all 338 contacts use one of the 24 keys (23 in use, `laundry`
+  empty), so the migration adds the `category` foreign key (RESTRICT).
+- Verified: `tsc` clean; eslint 0 errors on every touched/new file; scratch
+  `next build` passes and lists `/admin/categories` and the four new API routes;
+  `tsx` checks of slugify, filter, counts, toggles, CSV label match, reorder and
+  delete-blocker all pass; the migration INSERT matches the old constant exactly.
+- NOT verified in a browser: the new code needs the migration, which is not
+  applied (local .env is production).
+- Order matters: apply the migration BEFORE pushing. Every page renders per
+  request (the root layout calls `auth()`), so the build will pass without the
+  migration and /community would then fail at runtime.
+- Also fixed in passing: the xlsx template's dropdowns were on the wrong columns
+  (category list on `number`, locality on `service`, Yes/No on `hours`); the
+  letters now come from the header list.
+
 # News section revamp
 
 **Problem.** A post's body is clamped to three lines in a carousel with no way
@@ -63,7 +94,7 @@ Every item above is done and checked in a running build.
   navbar behaves on every page, so changing it is a site-wide design decision
   rather than a news fix.
 
-## Admin-managed community categories (proposed 2026-11-11, awaiting go-ahead)
+## Admin-managed community categories (proposed 2026-11-11, superseded: see the top of this file)
 
 Today the 24 categories are a fixed list in `src/lib/community.ts`; admin can only pick from it.
 

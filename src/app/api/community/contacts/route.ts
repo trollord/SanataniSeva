@@ -2,11 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
-import { COMMUNITY_CATEGORIES } from "@/lib/community";
+import { checkCategoryChoice } from "@/lib/directory-categories";
 import { HIRANANDANI_LOCALITIES } from "@/lib/constants";
 import { parsePhone } from "@/lib/phone";
-
-const CATEGORY_KEYS = COMMUNITY_CATEGORIES.map((c) => c.key) as [string, ...string[]];
 
 const submitSchema = z.object({
   name: z.string().min(2, "Name is required").max(120),
@@ -28,7 +26,8 @@ const submitSchema = z.object({
     )
     .min(1, "At least one phone number is required")
     .max(5, "At most five numbers"),
-  category: z.enum(CATEGORY_KEYS),
+  // Checked against the DirectoryCategory table after parsing
+  category: z.string().trim().min(1, "Pick a category"),
   service: z.string().min(5, "Describe the service (min 5 chars)").max(200),
   locality: z.string().refine((v) => (HIRANANDANI_LOCALITIES as readonly string[]).includes(v), {
     message: "Pick a valid locality",
@@ -52,6 +51,11 @@ export async function POST(req: NextRequest) {
     if (!parsed.success) {
       const msg = parsed.error.issues[0]?.message ?? "Invalid input";
       return NextResponse.json({ error: msg }, { status: 400 });
+    }
+
+    const categoryError = await checkCategoryChoice(parsed.data.category, null);
+    if (categoryError) {
+      return NextResponse.json({ error: categoryError }, { status: 400 });
     }
 
     const { submittedBy, contactPerson, ...rest } = parsed.data;
@@ -80,6 +84,7 @@ export async function GET() {
       name: true,
       contactPerson: true,
       category: true,
+      subcategoryId: true,
       service: true,
       phones: true,
       whatsapp: true,

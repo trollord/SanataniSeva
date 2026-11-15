@@ -15,6 +15,8 @@ export async function GET() {
       name: true,
       phones: true,
       category: true,
+      // By label, which is what the importer matches on (within the category)
+      subcategory: { select: { label: true } },
       service: true,
       locality: true,
       contactPerson: true,
@@ -29,7 +31,7 @@ export async function GET() {
   });
 
   const headers = [
-    "name", "extension", "number", "category", "service", "locality",
+    "name", "extension", "number", "category", "subcategory", "service", "locality",
     "contactPerson", "address", "hours", "whatsapp", "status", "verified", "createdAt", "tags",
   ];
 
@@ -42,6 +44,7 @@ export async function GET() {
     escape(c.phones.map((x) => parsePhone(x).extension).join("|")),
     escape(c.phones.map((x) => parsePhone(x).number).join("|")),
     escape(c.category),
+    escape(c.subcategory?.label ?? ""),
     escape(c.service),
     escape(c.locality),
     escape(c.contactPerson ?? ""),

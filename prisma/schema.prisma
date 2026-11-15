@@ -258,7 +258,10 @@ model CommunityContact {
   id            String   @id @default(cuid())
   name          String
   contactPerson String?
-  category      String // key from COMMUNITY_CATEGORIES
+  category      String // DirectoryCategory.key
+  /// Optional finer grouping inside `category`. The API checks it belongs to
+  /// that category; deleting the subcategory leaves the contact unassigned.
+  subcategoryId String?
   service       String
   phones        String[] // one vendor often has two or more numbers
   whatsapp      Boolean  @default(false)
@@ -279,7 +282,40 @@ model CommunityContact {
   /// plain column, so migrations for this table stay hand-written.
   searchText String?
 
+  directoryCategory DirectoryCategory     @relation(fields: [category], references: [key], onDelete: Restrict)
+  subcategory       DirectorySubcategory? @relation(fields: [subcategoryId], references: [id], onDelete: SetNull)
+
   @@index([status, category])
+  @@index([subcategoryId])
+}
+
+// Service-provider categories, managed from /admin/categories. `key` is what
+// CommunityContact.category stores: slugified from the label on create and
+// never changed, so a rename only touches this row.
+model DirectoryCategory {
+  key           String                 @id
+  label         String
+  icon          String // lucide icon name, from the curated set in src/lib/directory-icons.ts
+  sortOrder     Int                    @default(0)
+  subcategories DirectorySubcategory[]
+  contacts      CommunityContact[]
+  createdAt     DateTime               @default(now())
+  updatedAt     DateTime               @updatedAt
+}
+
+model DirectorySubcategory {
+  id          String             @id @default(cuid())
+  categoryKey String
+  // Restrict: a category can only be deleted once its subcategories are gone,
+  // which the admin does deliberately (and is told how many contacts it frees).
+  category    DirectoryCategory  @relation(fields: [categoryKey], references: [key], onDelete: Restrict)
+  label       String
+  sortOrder   Int                @default(0)
+  contacts    CommunityContact[]
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  @@unique([categoryKey, label])
 }
 
 // Individual news items posted by admin — shown in the "Today's News" feed.

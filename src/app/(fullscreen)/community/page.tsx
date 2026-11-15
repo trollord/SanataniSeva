@@ -7,6 +7,7 @@ import BusTimings from "@/components/community/BusTimings";
 import EmergencyNumbers from "@/components/community/EmergencyNumbers";
 import CommunityTabs from "@/components/community/CommunityTabs";
 import { type DbCommunityContact } from "@/lib/community";
+import { getDirectoryCategories } from "@/lib/directory-categories";
 
 // 60s, not an hour: the bus section highlights the *next* departure against
 // the current time, so an hour-old render would point at a bus that has
@@ -30,25 +31,29 @@ export const metadata: Metadata = {
 };
 
 export default async function CommunityPage() {
-  const raw = await prisma.communityContact.findMany({
-    where: { status: "ACTIVE" },
-    orderBy: { createdAt: "desc" },
-    select: {
-      id: true,
-      name: true,
-      contactPerson: true,
-      category: true,
-      service: true,
-      phones: true,
-      whatsapp: true,
-      locality: true,
-      address: true,
-      hours: true,
-      tags: true,
-      verified: true,
-      createdAt: true,
-    },
-  });
+  const [raw, categories] = await Promise.all([
+    prisma.communityContact.findMany({
+      where: { status: "ACTIVE" },
+      orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        name: true,
+        contactPerson: true,
+        category: true,
+        subcategoryId: true,
+        service: true,
+        phones: true,
+        whatsapp: true,
+        locality: true,
+        address: true,
+        hours: true,
+        tags: true,
+        verified: true,
+        createdAt: true,
+      },
+    }),
+    getDirectoryCategories(),
+  ]);
 
   // A card with no number has nothing to act on, so it is not shown. The
   // numberless rows are already PENDING, but this keeps that true even if one
@@ -74,7 +79,7 @@ export default async function CommunityPage() {
         <CommunityTabs
           heading={<CommunityHero />}
           busesAvailable={busRouteCount > 0}
-          directory={<CommunityDirectory dbContacts={dbContacts} />}
+          directory={<CommunityDirectory dbContacts={dbContacts} categories={categories} />}
           buses={<BusTimings />}
           emergencyAvailable={emergencyContacts.length > 0}
           emergency={<EmergencyNumbers contacts={emergencyContacts} />}

@@ -57,7 +57,9 @@ export default function CommunityTabs({
 
   return (
     <div className="flex flex-1 flex-col min-h-0 min-w-0">
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 lg:gap-6 mb-4 shrink-0">
+      {/* Tabs sit right after the title rather than pushed to the far edge,
+          where they were easy to miss on a wide screen. */}
+      <div className="flex flex-col lg:flex-row lg:items-center gap-3 lg:gap-6 mb-4 shrink-0">
       {heading}
       <div
         role="tablist"

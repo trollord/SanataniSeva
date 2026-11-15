@@ -1,39 +1,51 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import Papa from "papaparse";
 import * as XLSX from "xlsx";
-import { Upload, Download, FileSpreadsheet, CheckCircle2, XCircle, Loader2 } from "lucide-react";
-import { COMMUNITY_CATEGORIES } from "@/lib/community";
+import { Upload, Download, FileSpreadsheet, CheckCircle2, XCircle, AlertTriangle, Loader2 } from "lucide-react";
 import { HIRANANDANI_LOCALITIES } from "@/lib/constants";
 import { formatPhone, parsePhone } from "@/lib/phone";
+import {
+  type DirectoryCategoryView,
+  findSubcategoryByLabel,
+  sameLabel,
+} from "@/lib/directory";
 
-/* ── Category label ↔ key maps ─────────────────────────────────────────── */
-const LABEL_TO_KEY = Object.fromEntries(
-  COMMUNITY_CATEGORIES.map((c) => [c.label.toLowerCase(), c.key])
-) as Record<string, string>;
-const KEY_TO_LABEL = Object.fromEntries(
-  COMMUNITY_CATEGORIES.map((c) => [c.key, c.label])
-) as Record<string, string>;
-const VALID_KEYS = new Set<string>(COMMUNITY_CATEGORIES.map((c) => c.key));
 const VALID_LOCALITIES = new Set(HIRANANDANI_LOCALITIES as readonly string[]);
 
 const REQUIRED_COLS = ["name", "extension", "number", "category", "service", "locality"];
-const ALL_COLS = [...REQUIRED_COLS, "contactPerson", "address", "hours", "whatsapp"];
+// Template column order. Import reads by header name, so older sheets without
+// a subcategory column still load.
+const ALL_COLS = [
+  "name", "extension", "number", "category", "subcategory", "service", "locality",
+  "contactPerson", "address", "hours", "whatsapp",
+];
+
+/** Spreadsheet column letter for a template header (all fit in A-Z). */
+const colLetter = (name: string) => String.fromCharCode(65 + ALL_COLS.indexOf(name));
 
 type ParsedRow = {
   index: number;
   data: Record<string, string>;
   errors: string[];
+  /** Imported anyway, but worth telling the admin about */
+  warnings: string[];
   mapped: Record<string, unknown> | null;
 };
 
 /* ── Helpers ────────────────────────────────────────────────────────────── */
-function resolveCategory(raw: string): string | null {
+/** By key, or by label ignoring case. */
+function resolveCategory(
+  raw: string,
+  categories: DirectoryCategoryView[]
+): DirectoryCategoryView | null {
   const trimmed = raw.trim();
-  if (VALID_KEYS.has(trimmed)) return trimmed;
-  const byLabel = LABEL_TO_KEY[trimmed.toLowerCase()];
-  return byLabel ?? null;
+  return (
+    categories.find((c) => c.key === trimmed) ??
+    categories.find((c) => sameLabel(c.label, trimmed)) ??
+    null
+  );
 }
 
 function resolveLocality(raw: string): string | null {
@@ -42,8 +54,13 @@ function resolveLocality(raw: string): string | null {
   return null;
 }
 
-function validateRow(raw: Record<string, string>, index: number): ParsedRow {
+function validateRow(
+  raw: Record<string, string>,
+  index: number,
+  categories: DirectoryCategoryView[]
+): ParsedRow {
   const errors: string[] = [];
+  const warnings: string[] = [];
 
   const name = raw.name?.trim() ?? "";
   // Two aligned columns, pipe-separated when a vendor has several numbers:
@@ -69,8 +86,17 @@ function validateRow(raw: Record<string, string>, index: number): ParsedRow {
     });
   if (service.length < 5 || service.length > 200) errors.push("Service must be 5–200 chars");
 
-  const category = resolveCategory(raw.category ?? "");
+  const category = resolveCategory(raw.category ?? "", categories);
   if (!category) errors.push(`Invalid category "${raw.category}" — use key or label`);
+
+  // Matched by label within the row's category, never created: a typo should
+  // not quietly become a new subcategory. No match leaves the contact
+  // unassigned, which is a valid state, so it is a warning and not an error.
+  const subLabel = raw.subcategory?.trim() ?? "";
+  const subcategory = findSubcategoryByLabel(category ?? undefined, subLabel);
+  if (category && subLabel && !subcategory) {
+    warnings.push(`No subcategory "${subLabel}" in ${category.label}; left unassigned`);
+  }
 
   const locality = resolveLocality(raw.locality ?? "");
   if (!locality) errors.push(`Invalid locality "${raw.locality}"`);
@@ -82,7 +108,8 @@ function validateRow(raw: Record<string, string>, index: number): ParsedRow {
       ? {
           name,
           phones,
-          category: category!,
+          category: category!.key,
+          subcategoryId: subcategory?.id ?? null,
           service,
           locality: locality!,
           contactPerson: raw.contactPerson?.trim() || undefined,
@@ -92,11 +119,11 @@ function validateRow(raw: Record<string, string>, index: number): ParsedRow {
         }
       : null;
 
-  return { index, data: raw, errors, mapped };
+  return { index, data: raw, errors, warnings, mapped };
 }
 
 /* ── Template download ──────────────────────────────────────────────────── */
-function downloadTemplate() {
+function downloadTemplate(categories: DirectoryCategoryView[]) {
   const wb = XLSX.utils.book_new();
 
   /* Sheet 1 — Data entry */
@@ -106,6 +133,7 @@ function downloadTemplate() {
     "+91",
     "9876543210",
     "plumber",
+    "",
     "All plumbing repairs, pipe fitting, tap replacement",
     "Hiranandani Estate",
     "Ramesh",
@@ -117,24 +145,26 @@ function downloadTemplate() {
   const ws = XLSX.utils.aoa_to_sheet([headers, exampleRow]);
 
   /* Column widths */
-  ws["!cols"] = [22, 10, 16, 16, 36, 22, 18, 32, 22, 10].map((w) => ({ wch: w }));
+  ws["!cols"] = [22, 10, 16, 16, 20, 36, 22, 18, 32, 22, 10].map((w) => ({ wch: w }));
 
   const localityList = [...HIRANANDANI_LOCALITIES];
 
   if (!ws["!dataValidations"]) ws["!dataValidations"] = [];
-  // Category: col C (index 2), rows 2–500
+  // Letters come from ALL_COLS, so inserting a column cannot leave a
+  // validation on the wrong one.
+  const category = colLetter("category");
   (ws["!dataValidations"] as unknown[]).push({
-    sqref: "C2:C500",
+    sqref: `${category}2:${category}500`,
     type: "list",
-    formula1: `"${COMMUNITY_CATEGORIES.map((c) => c.key).join(",")}"`,
+    formula1: `"${categories.map((c) => c.key).join(",")}"`,
     showDropDown: false,
     showErrorMessage: true,
     errorTitle: "Invalid category",
-    error: `Must be one of: ${COMMUNITY_CATEGORIES.map((c) => c.key).join(", ")}`,
+    error: `Must be one of: ${categories.map((c) => c.key).join(", ")}`,
   });
-  // Locality: col E (index 4), rows 2–500
+  const locality = colLetter("locality");
   (ws["!dataValidations"] as unknown[]).push({
-    sqref: "E2:E500",
+    sqref: `${locality}2:${locality}500`,
     type: "list",
     formula1: `"${localityList.join(",")}"`,
     showDropDown: false,
@@ -142,9 +172,9 @@ function downloadTemplate() {
     errorTitle: "Invalid locality",
     error: `Must be one of: ${localityList.join(", ")}`,
   });
-  // Whatsapp: col I (index 8), rows 2–500
+  const whatsapp = colLetter("whatsapp");
   (ws["!dataValidations"] as unknown[]).push({
-    sqref: "I2:I500",
+    sqref: `${whatsapp}2:${whatsapp}500`,
     type: "list",
     formula1: '"Yes,No"',
     showDropDown: false,
@@ -154,26 +184,36 @@ function downloadTemplate() {
 
   /* Sheet 2 — Reference */
   const refData = [
-    ["Category Key", "Category Label"],
-    ...COMMUNITY_CATEGORIES.map((c) => [c.key, c.label]),
+    ["Category Key", "Category Label", "Subcategories (optional, by label)"],
+    ...categories.map((c) => [c.key, c.label, c.subcategories.map((s) => s.label).join(" | ")]),
     [],
     ["Locality Values"],
     ...HIRANANDANI_LOCALITIES.map((l) => [l]),
   ];
   const wsRef = XLSX.utils.aoa_to_sheet(refData);
-  wsRef["!cols"] = [{ wch: 18 }, { wch: 22 }];
+  wsRef["!cols"] = [{ wch: 18 }, { wch: 26 }, { wch: 48 }];
   XLSX.utils.book_append_sheet(wb, wsRef, "Valid Values");
 
   XLSX.writeFile(wb, "community-template.xlsx");
 }
 
 /* ── Main component ─────────────────────────────────────────────────────── */
-export default function CommunityCSVTools() {
+export default function CommunityCSVTools({
+  categories,
+}: {
+  /** In display order, from the DB */
+  categories: DirectoryCategoryView[];
+}) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [rows, setRows] = useState<ParsedRow[]>([]);
   const [headerError, setHeaderError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
-  const [result, setResult] = useState<{ created: number; skipped: number } | null>(null);
+  const [result, setResult] = useState<{ created: number; skipped: number; unassigned: number } | null>(null);
+
+  const labelByKey = useMemo(
+    () => new Map(categories.map((c) => [c.key, c.label])),
+    [categories]
+  );
 
   const validRows = rows.filter((r) => r.errors.length === 0);
   const errorRows = rows.filter((r) => r.errors.length > 0);
@@ -197,7 +237,7 @@ export default function CommunityCSVTools() {
           );
           return;
         }
-        setRows(results.data.map((row, i) => validateRow(row, i + 1)));
+        setRows(results.data.map((row, i) => validateRow(row, i + 1, categories)));
       },
     });
 
@@ -214,7 +254,13 @@ export default function CommunityCSVTools() {
         body: JSON.stringify({ rows: validRows.map((r) => r.mapped) }),
       });
       const data = await res.json();
-      setResult({ created: data.created, skipped: errorRows.length });
+      setResult({
+        created: data.created,
+        skipped: errorRows.length,
+        // Unmatched in the preview, plus any the server dropped as stale
+        unassigned:
+          validRows.filter((r) => r.warnings.length > 0).length + (data.unassigned?.length ?? 0),
+      });
       setRows([]);
     } finally {
       setUploading(false);
@@ -232,7 +278,7 @@ export default function CommunityCSVTools() {
 
         {/* Download template */}
         <button
-          onClick={downloadTemplate}
+          onClick={() => downloadTemplate(categories)}
           className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-700 border border-gray-200 rounded-lg px-3 py-2 hover:bg-gray-50 transition-colors"
         >
           <FileSpreadsheet className="w-3.5 h-3.5 text-green-600" />
@@ -274,6 +320,8 @@ export default function CommunityCSVTools() {
           <span>
             <strong>{result.created} contacts added</strong> and set to Active.
             {result.skipped > 0 && ` ${result.skipped} rows skipped due to errors.`}
+            {result.unassigned > 0 &&
+              ` ${result.unassigned} ${result.unassigned === 1 ? "contact was" : "contacts were"} added without a subcategory, as theirs did not match one in their category.`}
           </span>
         </div>
       )}
@@ -329,7 +377,7 @@ export default function CommunityCSVTools() {
                     <td className="px-3 py-2 text-gray-600">{[row.data.extension, row.data.number].filter(Boolean).join(" ") || row.data.phones || "—"}</td>
                     <td className="px-3 py-2 text-gray-600">
                       {row.mapped
-                        ? KEY_TO_LABEL[row.mapped.category as string] ?? row.data.category
+                        ? labelByKey.get(row.mapped.category as string) ?? row.data.category
                         : row.data.category || "—"}
                     </td>
                     <td className="px-3 py-2 text-gray-600 max-w-[120px] truncate">
@@ -340,6 +388,11 @@ export default function CommunityCSVTools() {
                         <span className="flex items-start gap-1 text-red-600">
                           <XCircle className="w-3 h-3 mt-0.5 shrink-0" />
                           {row.errors[0]}
+                        </span>
+                      ) : row.warnings.length > 0 ? (
+                        <span className="flex items-start gap-1 text-amber-700">
+                          <AlertTriangle className="w-3 h-3 mt-0.5 shrink-0" />
+                          {row.warnings[0]}
                         </span>
                       ) : (
                         <CheckCircle2 className="w-3.5 h-3.5 text-green-500" />

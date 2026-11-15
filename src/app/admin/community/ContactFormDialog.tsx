@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { useFieldArray, useForm, Controller } from "react-hook-form";
+import { useFieldArray, useForm, useWatch, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Loader2, Plus, Trash2, Pencil } from "lucide-react";
@@ -13,16 +13,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import Modal from "@/components/ui/Modal";
 import SearchableSelect from "@/components/ui/searchable-select";
-import { COMMUNITY_CATEGORIES } from "@/lib/community";
+import type { DirectoryCategoryView } from "@/lib/directory";
 import { HIRANANDANI_LOCALITIES } from "@/lib/constants";
 import { PHONE_EXTENSIONS, combinePhone, formatPhone, parsePhone } from "@/lib/phone";
 
-const CATEGORY_KEYS = COMMUNITY_CATEGORIES.map((c) => c.key) as [string, ...string[]];
-
-const CATEGORY_OPTIONS = COMMUNITY_CATEGORIES.map((c) => ({
-  value: c.key,
-  label: c.label,
-}));
 const LOCALITY_OPTIONS = HIRANANDANI_LOCALITIES.map((l) => ({ value: l, label: l }));
 const STATUS_OPTIONS = [
   { value: "ACTIVE", label: "Active — visible on the public directory" },
@@ -35,7 +29,10 @@ const STATUS_OPTIONS = [
 const schema = z.object({
   name: z.string().trim().min(2, "Name is required").max(120),
   contactPerson: z.string().trim().max(80),
-  category: z.enum(CATEGORY_KEYS),
+  // The server checks both against the database
+  category: z.string().min(1, "Pick a category"),
+  /** "" is none */
+  subcategoryId: z.string(),
   service: z.string().trim().min(2, "Describe the service").max(200),
   phones: z
     .array(
@@ -77,6 +74,7 @@ export interface ContactRecord {
   name: string;
   contactPerson: string | null;
   category: string;
+  subcategoryId: string | null;
   service: string;
   phones: string[];
   whatsapp: boolean;
@@ -118,9 +116,12 @@ function Field({
 
 export default function ContactFormDialog({
   contact,
+  categories,
 }: {
   /** Omitted for the "Add contact" button; supplied when editing a row. */
   contact?: ContactRecord;
+  /** In display order, from the DB */
+  categories: DirectoryCategoryView[];
 }) {
   const isEdit = Boolean(contact);
   const router = useRouter();
@@ -133,13 +134,17 @@ export default function ContactFormDialog({
     handleSubmit,
     reset,
     trigger,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
       name: contact?.name ?? "",
       contactPerson: contact?.contactPerson ?? "",
-      category: (contact?.category as FormValues["category"]) ?? "health",
+      category:
+        contact?.category ??
+        (categories.some((c) => c.key === "health") ? "health" : categories[0]?.key ?? ""),
+      subcategoryId: contact?.subcategoryId ?? "",
       service: contact?.service ?? "",
       phones: contact?.phones.length
         ? contact.phones.map((raw) => {
@@ -159,6 +164,28 @@ export default function ContactFormDialog({
 
   const { fields, append, remove } = useFieldArray({ control, name: "phones" });
 
+  const categoryOptions = useMemo(() => {
+    const options = categories.map((c) => ({ value: c.key, label: c.label }));
+    // A key with no category row still shows as itself rather than a blank
+    // select; saving asks for a real category.
+    if (contact && !categories.some((c) => c.key === contact.category)) {
+      options.push({ value: contact.category, label: contact.category });
+    }
+    return options;
+  }, [categories, contact]);
+
+  const category = useWatch({ control, name: "category" });
+  const subcategoryOptions = useMemo(
+    () => [
+      { value: "", label: "None" },
+      ...(categories.find((c) => c.key === category)?.subcategories ?? []).map((s) => ({
+        value: s.id,
+        label: s.label,
+      })),
+    ],
+    [categories, category]
+  );
+
   async function onSubmit(values: FormValues) {
     setServerError(null);
     const payload = {
@@ -167,6 +194,7 @@ export default function ContactFormDialog({
         .map((p) => formatPhone(p.extension, p.number))
         .filter(Boolean),
       contactPerson: values.contactPerson || null,
+      subcategoryId: values.subcategoryId || null,
       notes: values.notes || null,
     };
 
@@ -351,32 +379,45 @@ export default function ContactFormDialog({
             </div>
           </Field>
 
-          {/* What and where */}
+          {/* What */}
           <div className="grid grid-cols-1 gap-x-5 gap-y-5 sm:grid-cols-2">
-            <Field label="Category">
+            <Field label="Category" error={errors.category?.message}>
               <Controller
                 control={control}
                 name="category"
                 render={({ field }) => (
                   <SearchableSelect
                     value={field.value}
-                    onChange={field.onChange}
-                    options={CATEGORY_OPTIONS}
+                    onChange={(v) => {
+                      // A subcategory belongs to one category, so it cannot
+                      // survive a change of category.
+                      if (v !== field.value) setValue("subcategoryId", "");
+                      field.onChange(v);
+                    }}
+                    options={categoryOptions}
                     aria-label="Category"
                   />
                 )}
               />
             </Field>
-            <Field label="Locality" error={errors.locality?.message}>
+            <Field
+              label="Subcategory (optional)"
+              hint={
+                subcategoryOptions.length === 1
+                  ? "This category has no subcategories yet"
+                  : undefined
+              }
+            >
               <Controller
                 control={control}
-                name="locality"
+                name="subcategoryId"
                 render={({ field }) => (
                   <SearchableSelect
                     value={field.value}
                     onChange={field.onChange}
-                    options={LOCALITY_OPTIONS}
-                    aria-label="Locality"
+                    options={subcategoryOptions}
+                    disabled={subcategoryOptions.length === 1}
+                    aria-label="Subcategory"
                   />
                 )}
               />
@@ -397,7 +438,22 @@ export default function ContactFormDialog({
             />
           </Field>
 
+          {/* Where and when */}
           <div className="grid grid-cols-1 gap-x-5 gap-y-5 sm:grid-cols-2">
+            <Field label="Locality" error={errors.locality?.message}>
+              <Controller
+                control={control}
+                name="locality"
+                render={({ field }) => (
+                  <SearchableSelect
+                    value={field.value}
+                    onChange={field.onChange}
+                    options={LOCALITY_OPTIONS}
+                    aria-label="Locality"
+                  />
+                )}
+              />
+            </Field>
             <Field label="Address" htmlFor="address">
               <Input
                 id="address"
@@ -406,15 +462,16 @@ export default function ContactFormDialog({
                 placeholder="Shop / building / landmark"
               />
             </Field>
-            <Field label="Hours" htmlFor="hours">
-              <Input
-                id="hours"
-                className={inputClass}
-                {...register("hours")}
-                placeholder="e.g. Mon to Sat, 9am to 8pm"
-              />
-            </Field>
           </div>
+
+          <Field label="Hours" htmlFor="hours">
+            <Input
+              id="hours"
+              className={inputClass}
+              {...register("hours")}
+              placeholder="e.g. Mon to Sat, 9am to 8pm"
+            />
+          </Field>
 
           {/* Publishing */}
           <div className="grid grid-cols-1 gap-x-5 gap-y-5 sm:grid-cols-2">

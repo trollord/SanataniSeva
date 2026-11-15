@@ -3,11 +3,9 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { COMMUNITY_CATEGORIES } from "@/lib/community";
+import { checkCategoryChoice } from "@/lib/directory-categories";
 import { HIRANANDANI_LOCALITIES } from "@/lib/constants";
 import { parsePhone } from "@/lib/phone";
-
-const CATEGORY_KEYS = COMMUNITY_CATEGORIES.map((c) => c.key) as [string, ...string[]];
 
 /**
  * Every field is optional so the status dropdown can keep sending just
@@ -18,7 +16,9 @@ const patchSchema = z
   .object({
     name: z.string().trim().min(2).max(120),
     contactPerson: z.string().trim().max(80).nullable(),
-    category: z.enum(CATEGORY_KEYS),
+    // Checked against the DirectoryCategory table after parsing
+    category: z.string().trim().min(1),
+    subcategoryId: z.string().min(1).nullable(),
     service: z.string().trim().min(2).max(200),
     phones: z
       .array(
@@ -70,6 +70,33 @@ export async function PATCH(
   const data = parsed.data;
   if (Object.keys(data).length === 0) {
     return NextResponse.json({ error: "Nothing to update" }, { status: 400 });
+  }
+
+  // Category and subcategory are checked as a pair. The edit dialog sends
+  // both; if only one arrives, the other comes from the saved row.
+  if (data.category !== undefined || data.subcategoryId !== undefined) {
+    const current = await prisma.communityContact.findUnique({
+      where: { id },
+      select: { category: true, subcategoryId: true },
+    });
+    if (!current) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+    // A subcategory belongs to one category, so moving the contact without
+    // naming a new one drops the old one rather than failing the check.
+    if (
+      data.subcategoryId === undefined &&
+      data.category !== undefined &&
+      data.category !== current.category
+    ) {
+      data.subcategoryId = null;
+    }
+    const categoryError = await checkCategoryChoice(
+      data.category ?? current.category,
+      data.subcategoryId !== undefined ? data.subcategoryId : current.subcategoryId
+    );
+    if (categoryError) {
+      return NextResponse.json({ error: categoryError }, { status: 400 });
+    }
   }
 
   // Publishing a contact nobody can call would render a dead card, and the

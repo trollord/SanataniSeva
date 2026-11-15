@@ -100,14 +100,14 @@ const PLATE_SERVICES = {
 /* ── Props ───────────────────────────────────────────────────────────────── */
 
 interface Trade {
-  /** Display label, e.g. "Carpenters". From COMMUNITY_CATEGORIES[].label. */
+  /** Display label, e.g. "Carpenters". A DirectoryCategory label. */
   label: string;
   /** Listings in that trade. From CATEGORY_COUNTS[key]. Always >= 1 today. */
   count: number;
 }
 
 interface HomeEntryServicesProps {
-  /** All trades with a non-zero count, in the order COMMUNITY_CATEGORIES defines them. Computed in page.tsx. */
+  /** All trades with a non-zero count, in the admin-set category order. Computed in page.tsx. */
   trades: Trade[];
   /** COMMUNITY_CONTACTS.length. Currently 30. */
   totalContacts: number;

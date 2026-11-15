@@ -9,29 +9,6 @@ import {
   BadgeCheck,
   Users,
   Check,
-  Hammer,
-  Wrench,
-  Zap,
-  AirVent,
-  PaintRoller,
-  Sparkles,
-  ShoppingBag,
-  ChefHat,
-  Stethoscope,
-  Scissors,
-  Shirt,
-  Truck,
-  GraduationCap,
-  Leaf,
-  Building2,
-  Car,
-  Siren,
-  Flame,
-  Landmark,
-  Briefcase,
-  Palette,
-  Printer,
-  HeartHandshake,
   type LucideIcon,
 } from "lucide-react";
 import WhatsAppIcon from "@/components/ui/WhatsAppIcon";
@@ -39,46 +16,37 @@ import { whatsAppContactUrl } from "@/lib/utils/whatsapp";
 import SearchableSelect from "@/components/ui/searchable-select";
 import { parsePhone } from "@/lib/phone";
 import {
-  COMMUNITY_CATEGORIES,
   type CommunityContact,
   type DbCommunityContact,
   toDisplayContact,
 } from "@/lib/community";
+import {
+  type CategoryChoice,
+  type DirectoryCategoryView,
+  type DirectoryIndex,
+  categoryCounts,
+  categoryFilter,
+  categoryText,
+  indexDirectory,
+  toggleCategory as toggleCategoryIn,
+  toggleSubcategory as toggleSubcategoryIn,
+} from "@/lib/directory";
+import { DIRECTORY_ICONS, directoryIcon, directoryIconName } from "@/lib/directory-icons";
 
-const ICONS: Record<string, LucideIcon> = {
-  Hammer,
-  Wrench,
-  Zap,
-  AirVent,
-  PaintRoller,
-  Sparkles,
-  ShoppingBag,
-  ChefHat,
-  Stethoscope,
-  Scissors,
-  Shirt,
-  Truck,
-  GraduationCap,
-  Leaf,
-  Building2,
-  Car,
-  Siren,
-  Flame,
-  Landmark,
-  Briefcase,
-  Palette,
-  Printer,
-  HeartHandshake,
-};
+const NO_CHOICE: CategoryChoice = { categories: new Set(), subcategories: new Set() };
 
 /** 300+ contacts is a lot to scroll; the table pages instead. */
 const PER_PAGE = 25;
 
-function buildSearchIndex(contacts: CommunityContact[]): Record<string, string> {
+function buildSearchIndex(
+  contacts: CommunityContact[],
+  index: DirectoryIndex
+): Record<string, string> {
   return Object.fromEntries(
     contacts.map((c) => {
-      const label =
-        COMMUNITY_CATEGORIES.find((cat) => cat.key === c.category)?.label ?? "";
+      // Category and subcategory labels both, so "dental" finds the Dental
+      // subcategory as well as anyone who mentions it in their service line.
+      const label = categoryText(index, c.category, c.subcategoryId);
       return [
         c.id,
         [c.name, c.contactPerson ?? "", c.service, label, c.locality, c.address, ...c.phones, ...c.tags]
@@ -91,13 +59,27 @@ function buildSearchIndex(contacts: CommunityContact[]): Record<string, string> 
 
 export default function CommunityDirectory({
   dbContacts,
+  categories,
 }: {
   dbContacts: DbCommunityContact[];
+  /** In display order, from the DB */
+  categories: DirectoryCategoryView[];
 }) {
   const contacts: CommunityContact[] = useMemo(
     () => dbContacts.map(toDisplayContact),
     [dbContacts]
   );
+
+  const index = useMemo(() => indexDirectory(categories), [categories]);
+
+  // A contact whose key has no category row still gets a row of its own,
+  // under its raw key, so it can be found and filtered rather than vanishing.
+  const railCategories = useMemo(() => {
+    const extra = Array.from(new Set(contacts.map((c) => c.category)))
+      .filter((key) => !index.byKey.has(key))
+      .map((key): DirectoryCategoryView => ({ key, label: key || "Other", icon: "", subcategories: [] }));
+    return [...categories, ...extra];
+  }, [categories, contacts, index]);
 
   // Only offer localities that actually have listings - the shared
   // HIRANANDANI_LOCALITIES list covers property forms too and would show
@@ -107,11 +89,14 @@ export default function CommunityDirectory({
     [contacts]
   );
 
-  const searchIndex = useMemo(() => buildSearchIndex(contacts), [contacts]);
+  const searchIndex = useMemo(() => buildSearchIndex(contacts, index), [contacts, index]);
 
   const [query, setQuery] = useState("");
-  /** Empty means "every category" - the All row, rather than a 24-key set. */
-  const [categories, setCategories] = useState<ReadonlySet<string>>(new Set());
+  /**
+   * No categories ticked means "every category" - the All row, rather than a
+   * set of every key. Subcategory ticks only ever sit under a ticked category.
+   */
+  const [choice, setChoice] = useState<CategoryChoice>(NO_CHOICE);
   const [locality, setLocality] = useState<string>("all");
   const [page, setPage] = useState(1);
 
@@ -133,18 +118,31 @@ export default function CommunityDirectory({
     });
   }, [query, locality, contacts, searchIndex]);
 
-  const categoryCounts = useMemo(() => {
-    const counts: Record<string, number> = {};
-    for (const c of preCategory) counts[c.category] = (counts[c.category] ?? 0) + 1;
-    return counts;
-  }, [preCategory]);
-
-  const results = useMemo(
-    () => (categories.size === 0 ? preCategory : preCategory.filter((c) => categories.has(c.category))),
-    [preCategory, categories]
+  const counts = useMemo(
+    () => categoryCounts(preCategory, index.subById),
+    [preCategory, index]
   );
 
-  const hasFilters = query.trim() !== "" || categories.size > 0 || locality !== "all";
+  const results = useMemo(
+    () => (choice.categories.size === 0 ? preCategory : preCategory.filter(categoryFilter(choice, index.subById))),
+    [preCategory, choice, index]
+  );
+
+  /**
+   * A ticked category's subcategories, minus any with nothing to show. One
+   * that is ticked stays even at zero, so a search cannot hide a live filter.
+   */
+  function visibleSubcategories(c: DirectoryCategoryView) {
+    return c.subcategories.filter(
+      (s) => (counts.bySubcategory[s.id] ?? 0) > 0 || choice.subcategories.has(s.id)
+    );
+  }
+
+  const mobileSubcategories = railCategories
+    .filter((c) => choice.categories.has(c.key))
+    .flatMap(visibleSubcategories);
+
+  const hasFilters = query.trim() !== "" || choice.categories.size > 0 || locality !== "all";
 
   const pageCount = Math.max(1, Math.ceil(results.length / PER_PAGE));
   // Narrowing a filter can leave you past the end of the new result set, which
@@ -159,28 +157,29 @@ export default function CommunityDirectory({
   // has not seen the start of.
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = 0;
-  }, [query, categories, locality]);
+  }, [query, choice, locality]);
 
   function changeQuery(v: string) { setQuery(v); setPage(1); }
   function changeLocality(v: string) { setLocality(v); setPage(1); }
 
   function toggleCategory(key: string) {
-    setCategories((prev) => {
-      const next = new Set(prev);
-      if (!next.delete(key)) next.add(key);
-      return next;
-    });
+    setChoice((prev) => toggleCategoryIn(prev, key, index.subById));
+    setPage(1);
+  }
+
+  function toggleSubcategory(id: string) {
+    setChoice((prev) => toggleSubcategoryIn(prev, id));
     setPage(1);
   }
 
   function clearCategories() {
-    setCategories(new Set());
+    setChoice(NO_CHOICE);
     setPage(1);
   }
 
   function clearAll() {
     setQuery("");
-    setCategories(new Set());
+    setChoice(NO_CHOICE);
     setLocality("all");
     setPage(1);
   }
@@ -249,7 +248,7 @@ export default function CommunityDirectory({
             <h2 className="text-[10px] uppercase tracking-[0.12em] text-zinc-500 font-semibold">
               Categories
             </h2>
-            {categories.size > 0 && (
+            {choice.categories.size > 0 && (
               <button
                 onClick={clearCategories}
                 className="text-[11px] text-zinc-500 hover:text-zinc-900 underline underline-offset-2 transition-colors"
@@ -262,21 +261,38 @@ export default function CommunityDirectory({
               top of the counts at the right edge of each row. */}
           <div className="flex-1 min-h-0 overflow-y-auto p-1.5 space-y-0.5 [scrollbar-width:thin] [scrollbar-gutter:stable] [scrollbar-color:#d9dfe0_transparent]">
             <RailRow
-              active={categories.size === 0}
+              active={choice.categories.size === 0}
               onClick={clearCategories}
               label="All categories"
               count={preCategory.length}
             />
-            {COMMUNITY_CATEGORIES.map((c) => (
-              <RailRow
-                key={c.key}
-                active={categories.has(c.key)}
-                onClick={() => toggleCategory(c.key)}
-                label={c.label}
-                count={categoryCounts[c.key] ?? 0}
-                selectable
-              />
-            ))}
+            {railCategories.map((c) => {
+              const active = choice.categories.has(c.key);
+              return (
+                <div key={c.key} className="space-y-0.5">
+                  <RailRow
+                    active={active}
+                    onClick={() => toggleCategory(c.key)}
+                    label={c.label}
+                    count={counts.byCategory[c.key] ?? 0}
+                    selectable
+                  />
+                  {/* A ticked category opens to its subcategories */}
+                  {active &&
+                    visibleSubcategories(c).map((s) => (
+                      <RailRow
+                        key={s.id}
+                        active={choice.subcategories.has(s.id)}
+                        onClick={() => toggleSubcategory(s.id)}
+                        label={s.label}
+                        count={counts.bySubcategory[s.id] ?? 0}
+                        selectable
+                        nested
+                      />
+                    ))}
+                </div>
+              );
+            })}
           </div>
         </aside>
 
@@ -286,23 +302,39 @@ export default function CommunityDirectory({
           {/* Category pills - the rail's stand-in below lg */}
           <div className="lg:hidden flex gap-2 overflow-x-auto pb-1 -mx-5 px-5 shrink-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             <CategoryPill
-              active={categories.size === 0}
+              active={choice.categories.size === 0}
               onClick={clearCategories}
               Icon={Users}
               label="All"
               count={preCategory.length}
             />
-            {COMMUNITY_CATEGORIES.map((c) => (
+            {railCategories.map((c) => (
               <CategoryPill
                 key={c.key}
-                active={categories.has(c.key)}
+                active={choice.categories.has(c.key)}
                 onClick={() => toggleCategory(c.key)}
-                Icon={ICONS[c.icon]}
+                Icon={directoryIcon(c.icon)}
                 label={c.label}
-                count={categoryCounts[c.key] ?? 0}
+                count={counts.byCategory[c.key] ?? 0}
               />
             ))}
           </div>
+
+          {/* The ticked categories' subcategories, a row of their own below
+              the categories: a pill row cannot open underneath an item. */}
+          {mobileSubcategories.length > 0 && (
+            <div className="lg:hidden flex gap-2 overflow-x-auto pb-1 -mx-5 px-5 mt-2 shrink-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              {mobileSubcategories.map((s) => (
+                <CategoryPill
+                  key={s.id}
+                  active={choice.subcategories.has(s.id)}
+                  onClick={() => toggleSubcategory(s.id)}
+                  label={s.label}
+                  count={counts.bySubcategory[s.id] ?? 0}
+                />
+              ))}
+            </div>
+          )}
 
           {/* Result count */}
           <div className="flex items-center justify-between gap-4 mt-3 lg:mt-0 mb-2.5 shrink-0">
@@ -364,7 +396,7 @@ export default function CommunityDirectory({
                     </thead>
                     <tbody className="divide-y divide-[#EBEBEB]">
                       {pageResults.map((c) => (
-                        <ContactRow key={c.id} contact={c} />
+                        <ContactRow key={c.id} contact={c} index={index} />
                       ))}
                     </tbody>
                   </table>
@@ -404,7 +436,8 @@ export default function CommunityDirectory({
  * tells a resident these combine rather than replace one another; the All row
  * is a reset, so it gets none. The count stays visible in both states - it is
  * the reason to pick a category, so hiding it behind the active style would
- * lose the information exactly when it is being used.
+ * lose the information exactly when it is being used. A `nested` row is a
+ * subcategory, indented so its checkbox lines up under its category's label.
  */
 function RailRow({
   active,
@@ -412,19 +445,21 @@ function RailRow({
   label,
   count,
   selectable = false,
+  nested = false,
 }: {
   active: boolean;
   onClick: () => void;
   label: string;
   count: number;
   selectable?: boolean;
+  nested?: boolean;
 }) {
   return (
     <button
       onClick={onClick}
       aria-pressed={active}
       title={label}
-      className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-left text-[13px] transition-colors ${
+      className={`w-full flex items-center gap-2 pr-2 ${nested ? "pl-[30px]" : "pl-2"} py-1.5 rounded-lg text-left text-[13px] transition-colors ${
         active
           ? "bg-[#FF5F15]/10 text-[#0B0B0C] font-medium"
           : "text-zinc-600 hover:bg-[#f2f4f4] hover:text-zinc-900"
@@ -462,7 +497,8 @@ function CategoryPill({
 }: {
   active: boolean;
   onClick: () => void;
-  Icon: LucideIcon;
+  /** Omitted for subcategory pills */
+  Icon?: LucideIcon;
   label: string;
   count: number;
 }) {
@@ -476,7 +512,7 @@ function CategoryPill({
           : "bg-white text-zinc-600 border-[#e4e9ea] hover:bg-[#f2f4f4] hover:text-zinc-900"
       }`}
     >
-      <Icon className="w-3.5 h-3.5" />
+      {Icon && <Icon className="w-3.5 h-3.5" />}
       {label}
       <span className={active ? "text-white/50" : "text-zinc-400"}>{count}</span>
     </button>
@@ -505,9 +541,10 @@ function PagerButton({
 }
 
 /* ─── Contact row ─────────────────────────────────────────────────────────── */
-function ContactRow({ contact: c }: { contact: CommunityContact }) {
-  const meta = COMMUNITY_CATEGORIES.find((cat) => cat.key === c.category);
-  const Icon = meta ? ICONS[meta.icon] : Users;
+function ContactRow({ contact: c, index }: { contact: CommunityContact; index: DirectoryIndex }) {
+  const Icon = DIRECTORY_ICONS[directoryIconName(index.byKey.get(c.category)?.icon)];
+  // "Health & Pharmacy · Dental" when a subcategory is set
+  const categoryLabel = categoryText(index, c.category, c.subcategoryId);
   // The page filters out numberless contacts, so there is always a primary.
   const primary = c.phones[0];
   // WhatsApp only exists on mobile numbers - offering it for a landline, a
@@ -522,7 +559,7 @@ function ContactRow({ contact: c }: { contact: CommunityContact }) {
           <div className="bg-[#F5F5F5] rounded-lg p-1.5 shrink-0">
             <Icon className="w-3.5 h-3.5 text-[#FF5F15]" />
           </div>
-          <span className="text-xs text-zinc-600 pt-1">{meta?.label ?? c.category}</span>
+          <span className="text-xs text-zinc-600 pt-1">{categoryLabel}</span>
         </div>
       </td>
 
@@ -551,7 +588,7 @@ function ContactRow({ contact: c }: { contact: CommunityContact }) {
             </p>
             {/* Category and locality fold in here once their columns drop away */}
             <p className="text-[11px] text-zinc-400 md:hidden">
-              {meta?.label}
+              {categoryLabel}
               {c.locality && <span className="text-zinc-300"> · {c.locality}</span>}
             </p>
           </div>

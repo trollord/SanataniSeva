@@ -3,7 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { formatDate } from "@/lib/utils/formatters";
-import { COMMUNITY_CATEGORIES } from "@/lib/community";
+import { getDirectoryCategories } from "@/lib/directory-categories";
+import { categoryText, indexDirectory } from "@/lib/directory";
 import CommunityAdminActions from "./CommunityAdminActions";
 import CommunityCSVTools from "./CommunityCSVTools";
 import ContactFormDialog from "./ContactFormDialog";
@@ -17,10 +18,6 @@ const STATUS_STYLES: Record<string, string> = {
   ACTIVE: "bg-green-100 text-green-800",
   REJECTED: "bg-red-100 text-red-700",
 };
-
-const CATEGORY_MAP = Object.fromEntries(
-  COMMUNITY_CATEGORIES.map((c) => [c.key, c.label])
-);
 
 interface PageProps {
   searchParams: Promise<{ status?: string; page?: string; q?: string }>;
@@ -46,12 +43,16 @@ export default async function AdminCommunityPage({ searchParams }: PageProps) {
   const total = await prisma.communityContact.count({ where });
   const { page, pageCount, skip, take, from, to } = resolvePage(filters.page, total);
 
-  const contacts = await prisma.communityContact.findMany({
-    where,
-    orderBy: { createdAt: "desc" },
-    skip,
-    take,
-  });
+  const [contacts, categories] = await Promise.all([
+    prisma.communityContact.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      skip,
+      take,
+    }),
+    getDirectoryCategories(),
+  ]);
+  const directory = indexDirectory(categories);
 
   const tabs = ["PENDING", "ACTIVE", "REJECTED", "ALL"];
 
@@ -61,10 +62,10 @@ export default async function AdminCommunityPage({ searchParams }: PageProps) {
         <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
           Community Directory
         </h1>
-        <ContactFormDialog />
+        <ContactFormDialog categories={categories} />
       </div>
 
-      <CommunityCSVTools />
+      <CommunityCSVTools categories={categories} />
 
       <CommunitySearch />
 
@@ -121,7 +122,7 @@ export default async function AdminCommunityPage({ searchParams }: PageProps) {
                       )}
                     </td>
                     <td className="px-4 py-3 text-gray-700 hidden md:table-cell">
-                      <p className="text-sm">{CATEGORY_MAP[c.category] ?? c.category}</p>
+                      <p className="text-sm">{categoryText(directory, c.category, c.subcategoryId)}</p>
                       <p className="text-xs text-gray-500 mt-0.5">{c.locality}</p>
                     </td>
                     <td className="px-4 py-3 text-gray-700 font-medium hidden sm:table-cell">
@@ -152,11 +153,13 @@ export default async function AdminCommunityPage({ searchParams }: PageProps) {
                     <td className="px-4 py-3">
                       <div className="flex items-center justify-end gap-1">
                         <ContactFormDialog
+                          categories={categories}
                           contact={{
                             id: c.id,
                             name: c.name,
                             contactPerson: c.contactPerson,
                             category: c.category,
+                            subcategoryId: c.subcategoryId,
                             service: c.service,
                             phones: c.phones,
                             whatsapp: c.whatsapp,

@@ -23,7 +23,6 @@
 
 import { PrismaClient } from "@prisma/client";
 import * as XLSX from "xlsx";
-import { COMMUNITY_CATEGORIES } from "../src/lib/community";
 import { parsePhone } from "../src/lib/phone";
 
 const prisma = new PrismaClient();
@@ -206,10 +205,6 @@ const CATEGORY_SERVICE: Record<string, string> = {
   marketing: "Marketing",
 };
 
-// Widened to string: the taxonomy is `as const`, so the inferred Set would be
-// of literal keys and reject the arbitrary strings coming out of the sheet.
-const VALID_KEYS: Set<string> = new Set(COMMUNITY_CATEGORIES.map((c) => c.key));
-
 const clean = (v: unknown): string =>
   String(v ?? "").replace(/\s+/g, " ").trim();
 
@@ -254,6 +249,13 @@ function isDialable(phone: string): boolean {
 type Row = Record<string, unknown>;
 
 async function main() {
+  // The taxonomy lives in DirectoryCategory (managed at /admin/categories).
+  const categories = await prisma.directoryCategory.findMany({
+    orderBy: [{ sortOrder: "asc" }, { label: "asc" }],
+    select: { key: true, label: true },
+  });
+  const VALID_KEYS = new Set(categories.map((c) => c.key));
+
   const args = process.argv.slice(2);
   const dryRun = args.includes("--dry-run");
   const file =
@@ -374,7 +376,7 @@ async function main() {
     byCat.set(p.data.category, (byCat.get(p.data.category) ?? 0) + 1);
 
   console.log("Category distribution:");
-  for (const c of COMMUNITY_CATEGORIES) {
+  for (const c of categories) {
     const n = byCat.get(c.key) ?? 0;
     if (n) console.log(`  ${String(n).padStart(3)}  ${c.key.padEnd(13)} ${c.label}`);
   }
