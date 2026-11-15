@@ -3,7 +3,6 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
-import { useRouter } from "next/navigation";
 import { PlusSquare, LayoutDashboard, Shield, LogOut, X, ArrowRight } from "lucide-react";
 import BecomeOwnerModal from "@/components/property/BecomeOwnerModal";
 import InstallAppPrompt from "@/components/layout/InstallAppPrompt";
@@ -35,7 +34,6 @@ const navItems = [
 /* ─── Avatar menu (FloatingActionMenu) ────────────────────────────────────── */
 function UserMenu() {
   const { data: session } = useSession();
-  const router = useRouter();
   const { scrolled, darkHero } = useNavbar();
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -46,14 +44,14 @@ function UserMenu() {
   const options = [
     {
       label: "My Dashboard",
-      onClick: () => { router.push("/dashboard"); setMenuOpen(false); },
+      href: "/dashboard",
       Icon: <LayoutDashboard className="h-4 w-4" />,
     },
     ...(isAdmin
       ? [
           {
             label: "Admin Panel",
-            onClick: () => { router.push("/admin"); setMenuOpen(false); },
+            href: "/admin",
             Icon: <Shield className="h-4 w-4" />,
           },
         ]

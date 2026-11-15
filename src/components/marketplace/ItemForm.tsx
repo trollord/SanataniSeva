@@ -14,6 +14,7 @@ import {
 import { Input } from "@/components/ui/input";
 import PhotoTileControls from "@/components/ui/PhotoTileControls";
 import { markPrimary, moveToPosition } from "@/lib/media-order";
+import { uploadMedia } from "@/lib/upload-media";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import {
@@ -463,13 +464,11 @@ function PhotosStep({
 }) {
   const onDrop = useCallback(
     async (acceptedFiles: File[]) => {
-      const MAX = 2 * 1024 * 1024;
-      const oversized = acceptedFiles.filter((f) => f.size > MAX);
-      oversized.forEach((f) => toast.error(`"${f.name}" exceeds 2 MB.`));
-      const valid = acceptedFiles.filter((f) => f.size <= MAX);
-      if (!valid.length) return;
+      // No size check up front: uploadMedia resizes each photo first, so a
+      // large phone photo still gets in
+      if (!acceptedFiles.length) return;
 
-      const newImgs: UploadedImage[] = valid.map((file) => ({
+      const newImgs: UploadedImage[] = acceptedFiles.map((file) => ({
         id: nextImageId(),
         file,
         preview: URL.createObjectURL(file),
@@ -480,14 +479,8 @@ function PhotosStep({
       const results = await Promise.all(
         newImgs.map(async (img) => {
           try {
-            const res = await fetch(
-              `/api/upload?filename=${encodeURIComponent(img.file!.name)}&contentType=${encodeURIComponent(img.file!.type)}&fileSize=${img.file!.size}`
-            );
-            if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.error ?? "Upload URL failed"); }
-            const { presignedUrl, s3Key, publicUrl } = await res.json();
-            const put = await fetch(presignedUrl, { method: "PUT", body: img.file, headers: { "Content-Type": img.file!.type } });
-            if (!put.ok) { const b = await put.text().catch(() => ""); throw new Error(b.match(/<Message>(.*?)<\/Message>/)?.[1] ?? `S3 error ${put.status}`); }
-            return { id: img.id, url: publicUrl, s3Key, error: undefined };
+            const { url, s3Key } = await uploadMedia(img.file!);
+            return { id: img.id, url, s3Key, error: undefined };
           } catch (e) {
             return { id: img.id, url: "", s3Key: "", error: e instanceof Error ? e.message : "Upload failed" };
           }
@@ -543,7 +536,7 @@ function PhotosStep({
           {isDragActive ? "Drop your photos here" : "Drag photos here, or tap to browse"}
         </p>
         <p className="text-sm text-gray-400 mt-2">
-          JPG, PNG, WEBP · max 2 MB each · 1–6 photos
+          JPG, PNG, WEBP · resized automatically · 1–6 photos
         </p>
         {images.length > 0 && (
           <span className="absolute top-3 right-4 text-xs font-bold text-gray-400">

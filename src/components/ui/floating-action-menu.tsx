@@ -2,18 +2,40 @@
 
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
-import { usePathname } from "next/navigation";
+import Link, { useLinkStatus } from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { Loader2, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+/**
+ * An option either navigates (`href`) or runs an action (`onClick`). Use
+ * `href` for pages: it renders a real link, so the page's loading screen is
+ * prefetched and shows the instant it is pressed. A router.push from onClick
+ * left the old page on screen, apparently dead, until the server had rendered
+ * the whole new one.
+ */
+type MenuOption = {
+  label: string;
+  Icon?: React.ReactNode;
+} & ({ href: string; onClick?: never } | { onClick: () => void; href?: never });
+
+const OPTION_CLASS = "flex items-center gap-2.5 px-5 py-2.5 text-[0.9rem] rounded-[10px] border-none";
+const OPTION_STYLE: React.CSSProperties = {
+  background: "#2a2a2a",
+  color: "#d4d4d4",
+  boxShadow: "0 2px 8px rgba(0,0,0,0.3)",
+};
+
+/** Swaps the option's icon for a spinner while its navigation is pending. */
+function LinkOptionIcon({ icon }: { icon?: React.ReactNode }) {
+  const { pending } = useLinkStatus();
+  return pending ? <Loader2 className="h-4 w-4 animate-spin" aria-label="Loading" /> : <>{icon}</>;
+}
+
 type FloatingActionMenuProps = {
-  options: {
-    label: string;
-    onClick: () => void;
-    Icon?: React.ReactNode;
-  }[];
+  options: MenuOption[];
   className?: string;
   trigger?: React.ReactNode;
   isOpen?: boolean;
@@ -50,6 +72,14 @@ const FloatingActionMenu = ({
   const triggerRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
+  const router = useRouter();
+
+  // Warm the pages as soon as the menu opens, so the loading screen is ready
+  // before the pointer reaches an option.
+  const hrefs = options.flatMap((o) => (o.href ? [o.href] : [])).join("|");
+  useEffect(() => {
+    if (isOpen && hrefs) hrefs.split("|").forEach((h) => router.prefetch(h));
+  }, [isOpen, hrefs, router]);
   const [pos, setPos] = useState({ top: 0, right: 0 });
 
   const updatePos = useCallback(() => {
@@ -163,18 +193,24 @@ const FloatingActionMenu = ({
                         delay: index * 0.05,
                       }}
                     >
-                      <Button
-                        onClick={option.onClick}
-                        className="flex items-center gap-2.5 px-5 py-2.5 text-[0.9rem] rounded-[10px] border-none"
-                        style={{
-                          background: "#2a2a2a",
-                          color: "#d4d4d4",
-                          boxShadow: "0 2px 8px rgba(0,0,0,0.3)",
-                        }}
-                      >
-                        {option.Icon}
-                        <span>{option.label}</span>
-                      </Button>
+                      {option.href ? (
+                        <Link
+                          href={option.href}
+                          // The menu closes itself when the route changes; on
+                          // the page it already points to there is no change.
+                          onClick={() => option.href === pathname && closeRef.current()}
+                          className={cn(buttonVariants(), OPTION_CLASS)}
+                          style={OPTION_STYLE}
+                        >
+                          <LinkOptionIcon icon={option.Icon} />
+                          <span>{option.label}</span>
+                        </Link>
+                      ) : (
+                        <Button onClick={option.onClick} className={OPTION_CLASS} style={OPTION_STYLE}>
+                          {option.Icon}
+                          <span>{option.label}</span>
+                        </Button>
+                      )}
                     </motion.div>
                   ))}
                 </div>

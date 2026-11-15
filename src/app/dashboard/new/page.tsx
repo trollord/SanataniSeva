@@ -34,6 +34,7 @@ import ContactPhoneField, { useAccountPhone } from "@/components/ui/ContactPhone
 import { WhatsAppShareModal } from "@/components/property/WhatsAppShare";
 import PhotoTileControls from "@/components/ui/PhotoTileControls";
 import { markPrimary, moveToPosition } from "@/lib/media-order";
+import { uploadMedia } from "@/lib/upload-media";
 import NewListingTour from "@/components/tour/NewListingTour";
 import type { ShareableProperty } from "@/lib/utils/whatsapp";
 import {
@@ -573,17 +574,13 @@ function Step2({
 }) {
   const onDrop = useCallback(
     async (acceptedFiles: File[]) => {
-      const maxFor = (f: File) =>
-        f.type.startsWith("video/") ? 50 * 1024 * 1024 : 2 * 1024 * 1024;
-      const oversized = acceptedFiles.filter((f) => f.size > maxFor(f));
-      if (oversized.length > 0) {
-        oversized.forEach((f) =>
-          toast.error(
-            `"${f.name}" exceeds ${f.type.startsWith("video/") ? "50" : "2"} MB and was removed.`
-          )
-        );
-      }
-      const validFiles = acceptedFiles.filter((f) => f.size <= maxFor(f));
+      // Only videos can be refused up front: photos are resized before their
+      // size is checked, so a large phone photo still gets in.
+      const tooBig = (f: File) => f.type.startsWith("video/") && f.size > 50 * 1024 * 1024;
+      acceptedFiles
+        .filter(tooBig)
+        .forEach((f) => toast.error(`"${f.name}" exceeds 50 MB and was removed.`));
+      const validFiles = acceptedFiles.filter((f) => !tooBig(f));
       if (validFiles.length === 0) return;
 
       const newImages: UploadedImage[] = validFiles.map((file) => ({
@@ -598,25 +595,12 @@ function Step2({
 
       onImagesChange((prev) => [...prev, ...newImages]);
 
-      // Upload each file
+      // Tiles are already showing with their spinner; each one is resized and
+      // uploaded behind it
       const uploadPromises = newImages.map(async (img) => {
         try {
-          const res = await fetch(
-            `/api/upload?filename=${encodeURIComponent(img.file.name)}&contentType=${encodeURIComponent(img.file.type)}&fileSize=${img.file.size}`
-          );
-          if (!res.ok) {
-            const err = await res.json().catch(() => ({}));
-            throw new Error(err.error ?? "Failed to get upload URL");
-          }
-          const { presignedUrl, s3Key, publicUrl } = await res.json();
-
-          await fetch(presignedUrl, {
-            method: "PUT",
-            body: img.file,
-            headers: { "Content-Type": img.file.type },
-          });
-
-          return { id: img.id, url: publicUrl, s3Key, error: undefined };
+          const { url, s3Key } = await uploadMedia(img.file);
+          return { id: img.id, url, s3Key, error: undefined };
         } catch (err) {
           return {
             id: img.id,
@@ -708,7 +692,7 @@ function Step2({
           {isDragActive ? "Drop photos or videos here" : "Drag & drop photos or videos here"}
         </p>
         <p className="text-xs text-gray-500 mt-1">
-          or click to browse · images up to 2 MB · MP4/WebM/MOV videos up to 50 MB · 10 files max
+          or click to browse · photos resized automatically · MP4/WebM/MOV videos up to 50 MB · 10 files max
         </p>
       </div>
 
@@ -1257,21 +1241,26 @@ export default function NewListingPage() {
 
       const { property } = await res.json();
 
-      // One at a time, in the lister's order: each row's createdAt is what
-      // keeps that order when the listing is read back.
-      for (const img of data.images) {
-        try {
-          await fetch(`/api/properties/${property.id}/images`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
+      // All photos in one request, in the lister's order: the server stamps
+      // each row's createdAt from its position, which is what keeps that order
+      // when the listing is read back.
+      const photos = data.images.filter((img) => img.url);
+      if (photos.length > 0) {
+        const saved = await fetch(`/api/properties/${property.id}/images`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            images: photos.map((img) => ({
               url: img.url,
               s3Key: img.s3Key,
               isPrimary: img.isPrimary,
-            }),
-          });
-        } catch {
-          // Same as before: one failed photo doesn't sink the listing
+            })),
+          }),
+        }).catch(() => null);
+        // The listing itself is saved, so this doesn't sink the submit - but
+        // say so, rather than leave the lister wondering where the photos went
+        if (!saved?.ok) {
+          toast.error("Your listing was saved, but its photos were not. Add them again from Edit.");
         }
       }
 

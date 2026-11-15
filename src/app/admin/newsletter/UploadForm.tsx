@@ -8,11 +8,31 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
+/** fetch() cannot report upload progress, and a 30 MB edition needs some. */
+function putWithProgress(url: string, file: File, onProgress: (pct: number) => void) {
+  return new Promise<void>((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("PUT", url);
+    xhr.setRequestHeader("Content-Type", "application/pdf");
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100));
+    };
+    xhr.onload = () =>
+      xhr.status >= 200 && xhr.status < 300
+        ? resolve()
+        : reject(new Error(`Storage refused the upload (${xhr.status})`));
+    xhr.onerror = () => reject(new Error("Network error during upload"));
+    xhr.send(file);
+  });
+}
+
 export default function UploadForm() {
   const router = useRouter();
   const fileRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
+  // 0-100 while the PDF goes to storage, null otherwise
+  const [progress, setProgress] = useState<number | null>(null);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -22,14 +42,28 @@ export default function UploadForm() {
     const date = (form.elements.namedItem("date") as HTMLInputElement).value;
     if (!title || !date) return toast.error("Fill in title and date.");
 
+    if (file.size > 50 * 1024 * 1024) return toast.error("PDF must be under 50 MB.");
+
     setUploading(true);
     try {
-      const fd = new FormData();
-      fd.append("file", file);
-      fd.append("title", title);
-      fd.append("date", date);
+      // The PDF goes straight to storage, then only its key is posted here:
+      // sending the file through the server capped it at Vercel's 4.5 MB
+      // request limit and sent every byte twice.
+      const presign = await fetch(`/api/admin/newsletter?fileSize=${file.size}`);
+      if (!presign.ok) {
+        const err = await presign.json().catch(() => ({}));
+        throw new Error(err.error ?? "Could not start the upload");
+      }
+      const { presignedUrl, s3Key } = await presign.json();
 
-      const res = await fetch("/api/admin/newsletter", { method: "POST", body: fd });
+      setProgress(0);
+      await putWithProgress(presignedUrl, file, setProgress);
+
+      const res = await fetch("/api/admin/newsletter", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ s3Key, title, date }),
+      });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         throw new Error(err.error ?? "Upload failed");
@@ -43,6 +77,7 @@ export default function UploadForm() {
       toast.error(err instanceof Error ? err.message : "Upload failed");
     } finally {
       setUploading(false);
+      setProgress(null);
     }
   }
 
@@ -90,13 +125,18 @@ export default function UploadForm() {
               <span className="font-medium">{file.name}</span>
               <span className="text-gray-400">({(file.size / 1024 / 1024).toFixed(1)} MB)</span>
             </div>
-          ) : (
+          ) : null}
+          {file && progress !== null ? (
+            <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-gray-200" role="progressbar" aria-valuenow={progress} aria-valuemin={0} aria-valuemax={100}>
+              <div className="h-full bg-[#FF5F15] transition-[width] duration-200" style={{ width: `${progress}%` }} />
+            </div>
+          ) : !file ? (
             <>
               <Upload className="h-7 w-7 mx-auto text-gray-400 mb-2" />
               <p className="text-sm text-gray-600 font-medium">Click to select a PDF</p>
               <p className="text-xs text-gray-400 mt-1">Max 50 MB</p>
             </>
-          )}
+          ) : null}
         </div>
       </div>
 
@@ -104,7 +144,8 @@ export default function UploadForm() {
         <Button type="submit" disabled={uploading || !file} className="gap-2 rounded-xl">
           {uploading ? (
             <>
-              <Loader2 className="h-4 w-4 animate-spin" /> Uploading…
+              <Loader2 className="h-4 w-4 animate-spin" />
+              {progress === null ? "Saving…" : progress < 100 ? `Uploading ${progress}%` : "Reading pages…"}
             </>
           ) : (
             <>

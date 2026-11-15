@@ -40,6 +40,23 @@ export function orderedImageRows(
 }
 
 /**
+ * The property equivalent of orderedImageRows. A property's media can open
+ * with a video, and the lead must be a still (see markPrimary), so the first
+ * row the client flagged keeps the primary role instead of photo 1 - still at
+ * most one, and none for an all-video set.
+ */
+export function orderedPropertyImageRows(
+  images: readonly { url: string; s3Key: string; isPrimary?: boolean }[],
+  base: number = Date.now()
+) {
+  const primary = images.findIndex((img) => img.isPrimary);
+  return orderedImageRows(images, base).map((row, i) => ({
+    ...row,
+    isPrimary: i === primary,
+  }));
+}
+
+/**
  * Moves the item at `from` to `to`, shifting the items between them by one.
  * The result is always a permutation of the input, so positions can never
  * collide or leave gaps. Out-of-range indexes return the list unchanged.

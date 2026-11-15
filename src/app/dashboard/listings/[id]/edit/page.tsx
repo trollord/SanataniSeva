@@ -34,6 +34,7 @@ import ContactPhoneField from "@/components/ui/ContactPhoneField";
 import { formatParking, parseAmenities } from "@/lib/utils/formatters";
 import PhotoTileControls from "@/components/ui/PhotoTileControls";
 import { markPrimary, moveToPosition } from "@/lib/media-order";
+import { uploadMedia } from "@/lib/upload-media";
 import {
   ChevronRight,
   ChevronLeft,
@@ -350,15 +351,13 @@ function Step2({
 }) {
   const onDrop = useCallback(
     async (acceptedFiles: File[]) => {
-      const maxFor = (f: File) =>
-        f.type.startsWith("video/") ? 50 * 1024 * 1024 : 2 * 1024 * 1024;
-      const oversized = acceptedFiles.filter((f) => f.size > maxFor(f));
-      if (oversized.length > 0) {
-        oversized.forEach((f) =>
-          toast.error(`"${f.name}" exceeds ${f.type.startsWith("video/") ? "50" : "2"} MB and was removed.`)
-        );
-      }
-      const validFiles = acceptedFiles.filter((f) => f.size <= maxFor(f));
+      // Only videos can be refused up front: photos are resized before their
+      // size is checked, so a large phone photo still gets in.
+      const tooBig = (f: File) => f.type.startsWith("video/") && f.size > 50 * 1024 * 1024;
+      acceptedFiles
+        .filter(tooBig)
+        .forEach((f) => toast.error(`"${f.name}" exceeds 50 MB and was removed.`));
+      const validFiles = acceptedFiles.filter((f) => !tooBig(f));
       if (validFiles.length === 0) return;
 
       const newImages: UploadedImage[] = validFiles.map((file) => ({
@@ -373,22 +372,12 @@ function Step2({
 
       onImagesChange((prev) => [...prev, ...newImages]);
 
+      // Tiles are already showing with their spinner; each one is resized and
+      // uploaded behind it
       const uploadPromises = newImages.map(async (img) => {
         try {
-          const res = await fetch(
-            `/api/upload?filename=${encodeURIComponent(img.file!.name)}&contentType=${encodeURIComponent(img.file!.type)}&fileSize=${img.file!.size}`
-          );
-          if (!res.ok) {
-            const err = await res.json().catch(() => ({}));
-            throw new Error(err.error ?? "Failed to get upload URL");
-          }
-          const { presignedUrl, s3Key, publicUrl } = await res.json();
-          await fetch(presignedUrl, {
-            method: "PUT",
-            body: img.file,
-            headers: { "Content-Type": img.file!.type },
-          });
-          return { id: img.id, url: publicUrl, s3Key, error: undefined };
+          const { url, s3Key } = await uploadMedia(img.file!);
+          return { id: img.id, url, s3Key, error: undefined };
         } catch (err) {
           return { id: img.id, url: "", s3Key: "", error: err instanceof Error ? err.message : "Upload failed" };
         }
@@ -447,7 +436,7 @@ function Step2({
         <p className="text-sm font-medium text-gray-700">
           {isDragActive ? "Drop photos or videos here" : "Drag & drop photos or videos here"}
         </p>
-        <p className="text-xs text-gray-500 mt-1">or click to browse · images up to 2 MB · MP4/WebM/MOV videos up to 50 MB · 10 files max</p>
+        <p className="text-xs text-gray-500 mt-1">or click to browse · photos resized automatically · MP4/WebM/MOV videos up to 50 MB · 10 files max</p>
       </div>
 
       {images.length > 0 && (

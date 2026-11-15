@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import { LayoutDashboard, Shield, LogOut } from "lucide-react";
 import FloatingActionMenu from "@/components/ui/floating-action-menu";
@@ -10,7 +9,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 export default function DashboardNavbar() {
   const { data: session } = useSession();
-  const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
 
   const isAdmin = ["ADMIN"].includes(session?.user?.role ?? "");
@@ -18,14 +16,14 @@ export default function DashboardNavbar() {
   const options = [
     {
       label: "My Dashboard",
-      onClick: () => { router.push("/dashboard"); setMenuOpen(false); },
+      href: "/dashboard",
       Icon: <LayoutDashboard className="h-4 w-4" />,
     },
     ...(isAdmin
       ? [
           {
             label: "Admin Panel",
-            onClick: () => { router.push("/admin"); setMenuOpen(false); },
+            href: "/admin",
             Icon: <Shield className="h-4 w-4" />,
           },
         ]
