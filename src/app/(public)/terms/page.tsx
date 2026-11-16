@@ -5,6 +5,7 @@ export const metadata: Metadata = {
   title: "Terms & Conditions",
   description:
     "Terms and conditions for using Sanatani Seva, the neighbourhood portal for Hiranandani Estate, Thane.",
+  alternates: { canonical: "/terms" },
 };
 
 const LAST_UPDATED = "14 November 2026";

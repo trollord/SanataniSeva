@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { Info } from "lucide-react";
+import Link from "next/link";
+import { ChevronDown, Info } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import CommunityDirectory from "@/components/community/CommunityDirectory";
 import CommunityHero from "@/components/community/CommunityHero";
@@ -68,6 +69,11 @@ export default async function CommunityPage() {
   // Only offer the bus tab when there is at least one published route.
   const busRouteCount = await prisma.busRoute.count({ where: { active: true } });
 
+  // Categories with someone to list, each with its own crawlable page.
+  const perCategory = new Map<string, number>();
+  for (const c of dbContacts) perCategory.set(c.category, (perCategory.get(c.category) ?? 0) + 1);
+  const browseCategories = categories.filter((c) => perCategory.has(c.key));
+
   return (
     // Below lg the page scrolls as a normal document: a phone cannot show the
     // filter rail, the chrome and a useful number of rows at once. From lg up
@@ -97,6 +103,29 @@ export default async function CommunityPage() {
             </span>
           </span>
         </p>
+
+        {/* ── Browse by category ──────────────────────────────────────────
+            Plain links to /community/[category], in the server HTML. The
+            table above pages on the client, so this is how crawlers reach
+            every contact. Collapsed, so it costs the one-screen layout a
+            single line of small print. */}
+        {browseCategories.length > 0 && (
+          <details className="group mt-1.5 shrink-0 text-[11px] text-gray-400">
+            <summary className="inline-flex cursor-pointer list-none items-center gap-1 hover:text-[#C8541A] transition-colors [&::-webkit-details-marker]:hidden">
+              Browse service providers by category
+              <ChevronDown className="h-3 w-3 transition-transform group-open:rotate-180" />
+            </summary>
+            <ul className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1">
+              {browseCategories.map((c) => (
+                <li key={c.key}>
+                  <Link href={`/community/${c.key}`} className="hover:text-[#C8541A] transition-colors">
+                    {c.label} ({perCategory.get(c.key)})
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </details>
+        )}
 
       </div>
     </div>

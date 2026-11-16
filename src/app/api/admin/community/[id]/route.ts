@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { checkCategoryChoice } from "@/lib/directory-categories";
+import { checkCategoryChoice, revalidateDirectoryContacts } from "@/lib/directory-categories";
 import { HIRANANDANI_LOCALITIES } from "@/lib/constants";
 import { parsePhone } from "@/lib/phone";
 
@@ -123,8 +122,7 @@ export async function PATCH(
 
   try {
     await prisma.communityContact.update({ where: { id }, data });
-    revalidatePath("/community");
-    revalidatePath("/admin/community");
+    revalidateDirectoryContacts();
     return NextResponse.json({ ok: true });
   } catch {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -143,8 +141,7 @@ export async function DELETE(
 
   try {
     await prisma.communityContact.delete({ where: { id } });
-    revalidatePath("/community");
-    revalidatePath("/admin/community");
+    revalidateDirectoryContacts();
     return NextResponse.json({ ok: true });
   } catch {
     return NextResponse.json({ error: "Not found" }, { status: 404 });

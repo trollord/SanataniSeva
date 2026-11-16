@@ -14,6 +14,26 @@ export const SITE_NAME = "Sanatani Seva";
 export const SITE_URL = process.env.NEXTAUTH_URL ?? "https://sanataniseva.com";
 export const SITE_TAGLINE = "Your Trusted Real Estate Advisors in Hiranandani Estate";
 
+/**
+ * The site's own number, for calls and WhatsApp (/contact, /promotions).
+ * whatsAppContactUrl() strips the formatting, so the readable form is safe to
+ * pass straight in.
+ */
+export const CONTACT_PHONE = "+91 99300 09144";
+
+/** Shown in the footer and on /contact. */
+export const OFFICE_ADDRESS_LINES = [
+  "B Wing, 306, Hamilton",
+  "Hiranandani Estate, Thane West",
+  "Thane, Maharashtra 400607",
+] as const;
+/** Google Maps embed for the office (Hamilton, above Hiranandani Hospital). */
+export const OFFICE_MAP_EMBED_URL =
+  "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d272.3587923832818!2d72.98016074644241!3d19.252472923043953!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3be7bbed98ca4455%3A0xf439e38ceecb84fd!2sBwing%2C%20Hamilton%2C%20106-108%2C%20Ghodbunder%20Service%20Rd%2C%20above%20Hiranandani%20Hospital%2C%20Hiranandani%20Estate%2C%20Thane%20West%2C%20Thane%2C%20Maharashtra%20400607!5e0!3m2!1sen!2sin!4v1794767358768!5m2!1sen!2sin";
+/** Opens the same place in Google Maps (app on phones) for directions. */
+export const OFFICE_MAP_URL =
+  "https://www.google.com/maps/search/?api=1&query=Hamilton%2C%20Ghodbunder%20Service%20Rd%2C%20above%20Hiranandani%20Hospital%2C%20Hiranandani%20Estate%2C%20Thane%20West%2C%20Thane%2C%20Maharashtra%20400607";
+
 export const HIRANANDANI_LOCALITIES = [
   "Hiranandani Estate",
   "Hiranandani Meadows",

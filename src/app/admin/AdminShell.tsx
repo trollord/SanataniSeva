@@ -18,6 +18,7 @@ import {
   Bus,
   Newspaper,
   Tags,
+  Megaphone,
 } from "lucide-react";
 
 const NAV_LINKS = [
@@ -30,6 +31,7 @@ const NAV_LINKS = [
   { href: "/admin/bus-timings", label: "Bus Timings", icon: Bus },
   { href: "/admin/newsletter", label: "Newspaper", icon: Newspaper },
   { href: "/admin/news",       label: "Today's News", icon: Newspaper },
+  { href: "/admin/promotions", label: "Promotions", icon: Megaphone },
   { href: "/admin/inquiries", label: "Inquiries", icon: MessageSquare },
   { href: "/admin/users", label: "Users", icon: Users },
 ];

@@ -58,7 +58,8 @@ export const metadata: Metadata = {
     "Hiranandani Estate newspaper",
     "Thane real estate",
   ],
-  alternates: { canonical: "/" },
+  // No site-wide canonical: every page without its own inherited "/" and
+  // told search engines it was a copy of the home page. Pages set their own.
   openGraph: {
     type: "website",
     locale: "en_IN",

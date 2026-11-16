@@ -6,6 +6,7 @@ export const metadata: Metadata = {
   title: "How It Works",
   description:
     "A simple, transparent process - completely free to browse, with verified listings and direct contact.",
+  alternates: { canonical: "/how-it-works" },
 };
 
 /* ─── tiny reusable pill ───────────────────────────────────────────────────── */

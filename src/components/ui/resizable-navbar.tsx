@@ -144,14 +144,16 @@ export function NavItems({ items }: { items: NavItem[] }) {
   const activeColor   = scrolled ? "#ffffff" : darkHero ? "#ffffff" : "#0B0B0C";
 
   return (
-    <nav className="flex items-center shrink-0 gap-5 xl:gap-7">
+    // Tighter below xl: at the xl size and spacing, seven links plus the logo
+    // and Sign In are wider than a 1024px row, which cannot wrap.
+    <nav className="flex items-center shrink-0 gap-4 xl:gap-7">
       {items.map((item) => {
         const active = pathname === item.link || pathname.startsWith(item.link + "/");
         return (
           <Link
             key={item.link}
             href={item.link}
-            className="text-[15px] font-medium whitespace-nowrap relative group transition-colors duration-200"
+            className="text-[14px] xl:text-[15px] font-medium whitespace-nowrap relative group transition-colors duration-200"
             style={{ color: active ? activeColor : inactiveColor }}
           >
             {item.name}

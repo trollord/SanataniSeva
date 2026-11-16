@@ -5,4 +5,5 @@
 // parses route segment config statically at compile time and rejects a
 // re-export it cannot follow.
 export const dynamic = "force-dynamic";
+export const metadata = { alternates: { canonical: "/" } };
 export { default } from "./home-v2/page";

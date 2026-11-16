@@ -7,6 +7,11 @@ import { Loader2, Upload, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { compressPdf, PDF_COMPRESS_FROM_BYTES } from "@/lib/compress-pdf";
+
+const MAX_UPLOAD_BYTES = 50 * 1024 * 1024; // what /api/admin/newsletter accepts
+
+const mb = (bytes: number) => `${(bytes / 1048576).toFixed(1)} MB`;
 
 /** fetch() cannot report upload progress, and a 30 MB edition needs some. */
 function putWithProgress(url: string, file: File, onProgress: (pct: number) => void) {
@@ -33,6 +38,8 @@ export default function UploadForm() {
   const [uploading, setUploading] = useState(false);
   // 0-100 while the PDF goes to storage, null otherwise
   const [progress, setProgress] = useState<number | null>(null);
+  // "3/8" while pages are being redrawn, null otherwise
+  const [shrinking, setShrinking] = useState<string | null>(null);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -42,14 +49,23 @@ export default function UploadForm() {
     const date = (form.elements.namedItem("date") as HTMLInputElement).value;
     if (!title || !date) return toast.error("Fill in title and date.");
 
-    if (file.size > 50 * 1024 * 1024) return toast.error("PDF must be under 50 MB.");
-
     setUploading(true);
     try {
+      // Big print exports are shrunk here first, so the limit applies to
+      // what is uploaded rather than to what the designer sent
+      setShrinking(file.size >= PDF_COMPRESS_FROM_BYTES ? "0" : null);
+      const upload = await compressPdf(file, (done, total) => setShrinking(`${done}/${total}`));
+      setShrinking(null);
+      if (upload.size > MAX_UPLOAD_BYTES) {
+        throw new Error(
+          `Still ${(upload.size / 1048576).toFixed(0)} MB after shrinking - the limit is 50 MB. Try splitting the edition.`
+        );
+      }
+
       // The PDF goes straight to storage, then only its key is posted here:
       // sending the file through the server capped it at Vercel's 4.5 MB
       // request limit and sent every byte twice.
-      const presign = await fetch(`/api/admin/newsletter?fileSize=${file.size}`);
+      const presign = await fetch(`/api/admin/newsletter?fileSize=${upload.size}`);
       if (!presign.ok) {
         const err = await presign.json().catch(() => ({}));
         throw new Error(err.error ?? "Could not start the upload");
@@ -57,7 +73,7 @@ export default function UploadForm() {
       const { presignedUrl, s3Key } = await presign.json();
 
       setProgress(0);
-      await putWithProgress(presignedUrl, file, setProgress);
+      await putWithProgress(presignedUrl, upload, setProgress);
 
       const res = await fetch("/api/admin/newsletter", {
         method: "POST",
@@ -69,7 +85,8 @@ export default function UploadForm() {
         throw new Error(err.error ?? "Upload failed");
       }
       const { pageCount } = await res.json();
-      toast.success(`Uploaded - ${pageCount} page${pageCount !== 1 ? "s" : ""} detected`);
+      const shrunk = upload !== file ? ` (shrunk ${mb(file.size)} → ${mb(upload.size)})` : "";
+      toast.success(`Uploaded - ${pageCount} page${pageCount !== 1 ? "s" : ""} detected${shrunk}`);
       form.reset();
       setFile(null);
       router.refresh();
@@ -78,6 +95,7 @@ export default function UploadForm() {
     } finally {
       setUploading(false);
       setProgress(null);
+      setShrinking(null);
     }
   }
 
@@ -134,7 +152,9 @@ export default function UploadForm() {
             <>
               <Upload className="h-7 w-7 mx-auto text-gray-400 mb-2" />
               <p className="text-sm text-gray-600 font-medium">Click to select a PDF</p>
-              <p className="text-xs text-gray-400 mt-1">Max 50 MB</p>
+              <p className="text-xs text-gray-400 mt-1">
+                Large print PDFs are shrunk automatically before upload
+              </p>
             </>
           ) : null}
         </div>
@@ -145,7 +165,9 @@ export default function UploadForm() {
           {uploading ? (
             <>
               <Loader2 className="h-4 w-4 animate-spin" />
-              {progress === null ? "Saving…" : progress < 100 ? `Uploading ${progress}%` : "Reading pages…"}
+              {shrinking !== null
+                ? shrinking === "0" ? "Opening PDF…" : `Shrinking page ${shrinking}…`
+                : progress === null ? "Saving…" : progress < 100 ? `Uploading ${progress}%` : "Reading pages…"}
             </>
           ) : (
             <>

@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { checkCategoryChoice } from "@/lib/directory-categories";
+import { checkCategoryChoice, revalidateDirectoryContacts } from "@/lib/directory-categories";
 import { HIRANANDANI_LOCALITIES } from "@/lib/constants";
 import { parsePhone } from "@/lib/phone";
 
@@ -83,7 +82,6 @@ export async function POST(req: NextRequest) {
     select: { id: true },
   });
 
-  revalidatePath("/community");
-  revalidatePath("/admin/community");
+  revalidateDirectoryContacts();
   return NextResponse.json({ id: contact.id }, { status: 201 });
 }

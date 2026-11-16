@@ -22,6 +22,8 @@ export interface CategoryAdminView {
   icon: string;
   /** Every status: any contact blocks a delete */
   contacts: number;
+  /** Promotions in it; they do not block a delete, they lose the category */
+  promotions: number;
   subcategories: { id: string; label: string; contacts: number }[];
 }
 
@@ -84,7 +86,10 @@ export default function CategoriesAdminClient({ categories }: { categories: Cate
     }
     const ok = await confirm({
       title: `Delete ${c.label}?`,
-      description: "No contacts use it. This cannot be undone.",
+      description:
+        c.promotions > 0
+          ? `No contacts use it. ${count(c.promotions, "promotion", "promotions")} will be left without a category. This cannot be undone.`
+          : "No contacts use it. This cannot be undone.",
       confirmLabel: "Delete category",
       danger: true,
     });

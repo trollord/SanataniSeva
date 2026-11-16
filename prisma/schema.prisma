@@ -299,6 +299,7 @@ model DirectoryCategory {
   sortOrder     Int                    @default(0)
   subcategories DirectorySubcategory[]
   contacts      CommunityContact[]
+  promotions    Promotion[]
   createdAt     DateTime               @default(now())
   updatedAt     DateTime               @updatedAt
 }
@@ -331,6 +332,43 @@ model NewsItem {
   updatedAt   DateTime @updatedAt
 
   @@index([status, publishedAt])
+}
+
+// Paid promotions of local businesses, shown on /promotions. Agreed and paid
+// offline; only admins create them. Live = not hidden and today (IST) within
+// startsAt..endsAt, both ends inclusive - see src/lib/promotions.ts.
+model Promotion {
+  id          String             @id @default(cuid())
+  /// From the name on create, deduplicated, then fixed: shared links keep working after a rename.
+  slug        String             @unique
+  name        String
+  tagline     String
+  description String             @default("")
+  /// Deleting the category leaves the promotion uncategorised rather than blocking the delete.
+  categoryKey String?
+  category    DirectoryCategory? @relation(fields: [categoryKey], references: [key], onDelete: SetNull)
+  offer       String?
+  phone       String? // display form from parsePhone(), e.g. "+91 98765 43210", like CommunityContact.phones
+  whatsapp    Boolean            @default(false)
+  website     String? // normalised https URL
+  instagram   String? // normalised profile URL
+  address     String?
+  locality    String? // one of HIRANANDANI_LOCALITIES
+  hours       String?
+  logoUrl     String?
+  logoKey     String? // S3 key, so a delete can remove the object
+  imageUrls   String[] // S3 public URLs, first one is the lead image
+  imageKeys   String[] // S3 keys, same order as imageUrls
+  spotlight   Boolean            @default(false)
+  sortOrder   Int                @default(0)
+  /// Calendar dates (no time), read as IST days. Null = open-ended.
+  startsAt    DateTime?          @db.Date
+  endsAt      DateTime?          @db.Date
+  hidden      Boolean            @default(false)
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  @@index([categoryKey])
 }
 
 // Weekly newspaper editions uploaded by admin as PDFs via Cloudinary.

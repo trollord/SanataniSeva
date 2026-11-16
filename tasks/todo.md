@@ -1,3 +1,36 @@
+# Promotions tab, first version (2026-11-16)
+
+Paid local-business promotions, added by admins only. Migration written, NOT
+applied (local .env is production).
+
+- [x] Schema: `Promotion` (+ `DirectoryCategory.promotions` relation, SetNull); hand-written migration with RLS; `prisma generate`
+- [x] `src/lib/promotions.ts` (pure): IST visibility + status pill, slug, Instagram/website normalisation, maps URL, search, shared zod form schema
+- [x] `src/lib/promotions-data.ts` (server): cached loader + tag, revalidation, slug dedupe, S3 key derivation
+- [x] Admin API `/api/admin/promotions` (POST) and `[id]` (PUT, PATCH hide/move, DELETE + S3 cleanup)
+- [x] `/admin/promotions` page: list, status pill, spotlight badge, reorder, hide/show, edit/add Modal, delete; sidebar entry
+- [x] `/promotions`: heading, spotlight slider, chips + search, card grid, empty state, closing band
+- [x] `/promotions/[slug]`: gallery, about, offer + valid till, hours, address, directions, contact buttons, metadata, 404
+- [x] Nav (after Resell / Giveaway), footer Explore, sitemap; CONTACT_PHONE moved to constants
+- [x] Categories admin: warn how many promotions lose their category on delete
+- [x] Verify: tsc, eslint, scratch build, tsx helper checks, curl
+
+### Review
+- Verified: `tsc` clean; eslint 0 new errors on every new/changed file (the one
+  error in `resizable-navbar.tsx`, setState in an effect, predates this);
+  scratch `next build` passes and lists `/promotions`, `/promotions/[slug]`,
+  `/admin/promotions` and both API routes; 13 `tsx` checks of the pure helpers
+  pass (IST rollover, status pill, slug + dedupe, Instagram/website, directions,
+  form schema, field normalisation, S3 keys).
+- curl: `/promotions` and `/sitemap.xml` 500 locally (the running dev server
+  still holds the pre-`generate` Prisma client; a fresh client gets P2021, table
+  missing, confirmed read-only). Admin APIs return 401 unauthenticated.
+- NOT verified in a browser: needs the migration.
+- Order matters: apply the migration BEFORE pushing. /promotions, the detail
+  pages, the sitemap and /admin/categories (promotion counts) all query the new
+  table and would 500 without it.
+- Desktop nav: seven links did not fit a 1024px row at 15px / gap-5 (estimate,
+  not measured), so below xl the links are 14px with gap-4.
+
 # Directory categories + subcategories, admin-managed (2026-11-15)
 
 Supersedes the 2026-11-11 proposal further down. Migration written, NOT applied

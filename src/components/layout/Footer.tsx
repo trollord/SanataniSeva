@@ -31,7 +31,7 @@ export default function Footer() {
           {/* Links - 2 columns side by side on mobile */}
           <div className="grid grid-cols-2 gap-6 sm:gap-8 md:contents">
 
-            {/* Explore: the five sections, in navbar order */}
+            {/* Explore: the sections, in navbar order */}
             <div className="md:col-span-2">
               <h4 className="text-[9px] sm:text-[10px] font-bold uppercase tracking-[0.14em] text-white/35 mb-3">
                 Explore
@@ -40,6 +40,7 @@ export default function Footer() {
                 {[
                   { href: "/community",   label: "Service Providers" },
                   { href: "/marketplace", label: "Resell / Giveaway" },
+                  { href: "/promotions",  label: "Promotions" },
                   { href: "/listings",    label: "Real Estate" },
                   { href: "/newspaper",   label: "Latest News" },
                   { href: "/contact",     label: "Connect" },

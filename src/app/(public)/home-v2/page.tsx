@@ -1,4 +1,6 @@
 export const dynamic = "force-dynamic";
+// Also served at /home-v2, which is the same page as /
+export const metadata = { alternates: { canonical: "/" } };
 
 import { unstable_cache } from "next/cache";
 import { prisma } from "@/lib/prisma";

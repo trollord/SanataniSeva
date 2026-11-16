@@ -1,6 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowRight, Mail, Phone, Clock } from "lucide-react";
+import { ArrowRight, Phone, Clock, MapPin, Navigation } from "lucide-react";
+import {
+  CONTACT_PHONE,
+  OFFICE_ADDRESS_LINES,
+  OFFICE_MAP_EMBED_URL,
+  OFFICE_MAP_URL,
+} from "@/lib/constants";
 import ContactForm from "@/components/contact/ContactForm";
 import WhatsAppIcon from "@/components/ui/WhatsAppIcon";
 import { whatsAppContactUrl } from "@/lib/utils/whatsapp";
@@ -12,11 +18,7 @@ export const metadata: Metadata = {
   alternates: { canonical: "/contact" },
 };
 
-// Placeholder contact details - swap for real ones before launch
-// Same line for calls and WhatsApp. whatsAppContactUrl() strips the
-// formatting, so the readable form is safe to pass straight in.
-const CONTACT_PHONE = "+91 99300 09144";
-const CONTACT_EMAIL = "hello@sanataniseva.com";
+// Same line for calls and WhatsApp; shared with /promotions via constants.ts.
 const WHATSAPP_NUMBER = CONTACT_PHONE;
 
 const FAQS: { q: string; a: string }[] = [
@@ -66,29 +68,14 @@ export default function ContactPage() {
               Prefer talking directly?
             </h2>
 
-            <QuickCard
-              href={whatsAppContactUrl(WHATSAPP_NUMBER)}
-              icon={<WhatsAppIcon className="w-5 h-5" />}
-              label="WhatsApp"
-              value={WHATSAPP_NUMBER}
-              hint="Fastest - usually under an hour"
-              external
-            />
-
+            {/* One number for calls and WhatsApp; the floating Chat button
+                already opens WhatsApp, so it needs no tile of its own. */}
             <QuickCard
               href={`tel:${CONTACT_PHONE.replace(/\s/g, "")}`}
               icon={<Phone className="w-5 h-5" />}
-              label="Call us"
+              label="Call or WhatsApp"
               value={CONTACT_PHONE}
               hint="Mon–Sat · 10:00 AM – 7:00 PM"
-            />
-
-            <QuickCard
-              href={`mailto:${CONTACT_EMAIL}`}
-              icon={<Mail className="w-5 h-5" />}
-              label="Email"
-              value={CONTACT_EMAIL}
-              hint="Replies within 24 hours"
             />
 
             <div className="bg-white border border-gray-200 rounded-2xl p-5 flex items-start gap-3">
@@ -105,6 +92,59 @@ export default function ContactPage() {
               </div>
             </div>
           </aside>
+        </div>
+      </section>
+
+      {/* ── OFFICE + MAP ─────────────────────────────────────────────────── */}
+      <section className="px-5 sm:px-8 pb-14 sm:pb-20">
+        <div className="max-w-5xl mx-auto">
+          <p className="text-[10px] font-semibold tracking-[0.25em] text-gray-400 uppercase mb-3">
+            Visit us
+          </p>
+          <h2 className="font-[family-name:var(--font-playfair)] text-2xl sm:text-3xl font-bold text-[#0B0B0C] mb-6">
+            Our office
+          </h2>
+          <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden grid grid-cols-1 lg:grid-cols-5">
+            <div className="lg:col-span-2 p-5 sm:p-6 flex flex-col gap-5">
+              <div className="flex items-start gap-4">
+                <div className="w-10 h-10 rounded-xl bg-[#EBEBEB] flex items-center justify-center shrink-0 text-[#0B0B0C]">
+                  <MapPin className="w-5 h-5" />
+                </div>
+                <address className="not-italic min-w-0">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-gray-400">
+                    Office address
+                  </p>
+                  <p className="text-sm sm:text-base font-semibold text-[#0B0B0C] mt-0.5">
+                    {OFFICE_ADDRESS_LINES[0]}
+                  </p>
+                  {OFFICE_ADDRESS_LINES.slice(1).map((line) => (
+                    <p key={line} className="text-xs sm:text-sm text-gray-500 leading-relaxed">
+                      {line}
+                    </p>
+                  ))}
+                </address>
+              </div>
+              <a
+                href={OFFICE_MAP_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                // Same look as the form's Send button (Button is a client module, so
+                // its class helper cannot be called from this server page)
+                className="inline-flex w-fit items-center gap-2 rounded-xl bg-primary px-3 py-2 text-sm font-medium text-primary-foreground transition-all hover:bg-primary/80"
+              >
+                <Navigation className="w-4 h-4" />
+                Get directions
+              </a>
+            </div>
+            <iframe
+              src={OFFICE_MAP_EMBED_URL}
+              title="Sanatani Seva office on Google Maps"
+              className="lg:col-span-3 block h-64 sm:h-80 w-full border-0 border-t lg:border-t-0 lg:border-l border-gray-200"
+              loading="lazy"
+              referrerPolicy="strict-origin-when-cross-origin"
+              allowFullScreen
+            />
+          </div>
         </div>
       </section>
 

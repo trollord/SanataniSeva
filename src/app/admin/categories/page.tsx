@@ -19,6 +19,9 @@ export default async function AdminCategoriesPage() {
         key: true,
         label: true,
         icon: true,
+        // Promotions never block a delete (the key is SET NULL), but the
+        // admin is told how many would lose their category.
+        _count: { select: { promotions: true } },
         subcategories: {
           orderBy: [{ sortOrder: "asc" }, { label: "asc" }],
           select: { id: true, label: true },
@@ -36,9 +39,10 @@ export default async function AdminCategoriesPage() {
   const categoryCount = new Map(byCategory.map((g) => [g.category, g._count._all]));
   const subcategoryCount = new Map(bySubcategory.map((g) => [g.subcategoryId, g._count._all]));
 
-  const view: CategoryAdminView[] = categories.map((c) => ({
+  const view: CategoryAdminView[] = categories.map(({ _count, ...c }) => ({
     ...c,
     contacts: categoryCount.get(c.key) ?? 0,
+    promotions: _count.promotions,
     subcategories: c.subcategories.map((s) => ({ ...s, contacts: subcategoryCount.get(s.id) ?? 0 })),
   }));
 

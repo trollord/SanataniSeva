@@ -105,6 +105,7 @@ export async function generateMetadata({
   return {
     title: property.title,
     description: property.description.slice(0, 160),
+    alternates: { canonical: `/listings/${id}` },
     openGraph: {
       title: property.title,
       images: property.images[0] ? [property.images[0].url] : [],

@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { HIRANANDANI_LOCALITIES } from "@/lib/constants";
+import { revalidateDirectoryContacts } from "@/lib/directory-categories";
 
 const rowSchema = z.object({
   name: z.string().min(2).max(120),
@@ -82,7 +82,7 @@ export async function POST(req: NextRequest) {
       })),
     });
     created = result.count;
-    revalidatePath("/community");
+    revalidateDirectoryContacts();
   }
 
   return NextResponse.json({ created, errors, unassigned });

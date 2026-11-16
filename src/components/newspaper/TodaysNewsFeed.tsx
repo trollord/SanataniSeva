@@ -191,13 +191,13 @@ export default function TodaysNewsFeed({ items }: { items: NewsItemMeta[] }) {
 function SectionHeading() {
   return (
     <div>
-      <div className="flex items-center gap-2">
-        <span className="h-1.5 w-1.5 rounded-full bg-[#C8541A]" />
-        <h2 className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#C8541A]">
+      <div className="flex items-center gap-3">
+        <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-[#C8541A]" />
+        <h2 className="font-[family-name:var(--font-playfair)] text-3xl sm:text-4xl font-bold leading-tight text-[#1C1C1C]">
           Upcoming Events
         </h2>
       </div>
-      <p className="ml-[18px] text-xs text-[#9E6B3F]">Community events &amp; highlights</p>
+      <p className="ml-[22px] mt-1 text-sm sm:text-base text-[#9E6B3F]">Community events &amp; highlights</p>
     </div>
   );
 }

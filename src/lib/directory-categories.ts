@@ -1,13 +1,16 @@
 /**
- * Server side of the service-provider taxonomy: the cached category loader and
- * the checks every contact write runs. Pure helpers are in directory.ts.
+ * Server side of the service-provider taxonomy: the cached category and
+ * contact loaders, their revalidation, and the checks every contact write
+ * runs. Pure helpers are in directory.ts.
  */
 import { revalidatePath, revalidateTag, unstable_cache } from "next/cache";
+import type { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import type { DirectoryCategoryView } from "@/lib/directory";
 
 export const DIRECTORY_CATEGORIES_TAG = "directory-categories";
+export const DIRECTORY_CONTACTS_TAG = "directory-contacts";
 
 /** A category or subcategory name as the admin APIs accept it. */
 export const directoryLabel = z
@@ -50,6 +53,70 @@ export function revalidateDirectory() {
   revalidatePath("/admin/community");
   revalidatePath("/admin/categories");
 }
+
+/**
+ * After any contact create, edit, status change or delete. The per-category
+ * pages are dynamic, so expiring the tag their loaders carry is enough.
+ */
+export function revalidateDirectoryContacts() {
+  revalidateTag(DIRECTORY_CONTACTS_TAG, { expire: 0 });
+  revalidatePath("/community");
+  revalidatePath("/admin/community");
+}
+
+/** What the public directory shows: published, and with a number to call. */
+const PUBLIC_CONTACT = {
+  status: "ACTIVE",
+  phones: { isEmpty: false },
+} satisfies Prisma.CommunityContactWhereInput;
+
+// Tagged with the categories tag too: deleting a subcategory un-assigns its
+// contacts in the database without going through a contact write.
+const CONTACT_CACHE = {
+  tags: [DIRECTORY_CONTACTS_TAG, DIRECTORY_CATEGORIES_TAG],
+  revalidate: 3600,
+};
+
+/** Published contacts per category key, for the crawlable category pages. */
+export const getDirectoryCategoryCounts = unstable_cache(
+  async (): Promise<Record<string, number>> => {
+    const rows = await prisma.communityContact.groupBy({
+      by: ["category"],
+      where: PUBLIC_CONTACT,
+      _count: { _all: true },
+    });
+    return Object.fromEntries(rows.map((r) => [r.category, r._count._all]));
+  },
+  ["directory-category-counts-v1"],
+  CONTACT_CACHE
+);
+
+export type DirectoryCategoryContact = Awaited<
+  ReturnType<typeof getDirectoryCategoryContacts>
+>[number];
+
+/** Every published contact in one category, by name: /community/[category]. */
+export const getDirectoryCategoryContacts = unstable_cache(
+  async (category: string) =>
+    prisma.communityContact.findMany({
+      where: { ...PUBLIC_CONTACT, category },
+      orderBy: [{ name: "asc" }, { id: "asc" }],
+      select: {
+        id: true,
+        name: true,
+        contactPerson: true,
+        subcategoryId: true,
+        service: true,
+        phones: true,
+        whatsapp: true,
+        locality: true,
+        address: true,
+        hours: true,
+      },
+    }),
+  ["directory-category-contacts-v1"],
+  CONTACT_CACHE
+);
 
 /**
  * Validates a contact's category and optional subcategory against the

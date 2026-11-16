@@ -24,6 +24,7 @@ const navItems = [
   { name: "Home", link: "/" },
   { name: "Service Providers", link: "/community" },
   { name: "Resell / Giveaway", link: "/marketplace" },
+  { name: "Promotions", link: "/promotions" },
   { name: "Real Estate", link: "/listings" },
   // { name: "How It Works", link: "/how-it-works" },
   // { name: "Blog", link: "/blog" },

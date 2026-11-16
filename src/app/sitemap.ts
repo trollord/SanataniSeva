@@ -2,11 +2,12 @@ import { MetadataRoute } from "next";
 import { prisma } from "@/lib/prisma";
 import { SITE_URL } from "@/lib/constants";
 import { BLOG_POSTS } from "@/lib/blog";
+import { getLivePromotions } from "@/lib/promotions-data";
 
 export const dynamic = "force-dynamic";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const [properties, items, news, editions] = await Promise.all([
+  const [properties, items, news, editions, promotions, directoryCategories] = await Promise.all([
     prisma.property.findMany({
       where: { status: "ACTIVE" },
       select: { id: true, updatedAt: true },
@@ -23,6 +24,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       where: { status: "PUBLISHED" },
       select: { id: true, date: true },
     }),
+    getLivePromotions(),
+    // Categories with at least one published contact: one crawlable page each
+    prisma.communityContact.groupBy({
+      by: ["category"],
+      where: { status: "ACTIVE", phones: { isEmpty: false } },
+      _max: { updatedAt: true },
+    }),
   ]);
 
   const base = SITE_URL;
@@ -31,7 +39,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: base, lastModified: new Date(), changeFrequency: "daily", priority: 1 },
     // Main sections, in navbar order.
     { url: `${base}/community`, lastModified: new Date(), changeFrequency: "daily", priority: 0.9 },
+    ...directoryCategories.map((c) => ({
+      url: `${base}/community/${c.category}`,
+      lastModified: c._max.updatedAt ?? new Date(),
+      changeFrequency: "weekly" as const,
+      priority: 0.7,
+    })),
     { url: `${base}/marketplace`, lastModified: new Date(), changeFrequency: "hourly", priority: 0.9 },
+    { url: `${base}/promotions`, lastModified: new Date(), changeFrequency: "daily", priority: 0.8 },
     { url: `${base}/listings`, lastModified: new Date(), changeFrequency: "hourly", priority: 0.9 },
     { url: `${base}/newspaper`, lastModified: new Date(), changeFrequency: "daily", priority: 0.9 },
     { url: `${base}/contact`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.7 },
@@ -60,6 +75,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       url: `${base}/news/${n.id}`,
       lastModified: n.publishedAt,
       changeFrequency: "monthly" as const,
+      priority: 0.6,
+    })),
+    ...promotions.map((p) => ({
+      url: `${base}/promotions/${p.slug}`,
+      lastModified: new Date(p.updatedAt),
+      changeFrequency: "weekly" as const,
       priority: 0.6,
     })),
     ...editions.map((e) => ({
