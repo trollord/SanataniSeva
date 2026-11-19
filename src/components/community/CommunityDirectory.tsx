@@ -443,7 +443,11 @@ export default function CommunityDirectory({
               {/* The card is the scroll container: the header stays put while
                   the rows move under it, so the columns are always labelled. */}
               <div className="flex-1 min-h-0 min-w-0 bg-white border border-[#e4e9ea] rounded-2xl overflow-hidden flex flex-col">
-                <div ref={scrollRef} className="flex-1 min-h-0 overflow-auto overscroll-contain">
+                {/* Only from md up, where this pane owns the scroll, does it
+                    contain overscroll. Below md the document scrolls, and
+                    overscroll-contain here stops a swipe that starts on a row
+                    from reaching the page: Android Chrome then scrolls nothing. */}
+                <div ref={scrollRef} className="flex-1 min-h-0 overflow-x-auto md:overflow-auto md:overscroll-contain">
                   <table className="w-full text-sm md:min-w-[640px]">
                     <thead className="sticky top-0 z-10">
                       <tr className="bg-[#F5F5F5] text-[10px] uppercase tracking-[0.12em] text-zinc-500">
