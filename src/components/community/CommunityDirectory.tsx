@@ -7,13 +7,13 @@ import {
   Phone,
   MapPin,
   BadgeCheck,
-  Users,
   Check,
-  type LucideIcon,
+  SlidersHorizontal,
 } from "lucide-react";
 import WhatsAppIcon from "@/components/ui/WhatsAppIcon";
 import { whatsAppContactUrl } from "@/lib/utils/whatsapp";
 import SearchableSelect from "@/components/ui/searchable-select";
+import { Sheet, SheetClose, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { parsePhone } from "@/lib/phone";
 import {
   type CommunityContact,
@@ -31,7 +31,7 @@ import {
   toggleCategory as toggleCategoryIn,
   toggleSubcategory as toggleSubcategoryIn,
 } from "@/lib/directory";
-import { DIRECTORY_ICONS, directoryIcon, directoryIconName } from "@/lib/directory-icons";
+import { DIRECTORY_ICONS, directoryIconName } from "@/lib/directory-icons";
 
 const NO_CHOICE: CategoryChoice = { categories: new Set(), subcategories: new Set() };
 
@@ -99,6 +99,8 @@ export default function CommunityDirectory({
   const [choice, setChoice] = useState<CategoryChoice>(NO_CHOICE);
   const [locality, setLocality] = useState<string>("all");
   const [page, setPage] = useState(1);
+  /** The category drawer that stands in for the rail below lg */
+  const [panelOpen, setPanelOpen] = useState(false);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
@@ -138,10 +140,6 @@ export default function CommunityDirectory({
     );
   }
 
-  const mobileSubcategories = railCategories
-    .filter((c) => choice.categories.has(c.key))
-    .flatMap(visibleSubcategories);
-
   const hasFilters = query.trim() !== "" || choice.categories.size > 0 || locality !== "all";
 
   const pageCount = Math.max(1, Math.ceil(results.length / PER_PAGE));
@@ -175,6 +173,73 @@ export default function CommunityDirectory({
   function clearCategories() {
     setChoice(NO_CHOICE);
     setPage(1);
+  }
+
+  /**
+   * The drawer applies a pick and closes, so the resident sees the results at
+   * once. The exception is ticking a category that has subcategories: the
+   * drawer stays open on them, since it is the only place to choose one.
+   */
+  function pickAll(collapse: boolean) {
+    clearCategories();
+    if (collapse) setPanelOpen(false);
+  }
+
+  function pickCategory(c: DirectoryCategoryView, collapse: boolean) {
+    const opensSubcategories =
+      !choice.categories.has(c.key) &&
+      c.subcategories.some((s) => (counts.bySubcategory[s.id] ?? 0) > 0);
+    toggleCategory(c.key);
+    if (collapse && !opensSubcategories) setPanelOpen(false);
+  }
+
+  function pickSubcategory(id: string, collapse: boolean) {
+    toggleSubcategory(id);
+    if (collapse) setPanelOpen(false);
+  }
+
+  /** The category list, shared by the wide-screen rail and the mobile drawer. */
+  function categoryRows(collapse: boolean) {
+    return (
+      <>
+        <RailRow
+          active={choice.categories.size === 0}
+          onClick={() => pickAll(collapse)}
+          label="All categories"
+          count={preCategory.length}
+          roomy={collapse}
+        />
+        {railCategories.map((c) => {
+          const active = choice.categories.has(c.key);
+          return (
+            <div key={c.key} className="space-y-0.5">
+              <RailRow
+                active={active}
+                onClick={() => pickCategory(c, collapse)}
+                label={c.label}
+                count={counts.byCategory[c.key] ?? 0}
+                selectable
+                roomy={collapse}
+              />
+              {/* A ticked category opens to its subcategories */}
+              {active &&
+                visibleSubcategories(c).map((s) => (
+                  <RailRow
+                    key={s.id}
+                    active={choice.subcategories.has(s.id)}
+                    onClick={() => pickSubcategory(s.id, collapse)}
+                    label={s.label}
+                    count={counts.bySubcategory[s.id] ?? 0}
+                    selectable
+                    nested
+                    roomy={collapse}
+                  />
+                ))}
+            </div>
+          );
+        })}
+      </>
+    );
   }
 
   function clearAll() {
@@ -260,84 +325,91 @@ export default function CommunityDirectory({
           {/* A thin scrollbar in its own reserved gutter, so it never sits on
               top of the counts at the right edge of each row. */}
           <div className="flex-1 min-h-0 overflow-y-auto p-1.5 space-y-0.5 [scrollbar-width:thin] [scrollbar-gutter:stable] [scrollbar-color:#d9dfe0_transparent]">
-            <RailRow
-              active={choice.categories.size === 0}
-              onClick={clearCategories}
-              label="All categories"
-              count={preCategory.length}
-            />
-            {railCategories.map((c) => {
-              const active = choice.categories.has(c.key);
-              return (
-                <div key={c.key} className="space-y-0.5">
-                  <RailRow
-                    active={active}
-                    onClick={() => toggleCategory(c.key)}
-                    label={c.label}
-                    count={counts.byCategory[c.key] ?? 0}
-                    selectable
-                  />
-                  {/* A ticked category opens to its subcategories */}
-                  {active &&
-                    visibleSubcategories(c).map((s) => (
-                      <RailRow
-                        key={s.id}
-                        active={choice.subcategories.has(s.id)}
-                        onClick={() => toggleSubcategory(s.id)}
-                        label={s.label}
-                        count={counts.bySubcategory[s.id] ?? 0}
-                        selectable
-                        nested
-                      />
-                    ))}
-                </div>
-              );
-            })}
+            {categoryRows(false)}
           </div>
         </aside>
 
         {/* Results */}
-        <div ref={resultsRef} className="flex flex-1 flex-col min-h-0 min-w-0 scroll-mt-24">
+        {/* pl clears the fixed Categories tab on the left edge below lg */}
+        <div ref={resultsRef} className="flex flex-1 flex-col min-h-0 min-w-0 scroll-mt-24 pl-3 lg:pl-0">
 
-          {/* Category pills - the rail's stand-in below lg */}
-          <div className="lg:hidden flex gap-2 overflow-x-auto pb-1 -mx-5 px-5 shrink-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            <CategoryPill
-              active={choice.categories.size === 0}
-              onClick={clearCategories}
-              Icon={Users}
-              label="All"
-              count={preCategory.length}
-            />
-            {railCategories.map((c) => (
-              <CategoryPill
-                key={c.key}
-                active={choice.categories.has(c.key)}
-                onClick={() => toggleCategory(c.key)}
-                Icon={directoryIcon(c.icon)}
-                label={c.label}
-                count={counts.byCategory[c.key] ?? 0}
-              />
-            ))}
-          </div>
+          {/* Below lg the rail becomes a drawer, opened from a tab on the
+              left edge so it is always in reach however far the list scrolls. */}
+          <Sheet open={panelOpen} onOpenChange={setPanelOpen}>
+            <SheetTrigger
+              aria-label="Filter by category"
+              className="lg:hidden fixed left-0 top-1/2 -translate-y-1/2 z-40 flex flex-col items-center gap-2 rounded-r-xl bg-[#FF5F15] text-white pl-1.5 pr-2 py-3.5 shadow-lg active:opacity-90 transition-opacity"
+            >
+              <SlidersHorizontal className="w-3.5 h-3.5" />
+              <span className="text-[11px] font-semibold uppercase tracking-[0.12em] [writing-mode:vertical-rl] rotate-180">
+                Categories
+              </span>
+              {choice.categories.size > 0 && (
+                <span className="min-w-4 h-4 px-1 rounded-full bg-white text-[#FF5F15] text-[10px] font-bold tabular-nums flex items-center justify-center">
+                  {choice.categories.size + choice.subcategories.size}
+                </span>
+              )}
+            </SheetTrigger>
+            <SheetContent
+              side="left"
+              showCloseButton={false}
+              className="lg:hidden z-[60] w-[82%] max-w-xs gap-0 bg-white p-0"
+            >
+              <div className="flex items-center justify-between gap-2 px-4 py-3 border-b border-[#EBEBEB] shrink-0">
+                <SheetTitle className="text-[10px] uppercase tracking-[0.12em] text-zinc-500 font-semibold">
+                  Categories
+                </SheetTitle>
+                <div className="flex items-center gap-3">
+                  {choice.categories.size > 0 && (
+                    <button
+                      onClick={clearCategories}
+                      className="text-[11px] text-zinc-500 hover:text-zinc-900 underline underline-offset-2 transition-colors"
+                    >
+                      Clear
+                    </button>
+                  )}
+                  <SheetClose
+                    aria-label="Close categories"
+                    className="text-zinc-400 hover:text-zinc-900 transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                  </SheetClose>
+                </div>
+              </div>
+              <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-2 space-y-0.5">
+                {categoryRows(true)}
+              </div>
+              <div className="p-3 border-t border-[#EBEBEB] shrink-0">
+                <SheetClose className="w-full rounded-full bg-[#FF5F15] text-white py-2.5 text-sm font-semibold hover:opacity-90 transition-opacity">
+                  Show {results.length} {results.length === 1 ? "contact" : "contacts"}
+                </SheetClose>
+              </div>
+            </SheetContent>
+          </Sheet>
 
-          {/* The ticked categories' subcategories, a row of their own below
-              the categories: a pill row cannot open underneath an item. */}
-          {mobileSubcategories.length > 0 && (
-            <div className="lg:hidden flex gap-2 overflow-x-auto pb-1 -mx-5 px-5 mt-2 shrink-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-              {mobileSubcategories.map((s) => (
-                <CategoryPill
-                  key={s.id}
-                  active={choice.subcategories.has(s.id)}
-                  onClick={() => toggleSubcategory(s.id)}
-                  label={s.label}
-                  count={counts.bySubcategory[s.id] ?? 0}
+          {/* What the drawer has applied, so a closed drawer never hides a
+              live filter. Each chip removes itself. */}
+          {choice.categories.size > 0 && (
+            <div className="lg:hidden flex flex-wrap gap-1.5 mb-2.5 shrink-0">
+              {[...choice.categories].map((key) => (
+                <ActiveChip
+                  key={key}
+                  label={railCategories.find((c) => c.key === key)?.label ?? key}
+                  onRemove={() => toggleCategory(key)}
+                />
+              ))}
+              {[...choice.subcategories].map((id) => (
+                <ActiveChip
+                  key={id}
+                  label={index.subById.get(id)?.label ?? ""}
+                  onRemove={() => toggleSubcategory(id)}
                 />
               ))}
             </div>
           )}
 
           {/* Result count */}
-          <div className="flex items-center justify-between gap-4 mt-3 lg:mt-0 mb-2.5 shrink-0">
+          <div className="flex items-center justify-between gap-4 mb-2.5 shrink-0">
             <p className="text-xs text-zinc-500">
               {results.length === 0
                 ? "No contacts found"
@@ -446,6 +518,7 @@ function RailRow({
   count,
   selectable = false,
   nested = false,
+  roomy = false,
 }: {
   active: boolean;
   onClick: () => void;
@@ -453,13 +526,15 @@ function RailRow({
   count: number;
   selectable?: boolean;
   nested?: boolean;
+  /** Finger-sized rows, for the mobile drawer */
+  roomy?: boolean;
 }) {
   return (
     <button
       onClick={onClick}
       aria-pressed={active}
       title={label}
-      className={`w-full flex items-center gap-2 pr-2 ${nested ? "pl-[30px]" : "pl-2"} py-1.5 rounded-lg text-left text-[13px] transition-colors ${
+      className={`w-full flex items-center gap-2 pr-2 ${nested ? "pl-[30px]" : "pl-2"} ${roomy ? "py-2.5 text-sm" : "py-1.5 text-[13px]"} rounded-lg text-left transition-colors ${
         active
           ? "bg-[#FF5F15]/10 text-[#0B0B0C] font-medium"
           : "text-zinc-600 hover:bg-[#f2f4f4] hover:text-zinc-900"
@@ -487,34 +562,16 @@ function RailRow({
   );
 }
 
-/* ─── Category pill ───────────────────────────────────────────────────────── */
-function CategoryPill({
-  active,
-  onClick,
-  Icon,
-  label,
-  count,
-}: {
-  active: boolean;
-  onClick: () => void;
-  /** Omitted for subcategory pills */
-  Icon?: LucideIcon;
-  label: string;
-  count: number;
-}) {
+/* ─── Active filter chip ──────────────────────────────────────────────────── */
+function ActiveChip({ label, onRemove }: { label: string; onRemove: () => void }) {
   return (
     <button
-      onClick={onClick}
-      aria-pressed={active}
-      className={`flex items-center gap-1.5 shrink-0 px-3.5 py-2 rounded-full text-xs font-medium border transition-all ${
-        active
-          ? "bg-[#FF5F15] text-white border-[#FF5F15]"
-          : "bg-white text-zinc-600 border-[#e4e9ea] hover:bg-[#f2f4f4] hover:text-zinc-900"
-      }`}
+      onClick={onRemove}
+      aria-label={`Remove ${label} filter`}
+      className="flex items-center gap-1 pl-3 pr-2 py-1 rounded-full text-xs font-medium bg-[#FF5F15]/10 text-[#0B0B0C] hover:bg-[#FF5F15]/15 transition-colors"
     >
-      {Icon && <Icon className="w-3.5 h-3.5" />}
       {label}
-      <span className={active ? "text-white/50" : "text-zinc-400"}>{count}</span>
+      <X className="w-3 h-3 text-[#FF5F15]" />
     </button>
   );
 }
