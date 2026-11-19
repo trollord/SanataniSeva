@@ -174,7 +174,7 @@ export default function DashboardListings({
         </div>
         <h2 className="text-xl font-bold text-gray-900 mb-2">No properties listed yet</h2>
         <p className="text-sm text-gray-500 max-w-sm mb-8 leading-relaxed">
-          You haven&apos;t listed any properties yet. Start listing now and connect with serious buyers and tenants in Hiranandani Estate - completely free.
+          You haven&apos;t listed any properties yet. Start listing now and connect with serious buyers and tenants in Hiranandani Estate - it only takes a few minutes.
         </p>
         <Link href="/dashboard/new">
           <Button className="bg-[#FF5F15] hover:bg-[#FF5F15]/90 text-white gap-2 px-6 py-5 text-base">

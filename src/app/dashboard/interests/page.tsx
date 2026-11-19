@@ -60,7 +60,7 @@ export default async function InterestsPage() {
               Own a property in Hiranandani Estate?
             </p>
             <p className="text-white/50 text-xs sm:text-[13px] mt-0.5">
-              List it for free and connect directly with verified seekers.
+              List it in minutes and connect directly with verified seekers.
             </p>
           </div>
           <Link

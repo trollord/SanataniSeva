@@ -45,7 +45,7 @@ export const BLOG_POSTS: BlogPost[] = [
       { type: "h2", text: "What Sanatani Seva does differently" },
       {
         type: "p",
-        text: "Owners list directly, for free. Our team verifies every listing before it goes live. Seekers browse verified homes, register interest for free, and talk to the owner directly - no intermediary in the conversation, no percentage riding on the deal. We charge a flat advisory fee only after a transaction actually closes, which is a fraction of a percentage-based commission.",
+        text: "Owners list directly. Our team verifies every listing before it goes live. Seekers browse verified homes, register interest in one tap, and talk to the owner directly - no intermediary in the conversation, no percentage riding on the deal. We charge a flat advisory fee only after a transaction actually closes, which is a fraction of a percentage-based commission.",
       },
       {
         type: "p",
@@ -97,7 +97,7 @@ export const BLOG_POSTS: BlogPost[] = [
       },
       {
         type: "p",
-        text: "Every listing on Sanatani Seva shows the deposit, lock-in and availability upfront, and you talk to the owner directly - so the answers to these questions come from the person who actually owns the home. Registering interest is free.",
+        text: "Every listing on Sanatani Seva shows the deposit, lock-in and availability upfront, and you talk to the owner directly - so the answers to these questions come from the person who actually owns the home. Registering interest takes one tap.",
       },
     ],
   },
@@ -105,7 +105,7 @@ export const BLOG_POSTS: BlogPost[] = [
     slug: "how-sanatani-community-works",
     title: "Direct From Owners: How Sanatani Seva Actually Works",
     excerpt:
-      "Free verified listings, direct owner contact, and a flat advisory fee only when a deal closes - a transparent look at our model and why we built it this way.",
+      "Verified listings, direct owner contact, and a flat advisory fee only when a deal closes - a transparent look at our model and why we built it this way.",
     date: "2026-07-23",
     readTime: "3 min read",
     blocks: [
@@ -116,12 +116,12 @@ export const BLOG_POSTS: BlogPost[] = [
       { type: "h2", text: "For owners" },
       {
         type: "p",
-        text: "Listing is free. You add photos and videos, set your price, deposit and availability, and submit. Our team reviews every listing before it goes live - verified listings earn more trust and significantly more responses. When a seeker registers interest, you get their contact instantly by email and can reach them on WhatsApp in one tap.",
+        text: "Listing is easy. You add photos and videos, set your price, deposit and availability, and submit. Our team reviews every listing before it goes live - verified listings earn more trust and significantly more responses. When a seeker registers interest, you get their contact instantly by email and can reach them on WhatsApp in one tap.",
       },
       { type: "h2", text: "For seekers" },
       {
         type: "p",
-        text: "Browsing is free and requires no paperwork. Filter by locality, budget, configuration and availability, register interest on homes you like, and speak directly with owners. No percentage commission changes hands at any point.",
+        text: "Browsing is easy and requires no paperwork. Filter by locality, budget, configuration and availability, register interest on homes you like, and speak directly with owners. No percentage commission changes hands at any point.",
       },
       { type: "h2", text: "How we sustain it" },
       {

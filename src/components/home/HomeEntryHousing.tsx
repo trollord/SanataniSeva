@@ -171,7 +171,7 @@ export default function HomeEntryHousing() {
 
               <div className="mt-8 h-px w-full max-w-[520px] bg-[rgba(240,233,223,0.14)]" />
               <p className="mt-5 text-[11px] font-bold uppercase tracking-[0.18em] text-[#EDE0CC]">
-                FREE TO BROWSE · FREE TO LIST
+                EASY TO BROWSE · EASY TO LIST
               </p>
 
               <div className="mt-9">

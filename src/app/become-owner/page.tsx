@@ -48,12 +48,12 @@ export default function BecomeOwnerPage() {
             </h1>
             <p className="text-gray-500 text-sm mb-8 leading-relaxed">
               To access the owner dashboard and list properties, activate your owner account.
-              It&apos;s free and takes one click.
+              It takes just one click.
             </p>
 
             <ul className="text-left space-y-3 mb-8">
               {[
-                "List properties in Hiranandani Estate for free",
+                "List properties in Hiranandani Estate in minutes",
                 "Manage all your listings from one dashboard",
                 "See interested seekers and their contact details",
                 "Get notified when someone registers interest",
@@ -74,12 +74,12 @@ export default function BecomeOwnerPage() {
               disabled={loading}
               className="w-full bg-[#FF5F15] hover:bg-[#FF5F15]/90 text-white gap-2 py-5"
             >
-              {loading ? "Activating…" : "Activate Owner Account - Free"}
+              {loading ? "Activating…" : "Activate Owner Account"}
               {!loading && <ArrowRight className="h-4 w-4" />}
             </Button>
 
             <p className="text-xs text-gray-400 mt-4">
-              No charges. You can still browse listings as a seeker anytime.
+              You can still browse listings as a seeker anytime.
             </p>
 
             <a href="/listings" className="block mt-3">

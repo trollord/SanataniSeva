@@ -104,7 +104,7 @@ export default async function MarketplacePage() {
             </h2>
             <p className="text-white/45 text-xs sm:text-sm leading-relaxed max-w-md">
               Add a few photos, set a price, and reach every resident of
-              Hiranandani Estate. Free, always.
+              Hiranandani Estate. It takes a minute.
             </p>
           </div>
           <Link

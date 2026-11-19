@@ -5,7 +5,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "How It Works",
   description:
-    "A simple, transparent process - completely free to browse, with verified listings and direct contact.",
+    "A simple, transparent process - easy to browse, with verified listings and direct contact.",
   alternates: { canonical: "/how-it-works" },
 };
 
@@ -43,7 +43,7 @@ export default function HowItWorksPage() {
 
           <p className="text-gray-500 text-base sm:text-lg md:text-xl max-w-2xl font-medium leading-relaxed mb-12">
             A simple, transparent process - verified listings and direct contact.
-            Completely free to browse.
+            Easy to browse.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
@@ -147,7 +147,7 @@ export default function HowItWorksPage() {
           <div className="order-1 md:order-2 space-y-7">
             <StepBadge label="Step 02" dark />
             <h2 className="text-4xl sm:text-5xl font-extrabold tracking-tighter leading-[0.95] text-white">
-              Register Interest - Free
+              Register Interest - In One Tap
             </h2>
             <p className="text-white/55 text-lg leading-relaxed">
               Found your dream home? Simply register your interest with a single

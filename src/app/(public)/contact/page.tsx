@@ -28,8 +28,8 @@ const FAQS: { q: string; a: string }[] = [
     a: "Open the listing you're interested in and tap the Call or WhatsApp button on the price card. That puts you straight through to the owner or broker who listed it.",
   },
   {
-    q: "I want to list my property - do I pay anything?",
-    a: "No. Listing is completely free. Create an account and head to Dashboard → List Property. Our team verifies the listing and publishes it.",
+    q: "How do I list my property?",
+    a: "It's easy. Create an account and head to Dashboard → List Property. Our team verifies the listing and publishes it.",
   },
   {
     q: "I run a local business - can I be added to the directory?",

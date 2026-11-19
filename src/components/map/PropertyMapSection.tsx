@@ -30,7 +30,7 @@ export default function PropertyMapSection({ lat, lng, propertyId, isLoggedIn }:
   function toggle(type: AmenityType) {
     if (!isLoggedIn) {
       toast("Sign in to explore nearby facilities", {
-        description: "Create a free account to discover hospitals, schools, and more around this property.",
+        description: "Create an account to discover hospitals, schools, and more around this property.",
         action: { label: "Sign in", onClick: () => window.location.href = "/login" },
         duration: 4000,
       });

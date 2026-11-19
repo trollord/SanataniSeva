@@ -34,7 +34,7 @@ export const metadata: Metadata = {
     template: "%s | Sanatani Seva",
   },
   description:
-    "Everything Hiranandani Estate residents need in one place: flats for rent and sale, a directory of trusted local plumbers, electricians, doctors and shops, a resident marketplace, bus timings and the estate newspaper. Free to browse.",
+    "Everything Hiranandani Estate residents need in one place: flats for rent and sale, a directory of trusted local plumbers, electricians, doctors and shops, a resident marketplace, bus timings and the estate newspaper. Easy to browse.",
   keywords: [
     // Housing
     "houses in Hiranandani Estate",

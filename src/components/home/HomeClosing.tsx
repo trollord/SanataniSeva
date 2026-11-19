@@ -77,9 +77,9 @@ const ENTRIES: { n: string; name: string; route: string; href: string }[] = [
 
 const LOCALITIES = [
   "Hiranandani Estate",
-  "Hiranandani Meadows",
   "Rodas Enclave",
   "One Hiranandani Park",
+  "Areas surrounding Hiranandani Estate",
 ];
 
 /* The honesty ledger. Wording is fixed: do not condense, merge, reorder
@@ -87,8 +87,8 @@ const LOCALITIES = [
 const NOTICES = [
   "Sanatani Seva lists; it does not mediate. We do not employ or endorse the vendors in the directory, so check credentials before you hire anyone.",
   "Prices and condition notes on the marketplace are written by sellers. See the item in person before you pay for it.",
-  "Directory entries marked as samples are placeholders, kept visible while we confirm real listings with residents one at a time.",
-  "Browsing, listing and contacting anyone on this portal is free. There is no charge to residents at any point.",
+  "Contact details are shared as a convenience. Any arrangement you make with a listed contact is between you and them.",
+  "Browsing, listing and contacting anyone on this portal is easy: a few taps, no paperwork, no middlemen.",
 ];
 
 const COLOPHON_HEADING = "text-[11px] font-bold uppercase tracking-[0.2em] text-[#1C1C1C]";

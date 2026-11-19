@@ -20,11 +20,11 @@ const STEPS: TourStep[] = [
   {
     target: '[data-tour="property-card"]',
     title: "Explore a property",
-    body: "Open any home to see photos, full details and its location on the map. Registering interest is completely free - you only pay a flat advisory fee after a deal is signed.",
+    body: "Open any home to see photos, full details and its location on the map. Registering interest takes one tap - a flat advisory fee is payable only after a deal is signed.",
   },
   {
     title: "You're all set ✨",
-    body: "Own a property in Hiranandani Estate? List it for free from your dashboard, and share any listing on WhatsApp with one tap. Happy house-hunting!",
+    body: "Own a property in Hiranandani Estate? List it in a few minutes from your dashboard, and share any listing on WhatsApp with one tap. Happy house-hunting!",
   },
 ];
 

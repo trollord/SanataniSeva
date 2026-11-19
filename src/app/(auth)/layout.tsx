@@ -26,13 +26,13 @@ export default function AuthLayout({
               <span className="text-white/70">Living in Hiranandani</span>
             </h2>
             <p className="text-white/60 leading-relaxed max-w-sm">
-              Browse verified listings and connect with owners and brokers - completely free.
+              Browse verified listings and connect with owners and brokers - quick and easy.
             </p>
           </div>
 
           <div className="relative z-10 flex gap-8">
             {[
-              { value: "Free", label: "Always free" },
+              { value: "Easy", label: "To list & browse" },
               { value: "Verified", label: "Listings" },
               { value: "Instant", label: "Contact access" },
             ].map(({ value, label }) => (

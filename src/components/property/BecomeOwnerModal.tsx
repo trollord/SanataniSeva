@@ -47,12 +47,12 @@ export default function BecomeOwnerModal({ open, onClose }: Props) {
         </h2>
         <p className="text-[13px] text-gray-500 mb-7 leading-relaxed">
           Activate your owner account to list properties.
-          It&apos;s free and takes one click.
+          It takes just one click.
         </p>
 
         <ul className="text-left space-y-3 mb-7">
           {[
-            "List properties in Hiranandani Estate for free",
+            "List properties in Hiranandani Estate in minutes",
             "Manage all your listings from one dashboard",
             "See interested seekers and their contact details",
             "Get notified when someone registers interest",
@@ -71,7 +71,7 @@ export default function BecomeOwnerModal({ open, onClose }: Props) {
           disabled={loading}
           className="w-full rounded-full bg-[#FF5F15] hover:bg-[#FF5F15]/90 text-white gap-2 py-5 text-sm font-medium tracking-wide"
         >
-          {loading ? "Activating…" : "Activate Owner Account - Free"}
+          {loading ? "Activating…" : "Activate Owner Account"}
           {!loading && <ArrowRight className="h-4 w-4" />}
         </Button>
 
@@ -83,7 +83,7 @@ export default function BecomeOwnerModal({ open, onClose }: Props) {
         </button>
 
         <p className="text-xs text-gray-400 mt-4">
-          No charges. You can still browse listings as a seeker anytime.
+          You can still browse listings as a seeker anytime.
         </p>
       </div>
     </Modal>

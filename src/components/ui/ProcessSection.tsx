@@ -20,8 +20,8 @@ const STEPS = [
   },
   {
     icon: Heart,
-    title: "Register Interest - Free",
-    desc: "Save your favorites and notify owners without paying a single rupee upfront.",
+    title: "Register Interest - In One Tap",
+    desc: "Save your favorites and let owners know you are interested, in a single tap.",
   },
   {
     icon: KeyRound,
