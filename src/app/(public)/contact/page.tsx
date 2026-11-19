@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowRight, Phone, Clock, MapPin, Navigation } from "lucide-react";
+import { ArrowRight, Phone, Mail, Clock, MapPin, Navigation } from "lucide-react";
 import {
+  CONTACT_EMAIL,
   CONTACT_PHONE,
   OFFICE_ADDRESS_LINES,
   OFFICE_MAP_EMBED_URL,
@@ -76,6 +77,14 @@ export default function ContactPage() {
               label="Call or WhatsApp"
               value={CONTACT_PHONE}
               hint="Mon–Sat · 10:00 AM – 7:00 PM"
+            />
+
+            <QuickCard
+              href={`mailto:${CONTACT_EMAIL}`}
+              icon={<Mail className="w-5 h-5" />}
+              label="Email"
+              value={CONTACT_EMAIL}
+              hint="We reply within 24 hours"
             />
 
             <div className="bg-white border border-gray-200 rounded-2xl p-5 flex items-start gap-3">

@@ -21,6 +21,9 @@ export const SITE_TAGLINE = "Your Trusted Real Estate Advisors in Hiranandani Es
  */
 export const CONTACT_PHONE = "+91 99300 09144";
 
+/** Where /contact form messages are delivered, and shown on that page. */
+export const CONTACT_EMAIL = "nsassociate.thane@gmail.com";
+
 /** Shown in the footer and on /contact. */
 export const OFFICE_ADDRESS_LINES = [
   "B Wing, 306, Hamilton",

@@ -140,6 +140,49 @@ export function passwordResetEmail(opts: {
   return { subject, html: shell(content) };
 }
 
+export function contactMessageEmail(opts: {
+  subjectLabel: string;
+  message: string;
+  name: string;
+  contact: string;
+}): { subject: string; html: string } {
+  const name = escapeHtml(opts.name);
+  const contact = escapeHtml(opts.contact);
+  // Keep the visitor's line breaks
+  const message = escapeHtml(opts.message).replace(/\n/g, "<br />");
+
+  const subject = `Contact form: ${opts.subjectLabel} - ${opts.name}`;
+
+  const content = `
+    <p style="font-family:${sans};font-size:10px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#9a9a9a;margin:0 0 14px;">
+      Contact Form &middot; ${escapeHtml(opts.subjectLabel)}
+    </p>
+    <h1 style="font-family:${serif};font-size:26px;line-height:1.25;font-weight:700;color:#FF5F15;margin:0 0 18px;">
+      New message from ${name}
+    </h1>
+
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#fafafa;border:1px solid #eeeeee;border-radius:10px;">
+      <tr>
+        <td style="padding:18px 22px;">
+          <p style="font-family:${sans};font-size:10px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:#9a9a9a;margin:0 0 6px;">
+            Reply to
+          </p>
+          <p style="font-family:${sans};font-size:15px;font-weight:600;color:#FF5F15;margin:0 0 3px;">
+            ${name}
+          </p>
+          <p style="font-family:${sans};font-size:13px;color:#555555;margin:0;">
+            ${contact}
+          </p>
+          <p style="font-family:${sans};font-size:13px;line-height:1.7;color:#555555;margin:10px 0 0;padding-top:10px;border-top:1px solid #eee;">
+            ${message}
+          </p>
+        </td>
+      </tr>
+    </table>`;
+
+  return { subject, html: shell(content) };
+}
+
 export function newInquiryEmail(opts: {
   ownerName: string | null;
   seekerName: string | null;

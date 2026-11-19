@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
 import { toast } from "sonner";
 import { CheckCircle2, Loader2, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -17,43 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
-const SUBJECTS = [
-  { value: "general",     label: "General enquiry" },
-  { value: "listing",     label: "About a listing" },
-  { value: "list",        label: "List my property" },
-  { value: "vendor",      label: "Add a vendor to the directory" },
-  { value: "partnership", label: "Partnership / business" },
-  { value: "feedback",    label: "Feedback or suggestion" },
-] as const;
-
-function looksLikeEmail(v: string) {
-  return /^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(v);
-}
-
-/** 10 digits for an Indian mobile, up to 13 once a country code is included. */
-function looksLikePhone(v: string) {
-  if (!/^[+\d\s\-()]+$/.test(v)) return false;
-  const digits = v.replace(/\D/g, "").length;
-  return digits >= 10 && digits <= 13;
-}
-
-const contactSchema = z.object({
-  subject: z.string().min(1, "Pick a subject"),
-  message: z.string().min(10, "Please write at least 10 characters"),
-  name: z.string().min(2, "Please enter your full name"),
-  // One field for either, so nobody is turned away for not having an email.
-  contact: z
-    .string()
-    .trim()
-    .min(1, "Leave a contact number or an email so we can reply")
-    .refine(
-      (v) => looksLikeEmail(v) || looksLikePhone(v),
-      "Enter a valid phone number or email address"
-    ),
-});
-
-type ContactFormData = z.infer<typeof contactSchema>;
+import { SUBJECTS, contactSchema, type ContactFormData } from "@/lib/validations/contact";
 
 export default function ContactForm() {
   const [submitting, setSubmitting] = useState(false);
@@ -78,12 +41,12 @@ export default function ContactForm() {
   const onSubmit = async (data: ContactFormData) => {
     setSubmitting(true);
     try {
-      // TODO(backend): this is still a stub - nothing is sent or stored, the
-      // visitor is simply told the message went through. Replace with a real
-      // POST /api/contact that persists { subject, message, name, contact }
-      // and routes the alert, before this page is promoted to residents.
-      await new Promise((r) => setTimeout(r, 700));
-      void data;
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error(`Contact form failed: ${res.status}`);
 
       toast.success("Message sent - we'll get back to you within 24 hours.");
       reset();
